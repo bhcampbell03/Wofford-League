@@ -500,6 +500,13 @@ const TRADES = [
   {year:2025,date:"2025-10-24",teamA:"bc",teamB:"of",sentA:["Jahmyr Gibbs (DET RB)","Nico Collins (HOU WR)"],sentB:["Tyler Warren (IND TE)","Kyren Williams (LAR RB)","Bucky Irving (TB RB)"]}
 ];
 
+// Manually curated ownership/franchise transitions, for the History timeline.
+// Not derived from SEASONS -- a roster slot changing hands isn't detectable
+// from the data alone (a team simply renaming itself looks identical).
+const FRANCHISE_CHANGES = [
+  {year:2024, title:"Ownership change", detail:"Reid Mario takes over the franchise spot previously held by Ryan Methot."}
+];
+
 // Winning percentage in the traditional .XXX format (no leading zero, no percent sign)
 function pctFmt(p){
   const s = p.toFixed(3);
@@ -787,6 +794,21 @@ function teamGrade(id){
   return Math.max(0, Math.min(100, grade));
 }
 
+// Computes {w,l,pf,pa} for one owner/year directly from MATCHUPS -- works even
+// for a season in progress (no SEASONS[year] entry yet, e.g. 2026's Week 1),
+// unlike reading it off final standings.
+function seasonTotalsFromGames(id, year){
+  let w=0,l=0,pf=0,pa=0,any=false;
+  (MATCHUPS[year]||[]).filter(wk=>!wk.playoff).forEach(week=>{
+    week.g.forEach(([tA,sA,tB,sB])=>{
+      const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+      if(oA===id){ any=true; pf+=sA; pa+=sB; if(sA>sB) w++; else if(sA<sB) l++; }
+      if(oB===id){ any=true; pf+=sB; pa+=sA; if(sB>sA) w++; else if(sB<sA) l++; }
+    });
+  });
+  return any ? {w,l,pf,pa} : null;
+}
+
 function luckRating(id, year){
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff);
   let xW=0, played=0;
@@ -800,8 +822,8 @@ function luckRating(id, year){
       if(oB===id){ played++; if(sB>=avg) xW++; }
     });
   });
-  const actual = SEASONS[year].find(t=>t.owner===id);
-  return { xW, xL: played-xW, actualW: actual?actual.w:null, luck: actual ? actual.w-xW : null };
+  const totals = seasonTotalsFromGames(id, year);
+  return { xW, xL: played-xW, actualW: totals?totals.w:null, luck: totals ? totals.w-xW : null };
 }
 
 // Win/loss streaks and hot scoring stretches, computed off regular-season games only.
@@ -952,7 +974,7 @@ const LAUREL_SVG = `<svg width="150" height="58" viewBox="0 0 150 58" fill="none
 
 /* ============ RENDER: NAV ============ */
 
-const PAGES = ["Home","Current Season","Analytics","History","Versus Records","Records & Awards","Leaderboards","Draft","Trades","Team Hub","Guide"];
+const PAGES = ["Home","Current Season","Analytics","History","Rivalries","Records & Awards","Leaderboards","Draft","Trades","Team Hub","Guide"];
 let currentPage = "Home";
 let adminAuthed = false;
 // Light deterrent only -- this is a static file with no backend, so this is
@@ -975,7 +997,7 @@ function renderPage(){
   else if(currentPage==="Current Season") app.innerHTML = pageLiveSeason();
   else if(currentPage==="Analytics") app.innerHTML = pageAnalytics();
   else if(currentPage==="History") app.innerHTML = pageHistory();
-  else if(currentPage==="Versus Records") app.innerHTML = pageRecords();
+  else if(currentPage==="Rivalries") app.innerHTML = pageRecords();
   else if(currentPage==="Records & Awards") app.innerHTML = pageAwards();
   else if(currentPage==="Leaderboards") app.innerHTML = pageLeaderboards();
   else if(currentPage==="Draft") app.innerHTML = pageDraftTrades();
@@ -1005,8 +1027,8 @@ function renderSiteMapContent(){
       {id:'jump-sos', label:'Strength of Schedule'},
       {id:'jump-oddscalc', label:'Playoff Odds by Start'}
     ]},
-    {page:"History", blurb:"Season-by-season recaps, career Team Grades, playoff brackets, and weekly box scores.", items:[]},
-    {page:"Versus Records", blurb:"Head-to-head records, the full grid, and rivalries.", items:[]},
+    {page:"History", blurb:"League timeline, league parity over time, season-by-season recaps, career Team Grades, playoff brackets, and weekly box scores.", items:[]},
+    {page:"Rivalries", blurb:"Head-to-head records, the full grid, and flagged rivalries with milestones.", items:[]},
     {page:"Records & Awards", blurb:"League records, awards, and league leaders by position.", items:[]},
     {page:"Leaderboards", blurb:"Pick any stat and any season (or career) and see every team ranked.", items:[]},
     {page:"Draft", blurb:"Draft value curve, draft skill table, and every team's draft report.", items:[
@@ -1160,6 +1182,103 @@ function extendedStandingsStats(id){
   return {blowoutW, blowoutL, weeksFirst, xW, xL, playoffW, playoffL};
 }
 
+// League parity, by season: the spread (max - min) of win% across all 12
+// teams. Regular season uses SEASONS' final standings pct, available for
+// every year 2022-2025. Playoff uses real bracket games only (PLAYOFF_
+// QUALIFIERS teams, playoff-flagged games between two qualifiers), so it's
+// only available for 2024-2025, the only years with weekly/bracket data.
+// League parity, by season: standard deviation of win% across all 12 teams.
+// Standard deviation (vs. a plain max-min range) still reflects the full
+// spread of the league, but a single outlier team -- one blowout-bad or
+// blowout-good season -- doesn't dominate the number the way it does with a
+// two-point range.
+function parityData(){
+  const years = [2022,2023,2024,2025];
+  const regular = years.map(y=>{
+    const pcts = SEASONS[y].map(t=>t.pct);
+    const mean = pcts.reduce((a,b)=>a+b,0)/pcts.length;
+    const variance = pcts.reduce((a,p)=>a+(p-mean)**2,0)/pcts.length;
+    return Math.sqrt(variance);
+  });
+  return {years, regular};
+}
+
+function renderParityChart(){
+  renderStaticChart('chartParity', canvas=>{
+    const {years, regular} = parityData();
+    return new Chart(canvas, {
+      type:'line',
+      data:{
+        labels: years.map(String),
+        datasets:[
+          {label:'Regular Season Win% Std. Dev.', data:regular, borderColor:'#8F6B0D', backgroundColor:'#8F6B0D', tension:0.25, pointRadius:4, borderWidth:2}
+        ]
+      },
+      options:{ maintainAspectRatio:false,
+        plugins:{ legend:{display:false},
+          tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${pctFmt(c.raw)}`}} },
+        scales:{ y:{title:{display:true,text:'Win% Standard Deviation'}, min:0} }
+      }
+    });
+  });
+}
+
+// League History Timeline events: champions (every year), franchise changes
+// (manually curated, see FRANCHISE_CHANGES), and the single all-time-high
+// single-game score, pulled from the shared computeRecordBook() the Records
+// & Awards page also uses. Trades are deliberately excluded from this
+// timeline.
+function computeTimelineEvents(){
+  const events = [];
+  [2022,2023,2024,2025].forEach(year=>{
+    const roster = SEASONS[year];
+    const champ = roster.find(t=>t.titles>0) || roster.find(t=>t.rank===1);
+    events.push({year, order:0, type:'champion', title:`${champ.team} wins the League`, detail:`${champ.w}-${champ.l} regular season`});
+  });
+  FRANCHISE_CHANGES.forEach(f=>events.push({year:f.year, order:1, type:'franchise', title:f.title, detail:f.detail}));
+
+  const {highGame} = computeRecordBook();
+  events.push({year:highGame.year, order:2, type:'record', title:'Highest single-game score', detail:`${currentTeamName(highGame.o)} \u2014 ${highGame.s} pts, Wk ${highGame.week}`});
+
+  return events.sort((x,y)=> x.year-y.year || x.order-y.order);
+}
+
+// Distinct marker shapes per timeline event type, so the eye can tell them
+// apart at a glance without reading the label: a banner for championships,
+// a diamond for franchise changes, a star for records.
+function timelineMarkerSvg(type, color){
+  if(type==='champion'){
+    return `<svg width="26" height="28" viewBox="0 0 24 26" xmlns="http://www.w3.org/2000/svg"><path d="M3 2h18v14l-9 9-9-9V2z" fill="${color}" stroke="var(--panel)" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  }
+  if(type==='franchise'){
+    return `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" transform="rotate(45 12 12)" fill="${color}" stroke="var(--panel)" stroke-width="2"/></svg>`;
+  }
+  return `<svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.9 6.6 7.1.9-5.2 4.9 1.4 7-6.2-3.6-6.2 3.6 1.4-7L2 9.5l7.1-.9L12 2z" fill="${color}" stroke="var(--panel)" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+}
+
+function renderTimelineHtml(){
+  const events = computeTimelineEvents();
+  const dotColor = {champion:'#8F6B0D', franchise:'#2F5D8A', record:'#B23B3B'};
+  const typeLabel = {champion:'Champion', franchise:'Franchise', record:'Record'};
+  return `
+    <div class="timeline-scroll" style="display:flex;gap:0;overflow-x:auto;padding:24px 8px 20px;margin-bottom:8px">
+      ${events.map((e,i)=>`
+        <div style="flex:0 0 220px;position:relative;padding:0 14px;">
+          <div style="height:3px;background:${i===0?'transparent':'var(--line)'};position:absolute;top:13px;left:0;width:50%;"></div>
+          <div style="height:3px;background:${i===events.length-1?'transparent':'var(--line)'};position:absolute;top:13px;right:0;width:50%;"></div>
+          <div style="height:28px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;margin:0 auto 10px;">
+            ${timelineMarkerSvg(e.type, dotColor[e.type])}
+          </div>
+          <div class="card" style="padding:10px 12px;min-height:110px">
+            <div class="note" style="font-weight:700;color:${dotColor[e.type]}">${e.year} &middot; ${typeLabel[e.type]}</div>
+            <div style="font-weight:700;font-size:13px;margin:4px 0 4px">${e.title}</div>
+            <div class="note" style="font-size:12px">${e.detail}</div>
+          </div>
+        </div>`).join("")}
+    </div>
+  `;
+}
+
 function pageHistory(){
   const years = [2025,2024,2023,2022];
   const weeks = allWeeksList();
@@ -1178,6 +1297,9 @@ function pageHistory(){
   }).sort((a,b)=> b.grade-a.grade);
 
   return `
+    <div class="section-title">League History Timeline <span class="sub">champions, franchise changes, and all-time records</span></div>
+    ${renderTimelineHtml()}
+
     <div class="section-title">All-Time Results <span class="sub">2022&ndash;2025</span></div>
     <div class="view-toggle" style="margin-bottom:12px">
       <button type="button" id="stdViewBtn" class="toggle-btn active">Standard</button>
@@ -1188,10 +1310,10 @@ function pageHistory(){
       <thead><tr>
         <th>Team</th><th class="num-cell">Grade</th><th class="num-cell">W</th><th class="num-cell">L</th>
         <th class="num-cell">Win%</th><th class="num-cell">Titles</th><th class="num-cell">Avg. finish</th>
-        <th class="num-cell">Playoffs*</th><th class="num-cell">Avg. PF</th><th class="num-cell">Avg. PA</th>
+        <th class="num-cell">Playoff W-L*</th><th class="num-cell">Avg. PF</th><th class="num-cell">Avg. PA</th>
         <th class="num-cell ext-col">Blowout W</th><th class="num-cell ext-col">Blowout L</th>
         <th class="num-cell ext-col">Wks 1st</th><th class="num-cell ext-col">xW</th><th class="num-cell ext-col">xL</th>
-        <th class="num-cell ext-col">Playoff W-L</th><th class="num-cell ext-col">Bench Left**</th>
+        <th class="num-cell ext-col">Bench Left**</th>
       </tr></thead>
       <tbody>
         ${standingRows.map(r=>{
@@ -1205,7 +1327,7 @@ function pageHistory(){
           <td class="num-cell">${pctFmt(r.pct)}</td>
           <td class="num-cell">${r.titles || 0}</td>
           <td class="num-cell">${r.avgRank.toFixed(1)}</td>
-          <td class="num-cell">${r.playoffs}</td>
+          <td class="num-cell">${ext.playoffW}-${ext.playoffL}</td>
           <td class="num-cell">${r.pfYears? (r.pf/r.pfYears).toFixed(1) : '&mdash;'}</td>
           <td class="num-cell">${r.pfYears? (r.pa/r.pfYears).toFixed(1) : '&mdash;'}</td>
           <td class="num-cell ext-col">${ext.blowoutW}</td>
@@ -1213,7 +1335,6 @@ function pageHistory(){
           <td class="num-cell ext-col">${ext.weeksFirst}</td>
           <td class="num-cell ext-col">${ext.xW}</td>
           <td class="num-cell ext-col">${ext.xL}</td>
-          <td class="num-cell ext-col">${ext.playoffW}-${ext.playoffL}</td>
           <td class="num-cell ext-col">${bench? bench.left.toFixed(1) : '&mdash;'}</td>
         </tr>`;
         }).join("")}
@@ -1222,7 +1343,10 @@ function pageHistory(){
     </div>
     <p class="note" style="margin-top:6px">**Bench Left is career total points left on the bench, 2024&ndash;2025 only (see the Records &amp; Awards page for the full explanation and per-week rate).</p>
 
-    <div class="section-title">Season by Season</div>
+    <div class="section-title" style="margin-top:32px">League Parity Over Time <span class="sub">regular season win% standard deviation, by year</span></div>
+    <div class="chart-wrap" style="height:320px"><canvas id="chartParity"></canvas></div>
+
+    <div class="section-title" style="margin-top:32px">Season by Season</div>
     ${years.map(year=>{
       const roster = [...SEASONS[year]].sort((a,b)=>a.rank-b.rank);
       const champ = roster.find(t=>t.titles>0) || roster[0];
@@ -1338,7 +1462,9 @@ function pageHistory(){
     <div id="weeklyReportWrap">${renderWeeklyReportHtml(def.year, def.week)}</div>
 
     <div class="footnotes">
-      <p>*Playoff appearances counted since 2024 only. Avg. PF/PA also only covers 2024&ndash;2025. Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Wks 1st, xW/xL, and Playoff W-L (real bracket games only) are also 2024&ndash;2025 only. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
+      <p>League Parity is the standard deviation of final-standings win% across all 12 teams that year, regular season only &mdash; a smaller number means a more competitively balanced league that year. Standard deviation is used instead of a simple best-minus-worst spread so one outlier team (a blowout-good or blowout-bad season) doesn't single-handedly set the number.</p>
+      <p>The League History Timeline's Record entry is the current all-time highest single-game score, placed at the year it was set &mdash; not a full history of every time that record changed hands. See the Records &amp; Awards page for the complete Record Book.</p>
+      <p>*Playoff W-L is real bracket games only, 2024&ndash;2025 (no bracket data exists for 2022&ndash;2023). Avg. PF/PA also only covers 2024&ndash;2025. Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Wks 1st, and xW/xL are also 2024&ndash;2025 only. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
       <p>SOS Rank and SOS are Strength of Schedule &mdash; indexed to that season's league average (100), based on average opponent points-per-game. Available for 2024&ndash;2025 only, since 2022&ndash;2023 have no weekly matchup data on record.</p>
       <p>Playoff Info (Bracket / Playoff Picture / Final Week Race) is available on any season card with real playoff qualifiers on record (2024&ndash;2025). Playoff Picture and Final Week Race reflect that season's actual result.</p>
       <p>Final Week Race compares each team's cumulative rank right before the season's last regular-season week to the real playoff cutoff line. It's a straightforward positional read, not a full win-probability or tiebreaker simulation.</p>
@@ -1354,15 +1480,66 @@ function pageHistory(){
 
 /* ============ PAGE: RECORDS (head to head, incl. rivalries) ============ */
 
+// A "rivalry" here means a lopsided series, not a competitive one: at least
+// 4 meetings, and one side's all-time head-to-head win% is under .400 or
+// over .600. Milestones (10th/20th meeting, a 5-5 tie ever reached, longest
+// win streak in the series, first meeting since a trade between the two
+// teams) only compute and display for pairs that clear that threshold.
+function computeRivalries(){
+  const games = allGames().filter(g=>g.oA&&g.oB);
+  const pairGames = {};
+  games.forEach(g=>{
+    const key = [g.oA,g.oB].sort().join("|");
+    (pairGames[key]=pairGames[key]||[]).push(g);
+  });
+  const rivalries = [];
+  Object.keys(pairGames).forEach(key=>{
+    const [a,b] = key.split("|");
+    const meetings = pairGames[key].slice().sort((x,y)=>x.year-y.year||x.week-y.week);
+    if(meetings.length<4) return;
+
+    let aWins=0, bWins=0;
+    meetings.forEach(g=>{
+      const aWon = (g.oA===a) ? g.sA>g.sB : g.sB>g.sA;
+      if(aWon) aWins++; else bWins++;
+    });
+    const pctA = aWins/(aWins+bWins);
+    if(!(pctA<0.400 || pctA>0.600)) return;
+    const domId = pctA>0.600 ? a : b, domPct = pctA>0.600 ? pctA : 1-pctA;
+
+    const milestones = [];
+    if(meetings.length>=10){ const m=meetings[9]; milestones.push({label:"10th meeting", detail:`${m.year} Wk ${m.week}`}); }
+    if(meetings.length>=20){ const m=meetings[19]; milestones.push({label:"20th meeting", detail:`${m.year} Wk ${m.week}`}); }
+
+    let ca=0, cb=0, tied55=false, tiedGame=null;
+    let curTeam=null, curLen=0, bestStreak={len:0};
+    meetings.forEach(g=>{
+      const aWon = (g.oA===a) ? g.sA>g.sB : g.sB>g.sA;
+      const winner = aWon ? a : b;
+      if(aWon) ca++; else cb++;
+      if(ca===5 && cb===5){ tied55=true; tiedGame=g; }
+      if(winner===curTeam) curLen++; else { curTeam=winner; curLen=1; }
+      if(curLen>bestStreak.len) bestStreak = {len:curLen, team:winner, end:g};
+    });
+    if(tied55) milestones.push({label:"Series tied 5-5", detail:`${tiedGame.year} Wk ${tiedGame.week}`});
+    if(bestStreak.len>=3) milestones.push({label:"Longest win streak", detail:`${currentTeamName(bestStreak.team)} won ${bestStreak.len} straight (through ${bestStreak.end.year} Wk ${bestStreak.end.week})`});
+
+    const pairTrades = TRADES.filter(t=>(t.teamA===a&&t.teamB===b)||(t.teamA===b&&t.teamB===a));
+    if(pairTrades.length){
+      const lastTradeYear = Math.max(...pairTrades.map(t=>t.year));
+      const nextMeeting = meetings.find(g=>g.year>lastTradeYear);
+      if(nextMeeting) milestones.push({label:"First meeting since a trade", detail:`${nextMeeting.year} Wk ${nextMeeting.week} (traded in ${lastTradeYear})`});
+    }
+
+    rivalries.push({a,b,meetings,aWins,bWins,pctA,domId,domPct,milestones});
+  });
+  return rivalries.sort((x,y)=>y.domPct-x.domPct || y.meetings.length-x.meetings.length);
+}
+
 function pageRecords(){
   const ids = allOwnerIdsSorted().filter(id=>id!=="rm2");
   const games = allGames().filter(g=>g.oA&&g.oB);
-  const pairCounts = {};
-  games.forEach(g=>{
-    const key = [g.oA,g.oB].sort().join("|");
-    pairCounts[key] = (pairCounts[key]||0)+1;
-  });
-  const topPairs = Object.keys(pairCounts).sort((a,b)=>pairCounts[b]-pairCounts[a]).slice(0,6);
+  const rivalries = computeRivalries();
 
   let closest=null, biggest=null, highest=null, lowest=null;
   games.forEach(g=>{
@@ -1405,21 +1582,25 @@ function pageRecords(){
       </tbody>
     </table>
     </div>
-    <div class="section-title" style="margin-top:32px">Rivalries <span class="sub">most-played pairings, 2024&ndash;2025</span></div>
-    <div class="grid cols-3">
-      ${topPairs.map(key=>{
-        const [a,b] = key.split("|");
-        const rec = h2hRecord(a,b);
+    <div id="jump-rivalries" class="section-title" style="margin-top:32px">Rivalries <span class="sub">4+ meetings, one side's win% under .400 or over .600</span></div>
+    ${rivalries.length ? `<div class="grid cols-2">
+      ${rivalries.map(r=>{
+        const otherId = r.domId===r.a ? r.b : r.a;
+        const domWins = r.domId===r.a ? r.aWins : r.bWins;
+        const otherWins = r.domId===r.a ? r.bWins : r.aWins;
         return `<div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span class="team-name">${currentTeamName(a)}</span>
-            <span class="note">${rec.aWins}-${rec.bWins}</span>
-            <span class="team-name">${currentTeamName(b)}</span>
+            <span class="team-name">${currentTeamName(r.a)}</span>
+            <span class="note">${r.aWins}-${r.bWins}</span>
+            <span class="team-name">${currentTeamName(r.b)}</span>
           </div>
-          <div class="note" style="margin-top:8px;text-align:center">${pairCounts[key]} meetings</div>
+          <div class="note" style="margin-top:6px;text-align:center">${r.meetings.length} meetings &middot; ${currentTeamName(r.domId)} leads ${domWins}-${otherWins} (${pctFmt(r.domPct)})</div>
+          ${r.milestones.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">
+            ${r.milestones.map(m=>`<span style="font-size:11px;font-weight:700;color:var(--gold-deep);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:3px 9px;" title="${m.detail}">${m.label}</span>`).join("")}
+          </div>` : ''}
         </div>`;
       }).join("")}
-    </div>
+    </div>` : `<p class="note">No pairing yet meets the 4-meeting, .400/.600 rivalry threshold.</p>`}
 
     <div class="section-title" style="margin-top:32px">Notable Games</div>
     <div class="grid cols-4">
@@ -1431,6 +1612,7 @@ function pageRecords(){
 
     <div class="footnotes">
       <p>Head-to-head, Full Grid, Rivalries, and Notable Games are all scoped to 2024&ndash;2025 &mdash; 2022 and 2023 didn't retain individual matchup data on ESPN. Full Grid rows show the row team's record against the column team; Ryan Methot (2022&ndash;2023 only) isn't included since no 2024&ndash;2025 matchup data exists for that franchise.</p>
+      <p>A pairing counts as a Rivalry once they've met at least 4 times and one side's all-time head-to-head win% is under .400 or over .600 &mdash; this flags lopsided series, not close ones, so a pairing with a near-even record never shows here even with many meetings. Milestones only compute for flagged pairs: 10th/20th meeting, a point in the series where it was tied 5-5, the longest win streak either side has put together in the matchup (3+ games), and the first meeting after the two teams last made a trade with each other. "Series tied 5-5" and "First meeting since a trade" only show when the series' own history actually produced that moment &mdash; a lopsided series won't always have passed through a 5-5 tie, and "first meeting since a trade" only checks whether a later season's meeting followed a trade year, not same-season sequencing (matchup data has no calendar dates, only week numbers).</p>
     </div>
   `;
 }
@@ -1530,11 +1712,12 @@ function pageAnalytics(){
   }
 
   function combinedTable(){
+    const years = Object.keys(MATCHUPS).map(Number).sort((a,b)=>a-b);
     const rows = allOwnerIdsSorted().filter(id=>id!=="rm2").map(id=>{
       let w=0,l=0,pf=0,pa=0,xW=0,xL=0,apW=0,apL=0,apT=0,any=false;
-      [2024,2025].forEach(year=>{
-        const t = SEASONS[year].find(s=>s.owner===id);
-        if(t && t.pf!=null){
+      years.forEach(year=>{
+        const t = seasonTotalsFromGames(id, year);
+        if(t){
           w+=t.w; l+=t.l; pf+=t.pf; pa+=t.pa; any=true;
           const r = luckRating(id,year);
           xW+=r.xW; xL+=r.xL;
@@ -1547,7 +1730,7 @@ function pageAnalytics(){
     }).filter(Boolean).sort((a,b)=>b.luck-a.luck);
 
     return `
-      <div id="jump-scoringluck" class="section-title" style="font-size:17px">Team Scoring &amp; Luck <span class="sub">2024&ndash;2025 combined</span></div>
+      <div id="jump-scoringluck" class="section-title" style="font-size:17px">Team Scoring &amp; Luck <span class="sub">${years[0]}&ndash;${years[years.length-1]} combined</span></div>
       <div class="table-wrap">
       <table class="sortable">
         <thead><tr>
@@ -1610,6 +1793,7 @@ function pageAnalytics(){
         <option value="draftpos">Draft Position, Skill &amp; Final Standing</option>
       </select>
       <select id="analyticsChartYear" style="display:none">
+        <option value="2026">2026</option>
         <option value="2025">2025</option>
         <option value="2024">2024</option>
       </select>
@@ -1626,8 +1810,7 @@ function pageAnalytics(){
 
     ${combinedTable()}
 
-    <div id="jump-sos" class="section-title" style="margin-top:32px;font-size:17px">Strength of Schedule <span class="sub">avg. SOS index across seasons played, 2024&ndash;2025</span></div>
-    <p class="note" style="margin-bottom:14px">Each season's SOS indexes opponents' scoring pace to a league-average schedule of 100 &mdash; 110 means a schedule 10% tougher than average, 90 means 10% easier, regular season only. This is the average of that index across every season a team has weekly data for; the same number breaks out year by year on the History page and in each owner's Team Hub report.</p>
+    <div id="jump-sos" class="section-title" style="margin-top:32px;font-size:17px">Strength of Schedule <span class="sub">avg. SOS index, 2024&ndash;2025</span></div>
     <div class="table-wrap">
     <table class="sortable">
       <thead><tr><th>Team</th><th class="num-cell">Avg. SOS Index</th><th class="num-cell">Seasons</th></tr></thead>
@@ -1637,8 +1820,7 @@ function pageAnalytics(){
     </table>
     </div>
 
-    <div id="jump-oddscalc" class="section-title" style="margin-top:32px;font-size:17px">Playoff Odds by Start <span class="sub">how often has a record like this led to the playoffs?</span></div>
-    <p class="note" style="margin-bottom:14px">Pick a win-loss record. This checks every team, in every season with weekly data on record, that had exactly that record after that many games, and shows how many of them went on to make the playoffs that year. Small samples (especially past 2-3 games) can swing hard on just one or two teams &mdash; the sample size is shown so you can judge how much to trust it.</p>
+    <div id="jump-oddscalc" class="section-title" style="margin-top:32px;font-size:17px">Playoff Odds by Start</div>
     <div class="chart-toolbar">
       <select id="oddsWins">${Array.from({length:9},(_,i)=>i).map(n=>`<option value="${n}" ${n===1?'selected':''}>${n} win${n===1?'':'s'}</option>`).join("")}</select>
       <select id="oddsLosses">${Array.from({length:9},(_,i)=>i).map(n=>`<option value="${n}">${n} loss${n===1?'':'es'}</option>`).join("")}</select>
@@ -1647,21 +1829,26 @@ function pageAnalytics(){
 
     <div class="footnotes">
       <p>Lowest single-game score excludes Week 18 &mdash; rosters sit starters that week, which skews low scores.</p>
-      <p>xW/xL is how many wins/losses a team "should" have had if every week it scored at or above that week's league average counted as a win, regardless of actual opponent. Luck is actual wins minus xW &mdash; positive means winning more than the scoring pace suggests. All-Play is a finer-grained version: each week, it's the record a team would have against all 11 other teams, not just their actual opponent &mdash; summed across the season. PF/PA/xW/xL/Luck/All-Play are all 2024&ndash;2025 combined; Career Team Grade (which also factors in rings and finishes) lives on the History and Team Hub pages. 2022&ndash;2023 have no PF/PA or weekly data on record.</p>
+      <p>xW/xL is how many wins/losses a team "should" have had if every week it scored at or above that week's league average counted as a win, regardless of actual opponent. Luck is actual wins minus xW &mdash; positive means winning more than the scoring pace suggests. All-Play is a finer-grained version: each week, it's the record a team would have against all 11 other teams, not just their actual opponent &mdash; summed across the season. PF/PA/xW/xL/Luck/All-Play combine every season with weekly matchup data on record, including 2026's games so far; Career Team Grade (which also factors in rings and finishes) lives on the History and Team Hub pages. 2022&ndash;2023 have no PF/PA or weekly data on record.</p>
       <p><b>Points For vs. Points Against:</b> divided at that season's league-wide average PF and PA. Dot color marks the quadrant: green = high scoring &amp; lucky, red = low scoring &amp; unlucky, amber = high scoring but unlucky, blue = low scoring but lucky.</p>
       <p><b>Standings by Week:</b> cumulative rank after each regular-season week (ties broken by points for). Rank 1 is the top of the chart. No teams are shown by default &mdash; click a name in the legend to add its line.</p>
       <p><b>Team Profile:</b> each axis is scaled 0&ndash;100 relative to the other 11 teams (100 = best in the league on that measure). Reg. Season W% covers all four seasons (2022&ndash;2025); Playoff W%, High Scoring, Luck, Consistency, and Record vs. Playoff Teams are 2024&ndash;2025 only, since there's no weekly data before that. Consistency rewards a lower week-to-week scoring swing, not higher scoring.</p>
       <p><b>Draft Position, Skill &amp; Final Standing:</b> one point per team-season (2024&ndash;2025), not averaged by slot. Horizontal position is draft slot, vertical position is final standing, and color is that team's own average draft value-over-baseline that year (red=below the league baseline, green=above). Lets you compare draft position against draft skill as predictors of where a team actually finished.</p>
+      <p><b>Strength of Schedule:</b> indexes opponents' scoring pace to a league-average schedule of 100 (110 = 10% tougher, 90 = 10% easier), regular season only, averaged across every season a team has weekly data for. Year-by-year breakout lives on the History page and in each owner's Team Hub report.</p>
+      <p><b>Playoff Odds by Start:</b> checks every team, in every season with weekly data on record, that had exactly the picked record after that many games, and shows how many went on to make the playoffs. Small samples (especially past 2-3 games) can swing hard on just one or two teams &mdash; the sample size shown lets you judge how much to trust it.</p>
     </div>
   `;
 }
 
 // Combined 2024-2025 luck/scoring totals for one owner.
+// Combined career luck/scoring totals for one owner -- every year with weekly
+// matchup data on record, not hardcoded to 2024-25, so an in-progress season
+// (2026's Week 1) contributes too.
 function combinedLuck(id){
   let w=0,l=0,pf=0,pa=0,xW=0,xL=0;
-  [2024,2025].forEach(year=>{
-    const t = SEASONS[year].find(s=>s.owner===id);
-    if(t && t.pf!=null){
+  Object.keys(MATCHUPS).map(Number).forEach(year=>{
+    const t = seasonTotalsFromGames(id, year);
+    if(t){
       w+=t.w; l+=t.l; pf+=t.pf; pa+=t.pa;
       const r = luckRating(id,year);
       if(r.actualW!=null){ xW+=r.xW; xL+=r.xL; }
@@ -1750,7 +1937,15 @@ function buildDraftPositionSkillScatter(){
 }
 
 function buildScatterPFPA(year){
-  return SEASONS[year].map(t=>({label:abbrev(t.team), fullLabel:t.team, x:t.pf, y:t.pa, color:ownerColor(t.owner)}));
+  if(SEASONS[year]) return SEASONS[year].map(t=>({label:abbrev(t.team), fullLabel:t.team, x:t.pf, y:t.pa, color:ownerColor(t.owner)}));
+  // No SEASONS entry yet (a season still in progress, e.g. 2026) -- compute
+  // PF/PA directly from games played so far instead.
+  return allOwnerIdsSorted().filter(id=>id!=="rm2").map(id=>{
+    const t = seasonTotalsFromGames(id, year);
+    if(!t) return null;
+    const name = currentTeamName(id);
+    return {label:abbrev(name), fullLabel:name, x:t.pf, y:t.pa, color:ownerColor(id)};
+  }).filter(Boolean);
 }
 
 // Rank (1=best) after each regular-season week, ties broken by cumulative points for.
@@ -1825,7 +2020,7 @@ function buildLuckBars(){
   const rows = [];
   allOwnerIdsSorted().filter(id=>id!=="rm2").forEach(id=>{
     let total = 0, any = false;
-    [2024,2025].forEach(year=>{
+    Object.keys(MATCHUPS).map(Number).forEach(year=>{
       const r = luckRating(id,year);
       if(r.actualW!=null){ total += r.luck; any = true; }
     });
@@ -2160,7 +2355,7 @@ function renderScoringChart(type, year){
   if(noteEl){
     noteEl.textContent = type==="range"
       ? "Box-and-whisker plot of each team's weekly scores that regular season. The gold box spans the 25th-75th percentile (the typical week); the red line is the median; the whiskers reach out to the lowest and highest score."
-      : "2024 and 2025 combined into one career total per team: how many more (or fewer) games a team won than its weekly scoring pace suggested it should have. A week counts as an \"expected win\" if the team scored at or above that week's league average, regardless of who they played.";
+      : "Every season with weekly matchup data on record combined into one career total per team (including 2026's games so far): how many more (or fewer) games a team won than its weekly scoring pace suggested it should have. A week counts as an \"expected win\" if the team scored at or above that week's league average, regardless of who they played.";
   }
 }
 
@@ -2252,21 +2447,11 @@ function computeAwards(){
     playoffWinLeaders, maxPlayoffWins};
 }
 
-function pageAwards(){
+// Record Book: a quick-reference set of single-game/season bests, shared by
+// the Records & Awards page (full table) and the History timeline (a subset
+// as dated events). Factored out so both stay in sync off one computation.
+function computeRecordBook(){
   const a = computeAwards();
-  const card = (icon,title,val,ctx) => `<div class="card award-card">${icon}<div><div class="title">${title}</div><div class="val">${val}</div><div class="ctx">${ctx}</div></div></div>`;
-  // For awards that can have multiple winners: if tied, the big value just says so,
-  // and the actual team names move down into the smaller subtitle line.
-  const tieCard = (icon,title,names,statText) => {
-    if(names.length>1) return card(icon, title, `${names.length}-way tie`, `${names.join(", ")} &mdash; ${statText}`);
-    return card(icon, title, names[0], statText);
-  };
-  const nameFor = (year,rawTeam) => currentTeamName(ownerForTeam(year,rawTeam));
-  const winnerTeam = a.biggest.sA>a.biggest.sB ? a.biggest.tA : a.biggest.tB;
-  const loserTeam = a.biggest.sA>a.biggest.sB ? a.biggest.tB : a.biggest.tA;
-
-  // Record Book: a quick-reference list of single-game/season bests, separate from
-  // the curated Superlative cards above.
   const games = allGames().filter(g=>g.oA&&g.oB);
   const gamesLow = allGamesForLow().filter(g=>g.oA&&g.oB);
   let highGame=null, lowGame=null, closest=null, highCombo=null, lowCombo=null;
@@ -2284,6 +2469,21 @@ function pageAwards(){
       if(!lowGame||entry.s<lowGame.s) lowGame=entry;
     });
   });
+  const winnerTeam = a.biggest.sA>a.biggest.sB ? a.biggest.tA : a.biggest.tB;
+  const loserTeam = a.biggest.sA>a.biggest.sB ? a.biggest.tB : a.biggest.tA;
+  return {a, highGame, lowGame, closest, highCombo, lowCombo, winnerTeam, loserTeam};
+}
+
+function pageAwards(){
+  const {a, highGame, lowGame, closest, highCombo, lowCombo, winnerTeam, loserTeam} = computeRecordBook();
+  const card = (icon,title,val,ctx) => `<div class="card award-card">${icon}<div><div class="title">${title}</div><div class="val">${val}</div><div class="ctx">${ctx}</div></div></div>`;
+  // For awards that can have multiple winners: if tied, the big value just says so,
+  // and the actual team names move down into the smaller subtitle line.
+  const tieCard = (icon,title,names,statText) => {
+    if(names.length>1) return card(icon, title, `${names.length}-way tie`, `${names.join(", ")} &mdash; ${statText}`);
+    return card(icon, title, names[0], statText);
+  };
+  const nameFor = (year,rawTeam) => currentTeamName(ownerForTeam(year,rawTeam));
 
   const recordRows = [
     ["Highest single-game score", `${highGame.s} &mdash; ${currentTeamName(highGame.o)}`, `vs ${highGame.opp}, ${highGame.year} Wk ${highGame.week}`],
@@ -2320,10 +2520,8 @@ function pageAwards(){
       ${card(ICON_ROCKET, "Most Improved", currentTeamName(a.mostImproved.id), `${pctFmt(a.mostImproved.from.pct)} in ${a.mostImproved.from.year} &rarr; ${pctFmt(a.mostImproved.to.pct)} in ${a.mostImproved.to.year}`)}
       ${card(ICON_ARROW_DOWN, "Biggest Decline", currentTeamName(a.biggestDecline.id), `${pctFmt(a.biggestDecline.from.pct)} in ${a.biggestDecline.from.year} &rarr; ${pctFmt(a.biggestDecline.to.pct)} in ${a.biggestDecline.to.year}`)}
     </div>
-    <p class="note" style="margin-top:16px">Career PPG, single-season scoring, and weeks-above-average are scoped to 2024&ndash;2025, the only seasons with weekly and points data on record. Most Improved/Biggest Decline compare only consecutive seasons for the same owner. Playoff appearances and wins are restricted to real bracket qualifiers each year (6 teams in 2024, 7 in 2025), excluding the non-qualifier consolation ladder. Every award refers to a franchise by its current team name, even if it happened under an older name.</p>
 
     <div class="section-title" style="margin-top:36px">Record Book</div>
-    <p class="note" style="margin-bottom:14px">Every all-time single-game and single-season best in one list, 2024&ndash;2025 unless noted.</p>
     <div class="card">
       <table>
         <tbody>
@@ -2347,7 +2545,6 @@ function pageAwards(){
     `).join("")}
 
     <div class="section-title" style="margin-top:36px">Bench Management <span class="sub">points left on the bench, 2024&ndash;2025</span></div>
-    <p class="note" style="margin-bottom:14px">For every week, compares what a team actually started to the best lineup they could have set at the same position counts they used that week (see note on the stat itself for what this does and doesn't catch). Sorted best (least left on the bench) to worst.</p>
     <div class="table-wrap">
     <table class="sortable">
       <thead><tr><th>Team</th><th class="num-cell">Actual PF</th><th class="num-cell">Optimal PF</th><th class="num-cell">Left on Bench</th><th class="num-cell">Per Week</th></tr></thead>
@@ -2361,6 +2558,12 @@ function pageAwards(){
         </tr>`).join("")}
       </tbody>
     </table>
+    </div>
+
+    <div class="footnotes">
+      <p>Career PPG, single-season scoring, and weeks-above-average are scoped to 2024&ndash;2025, the only seasons with weekly and points data on record. Most Improved/Biggest Decline compare only consecutive seasons for the same owner. Playoff appearances and wins are restricted to real bracket qualifiers each year (6 teams in 2024, 7 in 2025), excluding the non-qualifier consolation ladder. Every award refers to a franchise by its current team name, even if it happened under an older name.</p>
+      <p>Record Book covers every all-time single-game and single-season best, 2024&ndash;2025 unless noted.</p>
+      <p>Bench Management compares, for every week, what a team actually started to the best lineup it could have set at the same position counts it used that week. Sorted best (least left on the bench) to worst.</p>
     </div>
   `;
 }
@@ -2575,36 +2778,93 @@ function renderTradeLeaderboardHtml(year){
   if(!graded.length){
     return `<p class="note">No graded trades for ${year} yet.</p>`;
   }
-  const teamCell = (owner, i) => `<span style="cursor:pointer;text-decoration:underline dotted;" onclick="
-    document.querySelectorAll('.tl-detail-panel').forEach(el=>{ el.style.display='none'; });
-    const panel = document.getElementById('tldetail-${year}-${i}');
-    if(panel) panel.style.display='block';
-  ">${currentTeamName(owner)}</span>`;
+  // Not marked "sortable" on purpose: it's already ordered best-trade-to-
+  // closest, and each row toggles an inline detail row directly below it --
+  // the site's generic makeSortable() re-appends every tbody row by parsed
+  // cell text on a header click, which would scramble those inline detail
+  // rows away from the row they belong to. Simplest fix is just not to wire
+  // this particular table up as sortable.
   return `
+    <p class="note" style="margin-bottom:8px">Click a trade to see who was involved.</p>
     <div class="table-wrap">
-    <table class="sortable">
+    <table>
       <thead><tr><th>Date</th><th>Winner</th><th class="num-cell">Winner</th><th>Loser</th><th class="num-cell">Loser</th><th class="num-cell">Margin</th></tr></thead>
       <tbody>
-        ${graded.map((g,i)=>`<tr>
+        ${graded.map((g,i)=>`<tr style="cursor:pointer;" onclick="
+          const row=document.getElementById('tldetail-${year}-${i}');
+          const open=row.style.display==='table-row';
+          document.querySelectorAll('.tl-detail-row').forEach(el=>{ el.style.display='none'; });
+          row.style.display = open ? 'none' : 'table-row';
+        ">
           <td>${g.t.date}</td>
-          <td class="team-name">${teamCell(g.winner,i)}</td>
+          <td class="team-name">${currentTeamName(g.winner)}</td>
           <td class="num-cell luck-pos">${g.winnerDiff>0?'+':''}${g.winnerDiff.toFixed(2)}/g</td>
-          <td class="team-name">${teamCell(g.loser,i)}</td>
+          <td class="team-name">${currentTeamName(g.loser)}</td>
           <td class="num-cell luck-neg">${g.loserDiff>0?'+':''}${g.loserDiff.toFixed(2)}/g</td>
           <td class="num-cell">${g.margin.toFixed(2)}</td>
+        </tr>
+        <tr class="tl-detail-row" id="tldetail-${year}-${i}" style="display:none;">
+          <td colspan="6" style="background:var(--panel2);font-size:13px;line-height:1.6;padding:10px 14px;">
+            <div><b>${currentTeamName(g.t.teamA)}</b> got ${g.t.sentB.join(", ")}</div>
+            <div><b>${currentTeamName(g.t.teamB)}</b> got ${g.t.sentA.join(", ")}</div>
+          </td>
         </tr>`).join("")}
       </tbody>
     </table>
     </div>
-    <p class="note" style="margin-top:8px">Click a team above to see what the trade was.</p>
-    ${graded.map((g,i)=>`<div class="tl-detail-panel card" id="tldetail-${year}-${i}" style="display:none;margin-top:10px;">
-      <div class="note" style="font-weight:700;margin-bottom:6px">${g.t.date}</div>
-      <div style="font-size:13px;line-height:1.6">
-        <div><b>${currentTeamName(g.t.teamA)}</b> got ${g.t.sentB.join(", ")}</div>
-        <div><b>${currentTeamName(g.t.teamB)}</b> got ${g.t.sentA.join(", ")}</div>
-      </div>
-    </div>`).join("")}
   `;
+}
+
+
+
+function renderTradePickerOptionsHtml(year){
+  const sorted = [...TRADES].sort((a,b)=> new Date(b.date) - new Date(a.date));
+  return sorted.map((t,i)=>({t,i})).filter(x=>x.t.year===year)
+    .map(x=>`<option value="${x.i}">${x.t.date} &mdash; ${currentTeamName(x.t.teamA)} vs ${currentTeamName(x.t.teamB)}</option>`).join("");
+}
+
+// Trade Network: a circular diagram of every owner, with a line between any
+// pair that's traded with each other -- line thickness/opacity scale with
+// how many times that pair has traded, so heavy trading partners stand out
+// at a glance against pairs that have never dealt. Full team names sit
+// outside each node, anchored left/right/center based on which side of the
+// circle they're on so the text reads outward rather than overlapping.
+function renderTradeNetworkSvg(){
+  const ids = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const pairCounts = {};
+  TRADES.forEach(t=>{
+    const key = [t.teamA,t.teamB].sort().join("|");
+    pairCounts[key] = (pairCounts[key]||0)+1;
+  });
+  const maxCount = Math.max(1, ...Object.values(pairCounts));
+  const n = ids.length;
+  const size = 640, cx = size/2, cy = size/2, r = 190, labelR = r + 16;
+  const pos = {}, labelPos = {};
+  ids.forEach((id,i)=>{
+    const angle = (i/n)*2*Math.PI - Math.PI/2;
+    const cos = Math.cos(angle), sin = Math.sin(angle);
+    pos[id] = { x: cx + r*cos, y: cy + r*sin };
+    let anchor = 'middle', dy = 0;
+    if(cos > 0.2) anchor = 'start';
+    else if(cos < -0.2) anchor = 'end';
+    else dy = sin > 0 ? 14 : -6;
+    labelPos[id] = { x: cx + labelR*cos, y: cy + labelR*sin + dy, anchor };
+  });
+  const lines = Object.keys(pairCounts).map(key=>{
+    const [a,b] = key.split("|");
+    if(!pos[a] || !pos[b]) return '';
+    const count = pairCounts[key];
+    const width = 1 + (count/maxCount)*5;
+    const opacity = 0.25 + (count/maxCount)*0.6;
+    return `<line x1="${pos[a].x}" y1="${pos[a].y}" x2="${pos[b].x}" y2="${pos[b].y}" stroke="#8F6B0D" stroke-width="${width.toFixed(2)}" opacity="${opacity.toFixed(2)}"><title>${currentTeamName(a)} \u2194 ${currentTeamName(b)}: ${count} trade${count===1?'':'s'}</title></line>`;
+  }).join("");
+  const nodes = ids.map(id=>{
+    const p = pos[id], lp = labelPos[id];
+    const name = currentTeamName(id);
+    return `<g><circle cx="${p.x}" cy="${p.y}" r="7" fill="${ownerColor(id)}" stroke="var(--panel)" stroke-width="2"><title>${name}</title></circle>
+      <text x="${lp.x}" y="${lp.y}" text-anchor="${lp.anchor}" font-size="12" font-weight="700" fill="var(--text)">${name}</text></g>`;
+  }).join("");
+  return `<svg viewBox="0 0 ${size} ${size}" style="width:100%;max-width:680px;display:block;margin:0 auto">${lines}${nodes}</svg>`;
 }
 
 function pageTrades(){
@@ -2617,23 +2877,39 @@ function pageTrades(){
   const years = [...new Set(TRADES.map(t=>t.year))].sort((a,b)=>b-a);
   const defaultYear = years[0];
   const sorted = [...TRADES].sort((a,b)=> new Date(b.date) - new Date(a.date));
+  const defaultIndex = sorted.findIndex(t=>t.year===defaultYear);
   return `
     <div class="section-title">Trades</div>
 
     <div class="section-title" style="font-size:17px">All-Time Trade Leaderboard <span class="sub">one row per team, every trade on record</span></div>
-    <p class="note" style="margin-bottom:14px"><b>Value per Game:</b> how many points per game, on average, the players you've traded FOR have scored for you. <b>Net Value:</b> that number minus how many points per game the players you traded AWAY are scoring for their new teams. Positive Net Value means you're winning your trades overall; negative means the players you gave up are outscoring the players you got.</p>
     <div style="margin-bottom:24px">${renderTeamTradeLeaderboardHtml()}</div>
 
+    <div class="section-title" style="font-size:17px">Trade Network <span class="sub">line thickness = how often that pair has traded</span></div>
+    <div class="card" style="margin-bottom:24px">${renderTradeNetworkSvg()}</div>
+
     <div class="section-title" style="font-size:17px">Trades by Year</div>
-    <div style="margin-bottom:16px">
+    <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;">
       <select id="tradesYearPick" onchange="
-        document.querySelectorAll('.trade-card').forEach(el=>{
-          el.style.display = (el.dataset.year===this.value) ? '' : 'none';
-        });
+        const y = +this.value;
+        const picker = document.getElementById('tradesPickSelect');
+        picker.innerHTML = renderTradePickerOptionsHtml(y);
+        document.querySelectorAll('.trade-card').forEach(el=>{ el.style.display='none'; });
+        if(picker.options.length){
+          picker.selectedIndex = 0;
+          const card = document.getElementById('tradecard-'+picker.value);
+          if(card) card.style.display = '';
+        }
         const wrap = document.getElementById('tradeLbWrap');
-        if(wrap) wrap.innerHTML = renderTradeLeaderboardHtml(+this.value);
+        if(wrap) wrap.innerHTML = renderTradeLeaderboardHtml(y);
       ">
         ${years.map(y=>`<option value="${y}" ${y===defaultYear?'selected':''}>${y}</option>`).join("")}
+      </select>
+      <select id="tradesPickSelect" onchange="
+        document.querySelectorAll('.trade-card').forEach(el=>{ el.style.display='none'; });
+        const card = document.getElementById('tradecard-'+this.value);
+        if(card) card.style.display = '';
+      ">
+        ${renderTradePickerOptionsHtml(defaultYear)}
       </select>
     </div>
 
@@ -2647,7 +2923,7 @@ function pageTrades(){
         `<tr><td>${d.name}</td><td>${w.pos}</td><td class="num-cell">Wk${w.week}</td><td class="num-cell">${w.pts}</td></tr>`
       )).join("");
       return `
-      <div class="card trade-card" data-year="${t.year}" style="margin-bottom:8px;padding:9px 14px;border-top:2px solid var(--gold);${t.year===defaultYear?'':'display:none'}">
+      <div class="card trade-card" id="tradecard-${i}" style="margin-bottom:8px;padding:9px 14px;border-top:2px solid var(--gold);${i===defaultIndex?'':'display:none'}">
         <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;margin-bottom:3px">
           <span style="font-weight:800;letter-spacing:.5px;color:var(--gold-deep)">${t.year}</span>
           <span class="note" style="font-size:11px">${t.date}</span>
@@ -2671,6 +2947,10 @@ function pageTrades(){
         </div>`:''}
       </div>
     `;}).join("")}
+
+    <div class="footnotes">
+      <p><b>Value per Game:</b> how many points per game, on average, the players you've traded FOR have scored for you. <b>Net Value:</b> that number minus how many points per game the players you traded AWAY are scoring for their new teams. Positive Net Value means you're winning your trades overall; negative means the players you gave up are outscoring the players you got.</p>
+    </div>
   `;
 }
 
@@ -3409,10 +3689,8 @@ function pageLiveSeason(){
       </tbody>
     </table>
     </div>
-    <p class="note" style="margin-top:6px">SOS is average opponent scoring pace so far this season, indexed to a league-average schedule of 100 (110 = 10% tougher than average, 90 = 10% easier).</p>
 
     <div class="section-title" style="margin-top:24px;font-size:17px">All-Play Record <span class="sub">record if you played every team, every week</span></div>
-    <p class="note" style="margin-bottom:10px">Each team's weekly score compared against every OTHER team's score that week, not just their actual opponent &mdash; a truer read on who's really playing well than the schedule-dependent real record, especially early in a season.</p>
     <div class="table-wrap">
     <table class="sortable">
       <thead><tr><th>Team</th><th class="num-cell">W</th><th class="num-cell">L</th><th class="num-cell">T</th><th class="num-cell">Win%</th></tr></thead>
@@ -3429,7 +3707,6 @@ function pageLiveSeason(){
     </div>
 
     <div class="section-title" style="margin-top:24px;font-size:17px">Schedule</div>
-    <p class="note" style="margin-bottom:10px">Played weeks show the final score; upcoming weeks show the matchup only.</p>
     ${(()=>{
       const playedByWeek = {};
       weeks.forEach(wk=>{ playedByWeek[wk.w] = wk; });
@@ -3479,7 +3756,7 @@ function pageLiveSeason(){
       const withWeight = rows.filter(r=>r.currentWeight!=null);
       const avgWeight = withWeight.length ? withWeight.reduce((a,r)=>a+r.currentWeight,0) / withWeight.length : 0;
       return `
-        <p class="note" style="margin-bottom:10px">Each opponent's strength blends two signals -- win% and points-for-per-game (normalized to that season's own scoring level) -- each shrinking from last season's number toward this season's as more games get played (about 6 games of real evidence to outweigh last year's full season). Right now, with ${gp} game${gp===1?'':'s'} played, that blend is weighted roughly ${(avgWeight*100).toFixed(0)}% this season / ${(100-avgWeight*100).toFixed(0)}% last season. SOS Index is the average of the win% index and the scoring index (100 = league average, higher = tougher).</p>
+        <p class="note" style="margin-bottom:10px">With ${gp} game${gp===1?'':'s'} played, the blend is weighted roughly ${(avgWeight*100).toFixed(0)}% this season / ${(100-avgWeight*100).toFixed(0)}% last season.</p>
         <div class="table-wrap">
         <table class="sortable">
           <thead><tr><th>Team</th><th class="num-cell">Win% Index</th><th class="num-cell">Scoring Index</th><th class="num-cell">SOS Index</th></tr></thead>
@@ -3506,6 +3783,13 @@ function pageLiveSeason(){
         ${p.leaders.map((l,i)=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0;"><span>${i+1}. ${l.name}</span><span style="font-weight:700">${l.total.toFixed(1)}</span></div>`).join("")}
       </div>`).join("")}
     </div>
+
+    <div class="footnotes">
+      <p>SOS is average opponent scoring pace so far this season, indexed to a league-average schedule of 100 (110 = 10% tougher than average, 90 = 10% easier).</p>
+      <p>All-Play Record compares each team's weekly score against every OTHER team's score that week, not just their actual opponent &mdash; a truer read on who's really playing well than the schedule-dependent real record, especially early in a season.</p>
+      <p>Schedule: played weeks show the final score; upcoming weeks show the matchup only.</p>
+      <p>Blended SOS blends two signals &mdash; win% and points-for-per-game (normalized to that season's own scoring level) &mdash; each shrinking from last season's number toward this season's as more games get played (about 6 games of real evidence to outweigh last year's full season). SOS Index is the average of the win% index and the scoring index (100 = league average, higher = tougher).</p>
+    </div>
   `;
 }
 
@@ -3531,7 +3815,7 @@ const FAQS = [
   {q:"How is Team Grade calculated?", a:"See the Team Grade entry in the Stats Glossary above for the exact formula. In short: win%, average finish, top-3 and bottom-3 finish rates, titles, playoff/semifinal appearance rate, and points scored, blended into one 0&ndash;100 number on a school-letter scale."},
   {q:"Why don't 2022 and 2023 have weekly stats, charts, or box scores?", a:"Only final season standings were kept from those years &mdash; no week-by-week scores survived. Anything that needs weekly data (Luck, SOS, charts, box scores, Analytics) is scoped to 2024&ndash;2025 for that reason."},
   {q:"Does the site update itself automatically?", a:"No &mdash; this is a static file with no backend. Updates happen by generating a new version and re-uploading it wherever the site is hosted (see the GitHub Pages instructions if you're hosting it there)."},
-  {q:"What's the difference between the Records and Records & Awards pages?", a:"Records covers head-to-head history, rivalries, and notable games between teams. Records & Awards covers season-driven superlatives (most championships, best win%, etc.) and the all-time Record Book of single-game/season bests."},
+  {q:"What's the difference between the Rivalries and Records & Awards pages?", a:"Rivalries covers head-to-head history, flagged rivalries with milestones, and notable games between teams. Records & Awards covers season-driven superlatives (most championships, best win%, etc.) and the all-time Record Book of single-game/season bests."},
   {q:"Why are some Team Profile locations missing?", a:"Only the locations that have actually been provided are shown. Any team without one on file is noted plainly rather than guessed at."}
 ];
 
@@ -3544,6 +3828,7 @@ function pageReference(){
         <option value="bylaws">League Bylaws</option>
         <option value="glossary">Stats Glossary</option>
         <option value="faq">FAQs</option>
+        <option value="suggestions">Suggestions</option>
       </select>
     </div>
     <div id="refContent">${renderRefSection('sitemap')}</div>
@@ -3566,6 +3851,24 @@ function renderRefSection(section){
       <p class="note" style="margin-bottom:20px">Common questions about how the site works and what its numbers mean.</p>
       <div class="card" style="max-width:760px">
         ${FAQS.map(f=>`<div style="margin-bottom:16px"><div style="font-weight:800;font-family:var(--font-display);font-size:14px;">${f.q}</div><div class="note" style="margin-top:4px;font-size:13px;line-height:1.6;">${f.a}</div></div>`).join("")}
+      </div>`;
+  }
+  if(section==='suggestions'){
+    // League suggestions Google Form. Embedded via its viewform URL + ?embedded=true,
+    // with a plain link above it too -- if the form requires sign-in (Settings >
+    // Responses > "Limit to 1 response" or "Collect email addresses"), Google's
+    // login flow refuses to load inside a frame and the embed below will show
+    // blocked/blank. Turning those settings off is what fixes the embed itself;
+    // the link works either way.
+    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfIX282wD9Br7eTuEmCsZST9A1FT0hO8js03TyQezUFGwkYRw/viewform?embedded=true';
+    const GOOGLE_FORM_LINK = 'https://docs.google.com/forms/d/e/1FAIpQLSfIX282wD9Br7eTuEmCsZST9A1FT0hO8js03TyQezUFGwkYRw/viewform';
+    return `
+      <p class="note" style="margin-bottom:14px">Got a suggestion for the site? Drop it here.</p>
+      <div class="card" style="max-width:760px">
+        <a href="${GOOGLE_FORM_LINK}" target="_blank" rel="noopener" class="toggle-btn active" style="display:inline-block;text-decoration:none;margin-bottom:16px;">Open Suggestion Form &#8599;</a>
+        ${GOOGLE_FORM_URL
+          ? `<iframe src="${GOOGLE_FORM_URL}" width="100%" height="900" frameborder="0" style="border:0">Loading&hellip;</iframe>`
+          : `<p class="note" style="margin:0">Form coming soon.</p>`}
       </div>`;
   }
   return `
@@ -4347,7 +4650,6 @@ function pageLeaderboards(){
   const allYears = [...new Set([...Object.keys(SEASONS).map(Number), ...Object.keys(MATCHUPS).map(Number), ...Object.keys(PLAYER_SCORES).map(Number)])].sort((a,b)=>a-b);
   return `
     <div class="section-title">Team Leaderboards</div>
-    <p class="note" style="margin-bottom:14px">Pick a stat and a scope -- Career, a single season, or a custom multi-season range -- to see every team ranked. Some stats -- Team Grade, Draft Grade, Manager Grade -- are career-spanning formulas with no multi-season-subset version, so they're Career-only.</p>
     <div class="chart-toolbar">
       <select id="lbMetric">${LEADERBOARD_METRICS.map(m=>`<option value="${m.id}">${m.label}</option>`).join("")}</select>
       <select id="lbScopeType">
@@ -4363,6 +4665,10 @@ function pageLeaderboards(){
       </span>
     </div>
     <div id="lbResult">${renderLeaderboardHtml("winpct","career")}</div>
+
+    <div class="footnotes">
+      <p>Scope is Career, a single season, or a custom multi-season range. Team Grade, Draft Grade, and Manager Grade are career-spanning formulas with no multi-season-subset version, so they're Career-only.</p>
+    </div>
   `;
 }
 
@@ -4552,14 +4858,11 @@ function renderDraftValueHtml(){
 
   return `
     <div id="jump-pickvalue" class="section-title">Draft Pick Value</div>
-    <p class="note" style="margin-bottom:16px">Every stat below is scored against the league's own draft history, not a national ranking or ADP service (no such data exists for this dataset) &mdash; a pick "wins" if it outperformed what picks at that same slot have actually returned in the Wofford League across 2024&ndash;2025. A player's PPG only counts weeks real scoring data exists for them, regardless of which team's roster they sat on that week. Where a pick's value comes from a small number of games (shown as "Xgm"), treat it with extra caution &mdash; it may reflect an injury or a short stint more than the pick itself.</p>
 
     <div id="jump-curve" class="section-title" style="margin-top:18px;font-size:17px">League-Wide Draft Value Curve</div>
-    <p class="note" style="margin-bottom:10px">Average points-per-game returned by picks at each draft slot, pooled across both drafts &mdash; the baseline every other number here is measured against. Color scales from red (lowest PPG) to green (highest).</p>
     <div class="chart-wrap" style="height:220px"><canvas id="chartDraftValueCurve"></canvas></div>
 
     <div id="jump-skill" class="section-title" style="margin-top:18px;font-size:17px">Draft Skill by Team</div>
-    <p class="note" style="margin-bottom:10px">Round 1 hit rate is whether a team's Round 1 pick(s) beat the Round 1 baseline (max 2 picks per team, both drafts combined), shown with their average value in PPG. Steal/bust rate and value gained are whole-draft measures &mdash; steal/bust uses a &plusmn;3 PPG threshold against that pick's round baseline; value gained is the average PPG-over-baseline across every pick a team made.</p>
     <div class="table-wrap">
     <table class="sortable">
       <thead><tr><th>Team</th><th class="num-cell">Rd1 Hit Rate</th><th class="num-cell">Steal Rate</th><th class="num-cell">Bust Rate</th><th class="num-cell">Value Gained</th></tr></thead>
@@ -4576,7 +4879,6 @@ function renderDraftValueHtml(){
     </div>
 
     <div id="jump-phase" class="section-title" style="margin-top:18px;font-size:17px">Value by Draft Phase <span class="sub">avg. PPG above/below baseline</span></div>
-    <p class="note" style="margin-bottom:10px">Average value-over-baseline (in PPG) for each team's picks within each stretch of the draft. Top 3 and bottom 3 shown by default &mdash; expand for the full ranking.</p>
     <div class="grid cols-3">
       ${phases.map((ph,pi)=>`<div class="card" style="padding:8px 10px">
         <div class="note" style="font-weight:700;margin-bottom:6px">${ph.label}</div>
@@ -4585,7 +4887,6 @@ function renderDraftValueHtml(){
     </div>
 
     <div id="jump-position" class="section-title" style="margin-top:18px;font-size:17px">Value by Position <span class="sub">avg. PPG above/below baseline</span></div>
-    <p class="note" style="margin-bottom:10px">Same value-over-baseline measure, grouped by position instead of round &mdash; is a manager actually good at drafting a position, or just good at drafting early?</p>
     <div class="grid cols-3">
       ${posValue.map((pos,pi)=>`<div class="card" style="padding:8px 10px">
         <div class="note" style="font-weight:700;margin-bottom:6px">${pos.position}</div>
@@ -4631,7 +4932,6 @@ function renderDraftValueHtml(){
     </div>
 
     <div id="jump-injury" class="section-title" style="margin-top:16px;font-size:17px">Worst Injury Luck <span class="sub">Rounds 1&ndash;8 only (starters, not bench fliers)</span></div>
-    <p class="note" style="margin-bottom:10px">Share of an owner's picks from Rounds 1&ndash;8 (QB/RB/WR/TE only) that played fewer than 10 games that season &mdash; the best proxy available here for lost time, since there's no actual injury-report data in this dataset. Restricted to earlier rounds since a late-round bench flier missing time isn't really "bad luck."</p>
     <div class="card" style="margin-bottom:10px;border-top-color:var(--red)">
       <div class="note" style="font-weight:700;margin-bottom:6px;color:var(--red)">Worst Injury Luck</div>
       <div style="font-size:14px">${currentTeamName(injuryLuck[0].owner)} &mdash; ${injuryLuck[0].shortened} of ${injuryLuck[0].total} picks (${(injuryLuck[0].rate*100).toFixed(0)}%) played fewer than 10 games</div>
@@ -4671,6 +4971,14 @@ function renderDraftValueHtml(){
         <div class="note" style="font-weight:700;color:var(--gold-deep);margin-top:6px;font-size:11px;text-transform:uppercase;letter-spacing:.03em">Diamonds in the Rough</div>
         ${pickCategoryBlock(o.diamonds, 'ownerDiamond', o.owner)}
       </div>`).join("")}
+    </div>
+
+    <div class="footnotes">
+      <p>Every stat on this page is scored against the league's own draft history, not a national ranking or ADP service (no such data exists for this dataset) &mdash; a pick "wins" if it outperformed what picks at that same slot have actually returned in the Wofford League across 2024&ndash;2025. A player's PPG only counts weeks real scoring data exists for them, regardless of which team's roster they sat on that week. Where a pick's value comes from a small number of games (shown as "Xgm"), treat it with extra caution &mdash; it may reflect an injury or a short stint more than the pick itself.</p>
+      <p><b>League-Wide Draft Value Curve:</b> average points-per-game returned by picks at each draft slot, pooled across both drafts &mdash; the baseline every other number on this page is measured against. Color scales from red (lowest PPG) to green (highest).</p>
+      <p><b>Draft Skill by Team:</b> Round 1 hit rate is whether a team's Round 1 pick(s) beat the Round 1 baseline (max 2 picks per team, both drafts combined), shown with their average value in PPG. Steal/bust rate and value gained are whole-draft measures &mdash; steal/bust uses a &plusmn;3 PPG threshold against that pick's round baseline; value gained is the average PPG-over-baseline across every pick a team made.</p>
+      <p><b>Value by Draft Phase/Position:</b> average value-over-baseline (in PPG) for each team's picks within each stretch of the draft, or grouped by position instead of round. Top 3 and bottom 3 shown by default &mdash; expand for the full ranking.</p>
+      <p><b>Worst Injury Luck:</b> share of an owner's picks from Rounds 1&ndash;8 (QB/RB/WR/TE only) that played fewer than 10 games that season &mdash; the best proxy available here for lost time, since there's no actual injury-report data in this dataset. Restricted to earlier rounds since a late-round bench flier missing time isn't really "bad luck."</p>
     </div>
   `;
 }
@@ -5256,6 +5564,10 @@ function attachPageHandlers(){
     renderDraftValueCurveChart();
   }
 
+  if(document.getElementById('chartParity')){
+    renderParityChart();
+  }
+
   function wireBoxScoreToggles(){
     document.querySelectorAll('.box-score-toggle').forEach(el=>{
       el.addEventListener('click', ()=>{
@@ -5382,10 +5694,10 @@ const FEATURE_INDEX = [
   {label:"Season Recaps", page:"History", keywords:["recap","season by season"]},
   {label:"Draft Roster by Season", page:"History", keywords:["draft roster","who did they draft","team draft"]},
   {label:"All-Time Results", page:"History", keywords:["standings","all-time","combined"]},
-  {label:"Head-to-Head Records", page:"Versus Records", keywords:["head to head","h2h"]},
-  {label:"Full Grid", page:"Versus Records", keywords:["grid","matrix"]},
-  {label:"Rivalries", page:"Versus Records", keywords:["rivalry","rivalries"]},
-  {label:"Notable Games", page:"Versus Records", keywords:["blowout","closest game","combined score"]},
+  {label:"Head-to-Head Records", page:"Rivalries", keywords:["head to head","h2h"]},
+  {label:"Full Grid", page:"Rivalries", keywords:["grid","matrix"]},
+  {label:"Rivalries", page:"Rivalries", keywords:["rivalry","rivalries"]},
+  {label:"Notable Games", page:"Rivalries", keywords:["blowout","closest game","combined score"]},
   {label:"Team Scoring & Luck Table", page:"Analytics", keywords:["luck","xw","xl","expected wins"]},
   {label:"Highest/Lowest Single-Game Scores", page:"Analytics", keywords:["highest score","lowest score"]},
   {label:"Schedule Merchants (Wins Over/Under Expected)", page:"Analytics", keywords:["luck chart","wins over expected","schedule merchants"]},
@@ -5418,6 +5730,7 @@ const FEATURE_INDEX = [
   {label:"League Bylaws", page:"Guide", keywords:["bylaw","rule","constitution"]},
   {label:"Stats Glossary", page:"Guide", keywords:["glossary","definition","what does luck mean","team grade formula"]},
   {label:"FAQs", page:"Guide", keywords:["faq","frequently asked","help","question"]},
+  {label:"Suggestions", page:"Guide", keywords:["suggestion","feedback","form","idea"]},
   {label:"Add Weekly Scores", page:"Admin", keywords:["admin","login","enter scores","input scores"]}
 ];
 
