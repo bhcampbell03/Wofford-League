@@ -57,7 +57,18 @@
     .wrap{padding:0;max-width:100%;}
     .report-card, .trading-card{box-shadow:none;}
     .trading-card{margin:0;}
+    #backToTop{display:none !important;}
+    body.print-mode-week .wrap>*:not(#printWeekRecap){display:none !important;}
+    body.print-mode-week #printWeekRecap{display:block !important;}
+    body.print-mode-season .wrap>*:not(#printSeasonRecap){display:none !important;}
+    body.print-mode-season #printSeasonRecap{display:block !important;}
   }
+  #printWeekRecap, #printSeasonRecap{display:none;}
+  .print-recap{font-family:var(--font-body);}
+  .print-recap h2{font-family:var(--font-display);margin:0 0 2px;font-size:22px;}
+  .print-recap .prsub{color:var(--muted);font-size:13px;margin-bottom:14px;}
+  .print-recap table{width:100%;border-collapse:collapse;margin:10px 0;}
+  .print-recap th,.print-recap td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;}
   .admin-bubble{width:34px;height:34px;border-radius:50%;background:#1C1C1D;border:1px solid #3A3A3B;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;color:#8A8A8B;transition:background 0.15s,color 0.15s;}
   .admin-bubble:hover{background:#2A2A2B;}
   .admin-bubble.authed{background:var(--gold);border-color:var(--gold);color:#1C1C1D;}
@@ -139,6 +150,9 @@
   table.sortable th.sorted-asc::after{content:" \25B2";font-size:9px;}
   table.sortable th.sorted-desc::after{content:" \25BC";font-size:9px;}
   td{padding:9px 10px;border-bottom:1px solid var(--line);}
+  table.table-compact{font-size:13px;}
+  table.table-compact th{padding:5px 8px;font-size:10px;}
+  table.table-compact td{padding:4px 8px;}
   tr:last-child td{border-bottom:none;}
   tr:hover td{background:rgba(138,110,75,0.06);}
   tbody tr:nth-child(even) td{background:rgba(224,205,134,0.14);}
@@ -250,6 +264,26 @@
 
   .note{color:var(--muted);font-size:14px;margin:10px 0 0;}
   .luck-pos{color:var(--green);font-weight:700;} .luck-neg{color:var(--red-muted);font-weight:700;}
+  .percentile-chart{margin:10px 0 20px;}
+  .percentile-row{display:grid;grid-template-columns:180px 1fr 70px;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);}
+  .percentile-row:last-child{border-bottom:none;}
+  .percentile-header{border-bottom:none;padding-bottom:2px;}
+  .percentile-label{font-size:13px;font-weight:700;color:var(--text);}
+  .percentile-track-wrap{position:relative;}
+  .percentile-track{position:relative;height:8px;background:var(--panel2);border-radius:4px;}
+  .percentile-fill{position:absolute;top:0;left:0;height:8px;border-radius:4px;}
+  .percentile-badge{position:absolute;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;color:#fff;font-family:var(--font-display);font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+  .percentile-value{font-size:13px;font-weight:700;text-align:right;white-space:nowrap;}
+  .percentile-header .p-poor,.percentile-header .p-avg,.percentile-header .p-great{font-family:var(--font-display);font-weight:800;font-size:10px;letter-spacing:0.06em;}
+  .percentile-header{display:grid;grid-template-columns:180px 1fr 70px;}
+  .percentile-header .percentile-track-wrap{display:flex;justify-content:space-between;}
+  .percentile-header .p-poor{color:#3D6E96;}
+  .percentile-header .p-avg{color:var(--muted);flex:1;text-align:center;}
+  .percentile-header .p-great{color:var(--red-muted);}
+  @media(max-width:640px){
+    .percentile-row, .percentile-header{grid-template-columns:110px 1fr 56px;gap:6px;}
+    .percentile-label{font-size:11px;}
+  }
 
   .bylaw-article{margin-bottom:22px;}
   .bylaw-article h3{font-size:16px;margin:0 0 8px;color:var(--gold-deep);border-bottom:2px solid var(--gold);padding-bottom:6px;}
@@ -437,6 +471,12 @@ const PLAYOFF_QUALIFIERS = {
   2024: ["fa","mh","of","rm","bc","ew"],
   2025: ["fa","of","rm","ew","sk","mm","jt"]
 };
+
+// Playoff field size for a season still in progress (no PLAYOFF_QUALIFIERS entry
+// yet) -- used by the Power Rankings, SOS Forecast, and Championship Odds tools
+// on the Current Season page. Update this once that season's own playoff format
+// is set.
+const CURRENT_SEASON_PLAYOFF_SPOTS = 6;
 
 // Draft order by year. Pick-by-pick results get filled in as they're provided;
 // until then, "picks" stays null and the page shows an empty state.
@@ -1606,12 +1646,15 @@ function pageRecords(){
 
   return `
     <div class="section-title">Head-to-Head Records <span class="sub">2024&ndash;2025 matchup data</span></div>
-    <p class="note">Pick two teams to see their record against each other.</p>
+    <p class="note">Pick two teams to see their record against each other and how they compare career-wide.</p>
     <div class="grid cols-2" style="margin:14px 0 24px">
       <select id="ownerA">${ids.map(id=>`<option value="${id}">${currentTeamName(id)}</option>`).join("")}</select>
       <select id="ownerB">${ids.map((id,i)=>`<option value="${id}" ${i===1?'selected':''}>${currentTeamName(id)}</option>`).join("")}</select>
     </div>
-    <div id="h2h-result"></div>
+    <div class="grid cols-2" style="align-items:start">
+      <div id="h2h-result"></div>
+      <div id="compareTeamsResult">${compareTeamsHtml(ids[0], ids[1])}</div>
+    </div>
 
     <div class="section-title" style="margin-top:32px">Full Grid <span class="sub">green = winning record, red = losing record</span></div>
     <div class="h2h-wrap">
@@ -1670,6 +1713,8 @@ function renderH2HResult(){
   const a = document.getElementById("ownerA").value;
   const b = document.getElementById("ownerB").value;
   const box = document.getElementById("h2h-result");
+  const compareBox = document.getElementById("compareTeamsResult");
+  if(compareBox) compareBox.innerHTML = compareTeamsHtml(a,b);
   if(a===b){ box.innerHTML = `<p class="note">Pick two different teams.</p>`; return; }
   const rec = h2hRecord(a,b);
   const games = allGames().filter(g=>(g.oA===a&&g.oB===b)||(g.oA===b&&g.oB===a)).sort((x,y)=>x.year-y.year||x.week-y.week);
@@ -2379,6 +2424,11 @@ function renderScoringChart(type, year){
   renderStaticChart('chartAnalyticsMain', canvas=>{
     if(type==="range"){
       const rows = teamScoringRange(year);
+      // The box, whiskers and median are all drawn by this plugin rather than
+      // relying on Chart.js's native floating-bar renderer for the box (which
+      // doesn't reliably draw across configs) -- the dataset below only exists
+      // to give each row a y-position and establish the x scale, and is fully
+      // transparent.
       const boxPlugin = {
         id:'boxplot',
         afterDatasetsDraw(chart){
@@ -2389,7 +2439,7 @@ function renderScoringChart(type, year){
             const bar = meta.data[i];
             if(!bar) return;
             const cy = bar.y;
-            const halfH = (bar.height||18)/2;
+            const halfH = Math.min(14, (bar.height||28)/2);
             const xMin = x.getPixelForValue(r.min);
             const xQ1 = x.getPixelForValue(r.q1);
             const xMed = x.getPixelForValue(r.median);
@@ -2404,6 +2454,12 @@ function renderScoringChart(type, year){
             ctx.moveTo(xMin, cy-halfH*0.6); ctx.lineTo(xMin, cy+halfH*0.6);
             ctx.moveTo(xMax, cy-halfH*0.6); ctx.lineTo(xMax, cy+halfH*0.6);
             ctx.stroke();
+            ctx.fillStyle = 'rgba(219,165,20,0.30)';
+            ctx.strokeStyle = '#DBA514'; ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.rect(xQ1, cy-halfH, Math.max(1,xQ3-xQ1), halfH*2);
+            ctx.fill();
+            ctx.stroke();
             ctx.strokeStyle = '#B23B3B'; ctx.lineWidth = 2.5;
             ctx.beginPath();
             ctx.moveTo(xMed, cy-halfH); ctx.lineTo(xMed, cy+halfH);
@@ -2416,7 +2472,7 @@ function renderScoringChart(type, year){
         type:'bar',
         data:{
           labels: rows.map(r=>currentTeamName(r.ownerId)),
-          datasets:[{label:'IQR', data: rows.map(r=>[r.q1,r.q3]), backgroundColor:'rgba(219,165,20,0.25)', borderColor:'#DBA514', borderWidth:1.5, borderSkipped:false}]
+          datasets:[{label:'IQR', data: rows.map(r=>r.max), backgroundColor:'transparent', borderWidth:0, barPercentage:0.6, categoryPercentage:0.8}]
         },
         options:{ indexAxis:'y', maintainAspectRatio:false,
           plugins:{ legend:{display:false},
@@ -3893,6 +3949,462 @@ function renderRostersHtml(year){
   `;
 }
 
+// Power Rankings: blends current record with recent scoring form. Score is
+// 50% winning% (0-100 scale) and 50% a "recent scoring index" -- the average
+// of a team's last 3 games, indexed to the league average of everyone's last
+// 3 games (100 = average). throughWeek optionally limits the calculation to
+// weeks at or before that number, so movement vs. last week can be computed
+// by calling this twice.
+function computePowerRankings(year, throughWeek){
+  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff && (throughWeek==null || w.w<=throughWeek)).sort((a,b)=>a.w-b.w);
+  if(!weeks.length) return [];
+  const stats = {};
+  owners.forEach(id=>{ stats[id] = {w:0,l:0,pf:0,games:0,recent:[]}; });
+  weeks.forEach(week=>{
+    week.g.forEach(([tA,sA,tB,sB])=>{
+      const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+      if(oA && stats[oA]){ stats[oA].pf+=sA; stats[oA].games++; if(sA>sB) stats[oA].w++; else stats[oA].l++; stats[oA].recent.push(sA); }
+      if(oB && stats[oB]){ stats[oB].pf+=sB; stats[oB].games++; if(sB>sA) stats[oB].w++; else stats[oB].l++; stats[oB].recent.push(sB); }
+    });
+  });
+  let sumRecent=0, nRecent=0;
+  owners.forEach(id=>{
+    const r = stats[id].recent.slice(-3);
+    if(r.length){ sumRecent += r.reduce((a,b)=>a+b,0)/r.length; nRecent++; }
+  });
+  const leagueAvgRecent = nRecent ? sumRecent/nRecent : 0;
+  return owners.filter(id=>stats[id].games>0).map(id=>{
+    const s = stats[id];
+    const pct = s.games ? s.w/s.games : 0;
+    const recentSlice = s.recent.slice(-3);
+    const recentAvg = recentSlice.length ? recentSlice.reduce((a,b)=>a+b,0)/recentSlice.length : 0;
+    const recentIndex = leagueAvgRecent ? (recentAvg/leagueAvgRecent)*100 : 100;
+    const score = pct*100*0.5 + recentIndex*0.5;
+    return { owner:id, w:s.w, l:s.l, games:s.games, recentAvg, score };
+  }).sort((a,b)=>b.score-a.score)
+    .map((r,i)=>({...r, rank:i+1}));
+}
+
+// Strength-of-schedule for what's LEFT on the schedule (as opposed to
+// computeSOS, which looks at games already played). Opponent strength is each
+// team's own points-per-game so far this season, falling back to last
+// season's PF/game for any team that hasn't played yet. Indexed to 100 =
+// league-average remaining schedule.
+function computeRemainingSOS(year){
+  const played = new Set((MATCHUPS[year]||[]).filter(w=>!w.playoff).map(w=>w.w));
+  const full = FULL_SCHEDULE[year];
+  if(!full) return [];
+  const remainingWeeks = full.filter(fw=>!played.has(fw.w));
+  if(!remainingWeeks.length) return [];
+  const standings = computeCurrentStandings(year);
+  const ppgNow = {};
+  standings.forEach(r=>{ if(r.games>0) ppgNow[r.owner] = r.pf/r.games; });
+  const ppgPrior = {};
+  if(SEASONS[year-1]){
+    SEASONS[year-1].forEach(t=>{ if(t.pf!=null) ppgPrior[t.owner] = t.pf/(t.w+t.l); });
+  }
+  function ppgFor(oid){ return ppgNow[oid]!=null ? ppgNow[oid] : (ppgPrior[oid]!=null ? ppgPrior[oid] : null); }
+  const oppSum={}, oppCount={};
+  remainingWeeks.forEach(fw=>{
+    fw.g.forEach(([tA,tB])=>{
+      const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+      const pA = oA!=null ? ppgFor(oA) : null;
+      const pB = oB!=null ? ppgFor(oB) : null;
+      if(oA && pB!=null){ oppSum[oA]=(oppSum[oA]||0)+pB; oppCount[oA]=(oppCount[oA]||0)+1; }
+      if(oB && pA!=null){ oppSum[oB]=(oppSum[oB]||0)+pA; oppCount[oB]=(oppCount[oB]||0)+1; }
+    });
+  });
+  const raw = Object.keys(oppSum).map(oid=>({id:oid, avgOppPPG: oppSum[oid]/oppCount[oid], gamesLeft: oppCount[oid]}));
+  if(!raw.length) return [];
+  const leagueAvg = raw.reduce((a,r)=>a+r.avgOppPPG,0)/raw.length;
+  return raw.map(r=>({id:r.id, avgOppPPG:r.avgOppPPG, gamesLeft:r.gamesLeft, index: leagueAvg ? (r.avgOppPPG/leagueAvg)*100 : 100}))
+    .sort((a,b)=>b.index-a.index);
+}
+
+// ---- Championship Probability (Monte Carlo) ----
+function randNormal(mean, sd){
+  let u=0, v=0;
+  while(u===0) u = Math.random();
+  while(v===0) v = Math.random();
+  const z = Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  return mean + z*sd;
+}
+function leagueScoreStdDev(year){
+  const scores = [];
+  [year, year-1].forEach(y=>{
+    (MATCHUPS[y]||[]).filter(w=>!w.playoff).forEach(wk=>{
+      wk.g.forEach(([tA,sA,tB,sB])=>{ scores.push(sA,sB); });
+    });
+  });
+  if(scores.length<10) return 20;
+  const mean = scores.reduce((a,b)=>a+b,0)/scores.length;
+  const variance = scores.reduce((a,b)=>a+(b-mean)*(b-mean),0)/scores.length;
+  return Math.sqrt(variance);
+}
+// A team's projected per-game scoring for the rest of the season. Early in a
+// season, one or two games is too small a sample to trust on its own, so this
+// shrinks toward last season's PF/game the same way computeBayesianSOS does --
+// full current-season weight is only reached after about `priorGamesWeight`
+// games of real evidence.
+function teamBaseMean(id, year, priorGamesWeight=6){
+  const standings = computeCurrentStandings(year);
+  const row = standings.find(r=>r.owner===id);
+  const gamesPlayed = row ? row.games : 0;
+  const curPPG = (row && gamesPlayed) ? row.pf/gamesPlayed : null;
+  let priorPPG = null;
+  if(SEASONS[year-1]){
+    const t = SEASONS[year-1].find(t=>t.owner===id);
+    if(t && t.pf!=null) priorPPG = t.pf/(t.w+t.l);
+  }
+  if(curPPG!=null && priorPPG!=null){
+    const w = gamesPlayed/(gamesPlayed+priorGamesWeight);
+    return w*curPPG + (1-w)*priorPPG;
+  }
+  if(curPPG!=null) return curPPG;
+  if(priorPPG!=null) return priorPPG;
+  const all = standings.filter(r=>r.games>0);
+  if(all.length) return all.reduce((a,r)=>a+r.pf/r.games,0)/all.length;
+  return 110;
+}
+// Standard single-elimination bracket with byes for the top seeds when the
+// field isn't a power of two (same seeding pattern real tournament brackets
+// use, so seeds 1 and 2 can't meet before the final in a 6- or 7-team field).
+function simulateBracket(qualifiers, baseMean, sd){
+  const n = qualifiers.length;
+  if(n===0) return null;
+  if(n===1) return qualifiers[0];
+  let pow2 = 1;
+  while(pow2*2<=n) pow2*=2;
+  if(pow2<n) pow2*=2;
+  function seedOrder(size){
+    let order = [1];
+    while(order.length<size){
+      const total = order.length*2+1;
+      const next = [];
+      order.forEach(s=>{ next.push(s); next.push(total-s); });
+      order = next;
+    }
+    return order;
+  }
+  let slots = seedOrder(pow2).map(seedNum => seedNum<=n ? qualifiers[seedNum-1] : null);
+  while(slots.length>1){
+    const next = [];
+    for(let i=0;i<slots.length;i+=2){
+      const a = slots[i], b = slots[i+1];
+      if(a && !b) next.push(a);
+      else if(b && !a) next.push(b);
+      else if(!a && !b) next.push(null);
+      else {
+        const sA = randNormal(baseMean[a]!=null?baseMean[a]:110, sd);
+        const sB = randNormal(baseMean[b]!=null?baseMean[b]:110, sd);
+        next.push(sA>=sB ? a : b);
+      }
+    }
+    slots = next;
+  }
+  return slots[0];
+}
+function simulateChampionshipOdds(year, playoffSpots, sims){
+  playoffSpots = playoffSpots || CURRENT_SEASON_PLAYOFF_SPOTS;
+  sims = sims || 2000;
+  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const played = new Set((MATCHUPS[year]||[]).filter(w=>!w.playoff).map(w=>w.w));
+  const full = FULL_SCHEDULE[year] || [];
+  const remainingWeeks = full.filter(fw=>!played.has(fw.w));
+  const sd = leagueScoreStdDev(year);
+  const baseMean = {};
+  owners.forEach(id=>{ baseMean[id] = teamBaseMean(id, year); });
+  const curStandings = computeCurrentStandings(year);
+  const baseRecord = {};
+  curStandings.forEach(r=>{ baseRecord[r.owner] = {w:r.w, l:r.l, pf:r.pf}; });
+  owners.forEach(id=>{ if(!baseRecord[id]) baseRecord[id] = {w:0,l:0,pf:0}; });
+
+  const champCount = {}, playoffCount = {};
+  owners.forEach(id=>{ champCount[id]=0; playoffCount[id]=0; });
+
+  for(let s=0;s<sims;s++){
+    const rec = {};
+    owners.forEach(id=>{ rec[id] = {w:baseRecord[id].w, l:baseRecord[id].l, pf:baseRecord[id].pf}; });
+    remainingWeeks.forEach(fw=>{
+      fw.g.forEach(([tA,tB])=>{
+        const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+        if(!oA || !oB || !rec[oA] || !rec[oB]) return;
+        const sA = Math.max(30, randNormal(baseMean[oA]!=null?baseMean[oA]:110, sd));
+        const sB = Math.max(30, randNormal(baseMean[oB]!=null?baseMean[oB]:110, sd));
+        rec[oA].pf += sA; rec[oB].pf += sB;
+        if(sA>sB){ rec[oA].w++; rec[oB].l++; } else { rec[oB].w++; rec[oA].l++; }
+      });
+    });
+    const standing = owners.slice().sort((a,b)=> (rec[b].w-rec[a].w) || (rec[b].pf-rec[a].pf));
+    const qualifiers = standing.slice(0, Math.min(playoffSpots, owners.length));
+    qualifiers.forEach(id=>{ playoffCount[id]++; });
+    const champ = simulateBracket(qualifiers, baseMean, sd);
+    if(champ) champCount[champ]++;
+  }
+  return owners.map(id=>({
+    owner:id,
+    playoffPct: playoffCount[id]/sims,
+    champPct: champCount[id]/sims
+  })).sort((a,b)=>b.champPct-a.champPct || b.playoffPct-a.playoffPct);
+}
+
+// ---- Percentile chart (Team Hub) ----
+function lerpColor(c1,c2,t){
+  const hex = c=>[parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)];
+  const [r1,g1,b1]=hex(c1), [r2,g2,b2]=hex(c2);
+  const r = Math.round(r1+(r2-r1)*t), g = Math.round(g1+(g2-g1)*t), b = Math.round(b1+(b2-b1)*t);
+  return `rgb(${r},${g},${b})`;
+}
+function percentileColor(p){
+  if(p<50) return lerpColor('#3D6E96', '#C9BBA0', p/50);
+  return lerpColor('#C9BBA0', '#B23B3B', (p-50)/50);
+}
+// Career-wide data source for the percentile chart. Separate from
+// buildRadarProfile (which powers the Team Profile radar and stays at its
+// original 6 axes) so adding fields here never touches that chart.
+function buildPercentileProfileCareer(){
+  const ids = allOwnerIdsSorted().filter(o=>o!=="rm2" && careerStats()[o].years>0);
+  const raw = {};
+  const sosIndexByYear = {};
+  Object.keys(MATCHUPS).map(Number).forEach(y=>{
+    sosIndexByYear[y] = {};
+    computeSOS(y).forEach(r=>{ sosIndexByYear[y][r.id] = r.index; });
+  });
+  const benchByOwner = {};
+  benchPointsLeftByOwner().forEach(r=>{ benchByOwner[r.owner] = r; });
+  const allPlayTotals = {};
+  ids.forEach(o=>{ allPlayTotals[o] = {w:0,l:0,t:0}; });
+  Object.keys(MATCHUPS).map(Number).forEach(y=>{
+    computeAllPlayRecord(y).forEach(r=>{
+      if(allPlayTotals[r.owner]){ allPlayTotals[r.owner].w+=r.w; allPlayTotals[r.owner].l+=r.l; allPlayTotals[r.owner].t+=r.t; }
+    });
+  });
+  ids.forEach(o=>{
+    const cs = careerStats()[o];
+    const cl = combinedLuck(o);
+    const ext = extendedStandingsStats(o);
+    const vpt = recordVsPlayoffTeams(o);
+    const sd = stddev(weeklyScores(o));
+    const sosVals = Object.keys(sosIndexByYear).map(y=>sosIndexByYear[y][o]).filter(v=>v!=null);
+    const sosFaced = sosVals.length ? sosVals.reduce((a,b)=>a+b,0)/sosVals.length : null;
+    const bench = benchByOwner[o];
+    const apt = allPlayTotals[o];
+    const apGames = apt.w+apt.l+apt.t;
+    raw[o] = {
+      regSeasonWinPct: cs.w/(cs.w+cs.l),
+      playoffWinPct: (ext.playoffW+ext.playoffL)>0 ? ext.playoffW/(ext.playoffW+ext.playoffL) : null,
+      highScoring: cs.pfYears ? cs.pf/cs.pfYears : null,
+      luck: cl.luck,
+      consistencyDisplay: sd,
+      vsPlayoffTeams: (vpt.totalW+vpt.totalL)>0 ? vpt.totalW/(vpt.totalW+vpt.totalL) : null,
+      sosFaced,
+      benchLeftPerWeek: bench ? bench.leftPerWeek : null,
+      allPlayWinPct: apGames ? (apt.w+0.5*apt.t)/apGames : null
+    };
+  });
+  return {ids, raw};
+}
+
+// Single-season data source for the percentile chart -- same shape as the
+// career version above so buildTeamPercentiles can treat them the same way.
+function buildPercentileProfileSeason(year){
+  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const standings = computeCurrentStandings(year);
+  const standingsById = {}; standings.forEach(r=>{ standingsById[r.owner]=r; });
+  const ids = owners.filter(o=>standingsById[o] && standingsById[o].games>0);
+  const allPlay = computeAllPlayRecord(year);
+  const allPlayById = {}; allPlay.forEach(r=>{ allPlayById[r.owner]=r; });
+  const sosNow = {}; computeSOS(year).forEach(r=>{ sosNow[r.id]=r.index; });
+  const bench = benchPointsLeftByOwner([year]);
+  const benchById = {}; bench.forEach(r=>{ benchById[r.owner]=r; });
+  const qualifiers = PLAYOFF_QUALIFIERS[year]||[];
+  const vptRowsById = {};
+  ids.forEach(o=>{ vptRowsById[o] = recordVsPlayoffTeams(o).rows.find(r=>r.year===year); });
+  const raw = {};
+  ids.forEach(o=>{
+    const st = standingsById[o];
+    const ap = allPlayById[o];
+    const sd = stddev(seasonWeeklyScores(o, year));
+    const lr = luckRating(o, year);
+    let playoffW=0, playoffL=0;
+    (MATCHUPS[year]||[]).filter(w=>w.playoff).forEach(week=>{
+      week.g.forEach(([tA,sA,tB,sB])=>{
+        const oA=ownerForTeam(year,tA), oB=ownerForTeam(year,tB);
+        if(qualifiers.includes(oA) && qualifiers.includes(oB)){
+          if(oA===o){ if(sA>sB) playoffW++; else playoffL++; }
+          if(oB===o){ if(sB>sA) playoffW++; else playoffL++; }
+        }
+      });
+    });
+    const vptRow = vptRowsById[o];
+    const apGames = ap ? ap.w+ap.l+ap.t : 0;
+    raw[o] = {
+      regSeasonWinPct: st.pct,
+      playoffWinPct: (playoffW+playoffL)>0 ? playoffW/(playoffW+playoffL) : null,
+      highScoring: st.pf,
+      luck: lr.actualW!=null ? lr.luck : null,
+      consistencyDisplay: sd,
+      vsPlayoffTeams: vptRow && (vptRow.w+vptRow.l)>0 ? vptRow.w/(vptRow.w+vptRow.l) : null,
+      sosFaced: sosNow[o]!=null ? sosNow[o] : null,
+      benchLeftPerWeek: benchById[o] ? benchById[o].leftPerWeek : null,
+      allPlayWinPct: apGames ? (ap.w+0.5*ap.t)/apGames : null
+    };
+  });
+  return {ids, raw};
+}
+function seasonWeeklyScores(id, year){
+  const scores = [];
+  (MATCHUPS[year]||[]).filter(w=>!w.playoff).forEach(week=>{
+    week.g.forEach(([tA,sA,tB,sB])=>{
+      const oA=ownerForTeam(year,tA), oB=ownerForTeam(year,tB);
+      if(oA===id) scores.push(sA);
+      if(oB===id) scores.push(sB);
+    });
+  });
+  return scores;
+}
+
+// scope: "career" or a season year (number or numeric string). Defaults to
+// career if omitted.
+function buildTeamPercentiles(id, scope){
+  scope = scope || "career";
+  const profile = scope==="career" ? buildPercentileProfileCareer() : buildPercentileProfileSeason(+scope);
+  if(!profile.ids.includes(id)) return null;
+  const metrics = [
+    {key:"regSeasonWinPct", label:"Regular Season Win%", format:v=>pctFmt(v), higherBetter:true},
+    {key:"allPlayWinPct", label:"All-Play Win%", format:v=>pctFmt(v), higherBetter:true, nullable:true},
+    {key:"playoffWinPct", label:"Playoff Win%", format:v=>pctFmt(v), higherBetter:true, nullable:true},
+    {key:"highScoring", label:"Points For", format:v=>v.toFixed(1), higherBetter:true, nullable:true},
+    {key:"luck", label:"Luck (xW delta)", format:v=>(v>0?'+':'')+v.toFixed(1), higherBetter:true, nullable:true},
+    {key:"consistencyDisplay", label:"Consistency (lower = steadier)", format:v=>v.toFixed(1), higherBetter:false, nullable:true},
+    {key:"vsPlayoffTeams", label:"Record vs. Playoff Teams", format:v=>pctFmt(v), higherBetter:true, nullable:true},
+    {key:"sosFaced", label:"SOS Faced", format:v=>v.toFixed(1), higherBetter:true, nullable:true},
+    {key:"benchLeftPerWeek", label:"Bench Points Left / Week", format:v=>v.toFixed(2), higherBetter:false, nullable:true}
+  ];
+  const ids = profile.ids;
+  return metrics.map(m=>{
+    const eligibleIds = m.nullable ? ids.filter(o=>profile.raw[o][m.key]!=null) : ids;
+    const myVal = profile.raw[id][m.key];
+    if(m.nullable && myVal==null) return null;
+    const n = eligibleIds.length;
+    if(!n) return null;
+    const vals = eligibleIds.map(o=>profile.raw[o][m.key]).sort((a,b)=>a-b);
+    let rankAsc = vals.indexOf(myVal);
+    let pct = n>1 ? Math.round((rankAsc/(n-1))*100) : 50;
+    if(!m.higherBetter) pct = 100-pct;
+    pct = Math.max(1, Math.min(99, pct));
+    return {label:m.label, percentile:pct, display:m.format(myVal)};
+  }).filter(Boolean);
+}
+function renderPercentileChart(rows){
+  return `
+    <div class="percentile-chart">
+      <div class="percentile-row percentile-header">
+        <div class="percentile-label"></div>
+        <div class="percentile-track-wrap">
+          <span class="p-poor">POOR</span><span class="p-avg">AVERAGE</span><span class="p-great">GREAT</span>
+        </div>
+        <div class="percentile-value"></div>
+      </div>
+      ${rows.map(r=>`
+        <div class="percentile-row">
+          <div class="percentile-label">${r.label}</div>
+          <div class="percentile-track-wrap">
+            <div class="percentile-track">
+              <div class="percentile-fill" style="width:${r.percentile}%;background:${percentileColor(r.percentile)}"></div>
+              <div class="percentile-badge" style="left:${r.percentile}%;background:${percentileColor(r.percentile)}">${r.percentile}</div>
+            </div>
+          </div>
+          <div class="percentile-value">${r.display}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+// ---- Print-friendly recaps ----
+function computeStandingsThroughWeek(year, week){
+  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff && w.w<=week);
+  const stats = {};
+  owners.forEach(id=>{ stats[id]={w:0,l:0,pf:0,pa:0}; });
+  weeks.forEach(wk=>{
+    wk.g.forEach(([tA,sA,tB,sB])=>{
+      const oA=ownerForTeam(year,tA), oB=ownerForTeam(year,tB);
+      if(oA && stats[oA]){ stats[oA].pf+=sA; stats[oA].pa+=sB; if(sA>sB) stats[oA].w++; else stats[oA].l++; }
+      if(oB && stats[oB]){ stats[oB].pf+=sB; stats[oB].pa+=sA; if(sB>sA) stats[oB].w++; else stats[oB].l++; }
+    });
+  });
+  return owners.map(id=>{
+    const s=stats[id]; const games=s.w+s.l;
+    return {owner:id, ...s, games, pct: games?s.w/games:0};
+  }).filter(r=>r.games>0).sort((a,b)=>b.pct-a.pct || b.pf-a.pf).map((r,i)=>({...r, rank:i+1}));
+}
+function buildWeekRecapHtml(year, week){
+  const wk = (MATCHUPS[year]||[]).find(w=>w.w===week && !w.playoff);
+  if(!wk) return `<div class="print-recap"><p class="note">No results for ${year} Week ${week} yet.</p></div>`;
+  const games = wk.g.map(([tA,sA,tB,sB])=>{
+    const oA=ownerForTeam(year,tA), oB=ownerForTeam(year,tB);
+    return {tA: oA?currentTeamName(oA):tA, sA, tB: oB?currentTeamName(oB):tB, sB, margin: Math.abs(sA-sB)};
+  });
+  let highScorer=null, lowScorer=null;
+  games.forEach(g=>{
+    [[g.tA,g.sA],[g.tB,g.sB]].forEach(([t,s])=>{
+      if(!highScorer || s>highScorer.s) highScorer={t,s};
+      if(!lowScorer || s<lowScorer.s) lowScorer={t,s};
+    });
+  });
+  const closest = [...games].sort((a,b)=>a.margin-b.margin)[0];
+  const biggest = [...games].sort((a,b)=>b.margin-a.margin)[0];
+  const standings = computeStandingsThroughWeek(year, week);
+  return `
+    <div class="print-recap">
+      <h2>${year} &middot; Week ${week} Recap</h2>
+      <div class="prsub">Wofford League</div>
+      <table>
+        <thead><tr><th>Matchup</th><th>Score</th></tr></thead>
+        <tbody>
+          ${games.map(g=>`<tr><td>${g.tA} vs ${g.tB}</td><td>${g.sA} &ndash; ${g.sB}</td></tr>`).join("")}
+        </tbody>
+      </table>
+      <p style="font-size:13px;line-height:1.7">
+        <b>High score:</b> ${highScorer.t} (${highScorer.s})<br>
+        <b>Low score:</b> ${lowScorer.t} (${lowScorer.s})<br>
+        <b>Closest game:</b> ${closest.tA} ${closest.sA} &ndash; ${closest.sB} ${closest.tB} (margin ${closest.margin.toFixed(1)})<br>
+        <b>Biggest blowout:</b> ${biggest.tA} ${biggest.sA} &ndash; ${biggest.sB} ${biggest.tB} (margin ${biggest.margin.toFixed(1)})
+      </p>
+      <div class="section-title" style="font-size:14px;margin-top:14px">Standings Through Week ${week}</div>
+      <table>
+        <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PF</th><th>PA</th></tr></thead>
+        <tbody>
+          ${standings.map(r=>`<tr><td>${r.rank}</td><td>${currentTeamName(r.owner)}</td><td>${r.w}</td><td>${r.l}</td><td>${r.pf.toFixed(1)}</td><td>${r.pa.toFixed(1)}</td></tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+function buildSeasonRecapHtml(year){
+  const finished = !!SEASONS[year];
+  const roster = finished ? [...SEASONS[year]].sort((a,b)=>a.rank-b.rank) : computeCurrentStandings(year).map(r=>({owner:r.owner, team:currentTeamName(r.owner), w:r.w, l:r.l, pf:r.pf, pa:r.pa, rank:r.rank}));
+  if(!roster.length) return `<div class="print-recap"><p class="note">No data for ${year} yet.</p></div>`;
+  const champ = roster[0];
+  const recapText = finished ? generateRecap(year) : `Season in progress. Currently leading the regular season: ${champ.team||currentTeamName(champ.owner)} at ${champ.w}-${champ.l}.`;
+  return `
+    <div class="print-recap">
+      <h2>${year} Season Recap</h2>
+      <div class="prsub">Wofford League &middot; ${finished ? 'Champion' : 'Current Leader'}: ${champ.team||currentTeamName(champ.owner)}</div>
+      <p style="font-size:13px;line-height:1.7">${recapText}</p>
+      <table>
+        <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th>${roster[0].pf!=null?'<th>PF</th><th>PA</th>':''}</tr></thead>
+        <tbody>
+          ${roster.map(t=>`<tr><td>${t.rank}</td><td>${t.team||currentTeamName(t.owner)}</td><td>${t.w}</td><td>${t.l}</td>${t.pf!=null?`<td>${t.pf.toFixed(1)}</td><td>${t.pa.toFixed(1)}</td>`:''}</tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function pageLiveSeason(){
   const year = Math.max(...Object.keys(MATCHUPS).map(Number));
   if(!MATCHUPS[year] || !MATCHUPS[year].length){
@@ -3904,42 +4416,107 @@ function pageLiveSeason(){
   const allPlay = computeAllPlayRecord(year);
   const weeks = [...MATCHUPS[year]].sort((a,b)=>a.w-b.w);
 
+  const regWeeksPlayed = weeks.filter(w=>!w.playoff).map(w=>w.w);
+  const lastWeekNum = regWeeksPlayed.length ? Math.max(...regWeeksPlayed) : null;
+  const powerNow = computePowerRankings(year);
+  const powerPrev = lastWeekNum && lastWeekNum>1 ? computePowerRankings(year, lastWeekNum-1) : [];
+  const prevRankById = {};
+  powerPrev.forEach(r=>{ prevRankById[r.owner] = r.rank; });
+
+  const remSOS = computeRemainingSOS(year);
+  const remSOSById = {}; remSOS.forEach(r=>{ remSOSById[r.id]=r; });
+
+  const champOdds = simulateChampionshipOdds(year);
+
+  const allPlayById = {}; allPlay.forEach(r=>{ allPlayById[r.owner]=r; });
+  const champOddsById = {}; champOdds.forEach(r=>{ champOddsById[r.owner]=r; });
+
   return `
     <div class="section-title">Current Season <span class="sub">${year}</span></div>
 
     <div class="section-title" style="font-size:17px">Standings</div>
+    <p class="note" style="margin-bottom:10px">All-Play is the record each team would have if they'd played every team, every week, instead of just their actual schedule. Make Playoffs/Win League come from a 2,000-simulation Monte Carlo projection of the rest of the season and a ${CURRENT_SEASON_PLAYOFF_SPOTS}-team playoff bracket.</p>
     <div class="table-wrap">
     <table class="sortable">
-      <thead><tr><th>#</th><th>Team</th><th class="num-cell">W</th><th class="num-cell">L</th><th class="num-cell">PF</th><th class="num-cell">PA</th><th class="num-cell">SOS</th></tr></thead>
+      <thead><tr><th>#</th><th>Team</th><th class="num-cell">W-L</th><th class="num-cell">PF</th><th class="num-cell">PA</th><th class="num-cell">SOS</th><th class="num-cell">All Play W-L</th><th class="num-cell">Make Playoffs</th><th class="num-cell">Win League</th></tr></thead>
       <tbody>
-        ${standings.map(r=>`<tr>
+        ${standings.map(r=>{
+          const ap = allPlayById[r.owner];
+          const co = champOddsById[r.owner];
+          return `<tr>
           <td class="num-cell">${r.rank}</td>
           <td class="team-name">${currentTeamName(r.owner)}</td>
-          <td class="num-cell">${r.w}</td>
-          <td class="num-cell">${r.l}</td>
+          <td class="num-cell">${r.w}-${r.l}</td>
           <td class="num-cell">${r.pf.toFixed(1)}</td>
           <td class="num-cell">${r.pa.toFixed(1)}</td>
           <td class="num-cell">${sosById[r.owner] ? sosById[r.owner].index.toFixed(1) : '&mdash;'}</td>
-        </tr>`).join("")}
+          <td class="num-cell">${ap ? `${ap.w}-${ap.l}` : '&mdash;'}</td>
+          <td class="num-cell">${co ? (co.playoffPct*100).toFixed(1)+'%' : '&mdash;'}</td>
+          <td class="num-cell" style="font-weight:700">${co ? (co.champPct*100).toFixed(1)+'%' : '&mdash;'}</td>
+        </tr>`;
+        }).join("")}
       </tbody>
     </table>
     </div>
 
-    <div class="section-title" style="margin-top:24px;font-size:17px">All-Play Record <span class="sub">record if you played every team, every week</span></div>
+    <div class="section-title" style="margin-top:24px;font-size:17px">Power Rankings</div>
+    <p class="note" style="margin-bottom:10px">Blends current record (50%) with each team's last 3 games of scoring form (50%), indexed to the league average.</p>
     <div class="table-wrap">
-    <table class="sortable">
-      <thead><tr><th>Team</th><th class="num-cell">W</th><th class="num-cell">L</th><th class="num-cell">T</th><th class="num-cell">Win%</th></tr></thead>
+    <table class="sortable table-compact">
+      <thead><tr><th>#</th><th>Team</th><th class="num-cell">Record</th><th class="num-cell">Last 3 Avg</th></tr></thead>
       <tbody>
-        ${allPlay.map(r=>`<tr>
-          <td class="team-name">${currentTeamName(r.owner)}</td>
-          <td class="num-cell">${r.w}</td>
-          <td class="num-cell">${r.l}</td>
-          <td class="num-cell">${r.t}</td>
-          <td class="num-cell">${(r.pct*100).toFixed(1)}%</td>
-        </tr>`).join("")}
+        ${powerNow.map(r=>{
+          const prev = prevRankById[r.owner];
+          let moveHtml = `<span class="note">&mdash;</span>`;
+          if(prev!=null){
+            const delta = prev - r.rank;
+            if(delta>0) moveHtml = `<span class="luck-pos">&#9650;${delta}</span>`;
+            else if(delta<0) moveHtml = `<span class="luck-neg">&#9660;${Math.abs(delta)}</span>`;
+            else moveHtml = `<span class="note">&#9679;</span>`;
+          }
+          return `<tr>
+            <td class="num-cell">${r.rank} <span style="font-size:10px">${moveHtml}</span></td>
+            <td class="team-name">${currentTeamName(r.owner)}</td>
+            <td class="num-cell">${r.w}-${r.l}</td>
+            <td class="num-cell">${r.recentAvg.toFixed(1)}</td>
+          </tr>`;
+        }).join("")}
       </tbody>
     </table>
     </div>
+
+    <div class="section-title" style="margin-top:24px;font-size:17px">Blended SOS <span class="sub">win% + scoring, this year blended with last year &middot; plus what's left on the schedule</span></div>
+    ${(()=>{
+      const rows = computeBayesianSOS(year);
+      if(!rows.length || rows.every(r=>r.sosIndex==null)) return `<p class="note">Not enough data to compute this yet.</p>`;
+      const gp = rows[0].gamesPlayedSoFar || 0;
+      const withWeight = rows.filter(r=>r.currentWeight!=null);
+      const avgWeight = withWeight.length ? withWeight.reduce((a,r)=>a+r.currentWeight,0) / withWeight.length : 0;
+      return `
+        <p class="note" style="margin-bottom:10px">With ${gp} game${gp===1?'':'s'} played, the blend is weighted roughly ${(avgWeight*100).toFixed(0)}% this season / ${(100-avgWeight*100).toFixed(0)}% last season.</p>
+        <div class="table-wrap">
+        <table class="sortable">
+          <thead><tr><th>Team</th><th class="num-cell">Win% Index</th><th class="num-cell">Scoring Index</th><th class="num-cell">SOS Index</th><th class="num-cell">Games Left</th><th class="num-cell">Remaining SOS</th></tr></thead>
+          <tbody>
+            ${rows.map(r=>{
+              const rem = remSOSById[r.owner];
+              return `<tr>
+              <td class="team-name">${currentTeamName(r.owner)}</td>
+              <td class="num-cell">${r.winIndex!=null?r.winIndex.toFixed(1):'&mdash;'}</td>
+              <td class="num-cell">${r.pfIndex!=null?r.pfIndex.toFixed(1):'&mdash;'}</td>
+              <td class="num-cell">${r.sosIndex!=null?r.sosIndex.toFixed(1):'&mdash;'}</td>
+              <td class="num-cell">${rem?rem.gamesLeft:'&mdash;'}</td>
+              <td class="num-cell">${rem?rem.index.toFixed(1):'&mdash;'}</td>
+            </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+        </div>
+      `;
+    })()}
+
+    <div class="section-title" style="margin-top:24px;font-size:17px">Bench Management</div>
+    ${renderBenchManagementHtml(year)}
 
     <div class="section-title" style="margin-top:24px;font-size:17px">Schedule</div>
     ${(()=>{
@@ -3983,47 +4560,35 @@ function pageLiveSeason(){
     <div class="section-title" style="margin-top:24px;font-size:17px">Team Rosters</div>
     ${renderRostersHtml(year)}
 
-    <div class="section-title" style="margin-top:24px;font-size:17px">Blended SOS <span class="sub">win% + scoring, this year blended with last year</span></div>
-    ${(()=>{
-      const rows = computeBayesianSOS(year);
-      if(!rows.length || rows.every(r=>r.sosIndex==null)) return `<p class="note">Not enough data to compute this yet.</p>`;
-      const gp = rows[0].gamesPlayedSoFar || 0;
-      const withWeight = rows.filter(r=>r.currentWeight!=null);
-      const avgWeight = withWeight.length ? withWeight.reduce((a,r)=>a+r.currentWeight,0) / withWeight.length : 0;
-      return `
-        <p class="note" style="margin-bottom:10px">With ${gp} game${gp===1?'':'s'} played, the blend is weighted roughly ${(avgWeight*100).toFixed(0)}% this season / ${(100-avgWeight*100).toFixed(0)}% last season.</p>
-        <div class="table-wrap">
-        <table class="sortable">
-          <thead><tr><th>Team</th><th class="num-cell">Win% Index</th><th class="num-cell">Scoring Index</th><th class="num-cell">SOS Index</th></tr></thead>
-          <tbody>
-            ${rows.map(r=>`<tr>
-              <td class="team-name">${currentTeamName(r.owner)}</td>
-              <td class="num-cell">${r.winIndex!=null?r.winIndex.toFixed(1):'&mdash;'}</td>
-              <td class="num-cell">${r.pfIndex!=null?r.pfIndex.toFixed(1):'&mdash;'}</td>
-              <td class="num-cell">${r.sosIndex!=null?r.sosIndex.toFixed(1):'&mdash;'}</td>
-            </tr>`).join("")}
-          </tbody>
-        </table>
+    <div class="section-title" style="margin-top:24px;font-size:17px">Print Recaps</div>
+    <div class="no-print" style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;margin-bottom:8px">
+      <div>
+        <div class="note" style="font-weight:700;margin-bottom:4px">Week Recap</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="recapWeekYear">${Object.keys(MATCHUPS).map(Number).sort((a,b)=>b-a).map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join("")}</select>
+          <select id="recapWeekNum">${regWeeksPlayed.slice().sort((a,b)=>b-a).map(w=>`<option value="${w}" ${w===lastWeekNum?'selected':''}>Week ${w}</option>`).join("")}</select>
+          <button type="button" id="printWeekBtn" class="toggle-btn">Print</button>
         </div>
-      `;
-    })()}
-
-    <div class="section-title" style="margin-top:24px;font-size:17px">Bench Management</div>
-    ${renderBenchManagementHtml(year)}
-
-    <div class="section-title" style="margin-top:24px;font-size:17px">League Leaders by Position</div>
-    <div class="grid cols-3">
-      ${leagueLeadersByPosition(year).map(p=>`<div class="card" style="padding:10px 12px">
-        <div class="note" style="font-weight:700;margin-bottom:6px">${p.position}</div>
-        ${p.leaders.map((l,i)=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0;"><span>${i+1}. ${l.name}</span><span style="font-weight:700">${l.total.toFixed(1)}</span></div>`).join("")}
-      </div>`).join("")}
+      </div>
+      <div>
+        <div class="note" style="font-weight:700;margin-bottom:4px">Season Recap</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="recapSeasonYear">${Object.keys(MATCHUPS).map(Number).sort((a,b)=>b-a).map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join("")}</select>
+          <button type="button" id="printSeasonBtn" class="toggle-btn">Print</button>
+        </div>
+      </div>
     </div>
+    <div id="printWeekRecap">${lastWeekNum?buildWeekRecapHtml(year, lastWeekNum):''}</div>
+    <div id="printSeasonRecap">${buildSeasonRecapHtml(year)}</div>
 
     <div class="footnotes">
       <p>SOS is average opponent scoring pace so far this season, indexed to a league-average schedule of 100 (110 = 10% tougher than average, 90 = 10% easier).</p>
       <p>All-Play Record compares each team's weekly score against every OTHER team's score that week, not just their actual opponent &mdash; a truer read on who's really playing well than the schedule-dependent real record, especially early in a season.</p>
       <p>Schedule: played weeks show the final score; upcoming weeks show the matchup only.</p>
-      <p>Blended SOS blends two signals &mdash; win% and points-for-per-game (normalized to that season's own scoring level) &mdash; each shrinking from last season's number toward this season's as more games get played (about 6 games of real evidence to outweigh last year's full season). SOS Index is the average of the win% index and the scoring index (100 = league average, higher = tougher).</p>
+      <p>Blended SOS blends two signals &mdash; win% and points-for-per-game (normalized to that season's own scoring level) &mdash; each shrinking from last season's number toward this season's as more games get played (about 6 games of real evidence to outweigh last year's full season). SOS Index is the average of the win% index and the scoring index (100 = league average, higher = tougher). Games Left and Remaining SOS look only at what's still on the schedule, using each opponent's current scoring pace (or last season's, for any team yet to play a game).</p>
+      <p>Power Rankings blend current record and recent scoring form (last 3 games), 50/50; the up/down arrow compares to the ranking as of the prior week.</p>
+      <p>Championship Odds run 2,000 simulated seasons: each remaining game is scored using each team's projected points-per-game (blended with last season's PF/game early on, the same shrinkage approach as Blended SOS, so one big or small week doesn't overreact) and the league's own historical week-to-week variance, standings are ranked by simulated wins (ties by points for), and the top ${CURRENT_SEASON_PLAYOFF_SPOTS} seeds play out a simulated single-elimination bracket. Playoff field size for the season in progress is an assumption until the real bracket is set &mdash; treat these as rough odds, not certainties.</p>
+      <p>Print Recaps: pick a week or season above and click Print &mdash; only the recap prints, not the rest of the page.</p>
     </div>
   `;
 }
@@ -5389,6 +5954,25 @@ function pageTeamHub(selectedId){
     </div>
   `;
 
+  const percYears = Object.keys(MATCHUPS).map(Number).sort((a,b)=>b-a);
+  let defaultPercYear = null;
+  for(const y of percYears){
+    const st = computeCurrentStandings(y).find(r=>r.owner===id);
+    if(st && st.games>0){ defaultPercYear = y; break; }
+  }
+  const defaultPercScope = defaultPercYear!=null ? String(defaultPercYear) : "career";
+  const initialPercentiles = buildTeamPercentiles(id, defaultPercScope);
+  const percentileHtml = `
+    <div class="section-title" style="margin-top:28px;font-size:17px">Percentile Rankings <span class="sub" id="percentileScopeSub">vs. the rest of the league, ${defaultPercScope==="career"?"career":defaultPercScope}</span></div>
+    <div class="no-print" style="margin-bottom:10px">
+      <select id="percentileScopeSelect" data-owner="${id}">
+        ${percYears.map(y=>`<option value="${y}" ${String(y)===defaultPercScope?'selected':''}>${y} Season</option>`).join("")}
+        <option value="career" ${defaultPercScope==="career"?'selected':''}>Career</option>
+      </select>
+    </div>
+    <div id="percentileChartContainer">${initialPercentiles ? renderPercentileChart(initialPercentiles) : '<p class="note">No data for this scope yet.</p>'}</div>
+  `;
+
   const cs = careerStats()[id];
   const seasons = Object.keys(SEASONS).map(y=>({year:+y, ...SEASONS[y].find(t=>t.owner===id)})).filter(t=>t.owner);
   const avgRank = cs.ranks.reduce((a,b)=>a+b,0)/cs.ranks.length;
@@ -5574,15 +6158,8 @@ function pageTeamHub(selectedId){
     <div class="section-title">Team Hub <span class="sub">grades, career report, and profile in one place</span></div>
     <div style="margin-bottom:16px" class="no-print"><select id="hubOwner">${ids.map(oid=>`<option value="${oid}" ${oid===id?'selected':''}>${currentTeamName(oid)}</option>`).join("")}</select></div>
 
-    <div id="jump-compare" class="section-title" style="font-size:17px">Compare Teams</div>
-    <div class="chart-toolbar">
-      <select id="compareTeamA">${ids.map(oid=>`<option value="${oid}" ${oid===ids[0]?'selected':''}>${currentTeamName(oid)}</option>`).join("")}</select>
-      <span class="note">vs.</span>
-      <select id="compareTeamB">${ids.map(oid=>`<option value="${oid}" ${oid===ids[1]?'selected':''}>${currentTeamName(oid)}</option>`).join("")}</select>
-    </div>
-    <div id="compareTeamsResult" style="margin-bottom:20px;max-width:420px">${compareTeamsHtml(ids[0], ids[1])}</div>
-
     ${gradesHtml}
+    ${percentileHtml}
     ${reportHtml}
     ${profileHtml}
   `;
@@ -5596,7 +6173,7 @@ const TEAM_PROFILES = {};
 function recordVsPlayoffTeams(id){
   const rows = [];
   let totalW=0, totalL=0;
-  [2024,2025].forEach(year=>{
+  Object.keys(PLAYOFF_QUALIFIERS).map(Number).forEach(year=>{
     const qualifiers = PLAYOFF_QUALIFIERS[year]||[];
     let w=0,l=0;
     (MATCHUPS[year]||[]).filter(wk=>!wk.playoff).forEach(week=>{
@@ -5823,6 +6400,47 @@ function attachPageHandlers(){
   const exportReportBtn = document.getElementById("exportReportBtn");
   if(exportReportBtn) exportReportBtn.addEventListener("click", ()=>window.print());
 
+  const recapWeekYear = document.getElementById("recapWeekYear");
+  const recapWeekNum = document.getElementById("recapWeekNum");
+  const printWeekBtn = document.getElementById("printWeekBtn");
+  const printWeekRecapEl = document.getElementById("printWeekRecap");
+  if(recapWeekYear && recapWeekNum && printWeekRecapEl){
+    const refreshWeekOptions = ()=>{
+      const y = +recapWeekYear.value;
+      const wkNums = (MATCHUPS[y]||[]).filter(w=>!w.playoff).map(w=>w.w).sort((a,b)=>b-a);
+      recapWeekNum.innerHTML = wkNums.map(w=>`<option value="${w}">Week ${w}</option>`).join("");
+    };
+    const refreshWeekRecap = ()=>{
+      const y = +recapWeekYear.value, w = +recapWeekNum.value;
+      printWeekRecapEl.innerHTML = w ? buildWeekRecapHtml(y, w) : '';
+    };
+    recapWeekYear.addEventListener("change", ()=>{ refreshWeekOptions(); refreshWeekRecap(); });
+    recapWeekNum.addEventListener("change", refreshWeekRecap);
+    if(printWeekBtn){
+      printWeekBtn.addEventListener("click", ()=>{
+        document.body.classList.add("print-mode-week");
+        window.print();
+        setTimeout(()=>document.body.classList.remove("print-mode-week"), 500);
+      });
+    }
+  }
+
+  const recapSeasonYear = document.getElementById("recapSeasonYear");
+  const printSeasonBtn = document.getElementById("printSeasonBtn");
+  const printSeasonRecapEl = document.getElementById("printSeasonRecap");
+  if(recapSeasonYear && printSeasonRecapEl){
+    recapSeasonYear.addEventListener("change", ()=>{
+      printSeasonRecapEl.innerHTML = buildSeasonRecapHtml(+recapSeasonYear.value);
+    });
+    if(printSeasonBtn){
+      printSeasonBtn.addEventListener("click", ()=>{
+        document.body.classList.add("print-mode-season");
+        window.print();
+        setTimeout(()=>document.body.classList.remove("print-mode-season"), 500);
+      });
+    }
+  }
+
   const ownerA = document.getElementById("ownerA");
   const ownerB = document.getElementById("ownerB");
   if(ownerA && ownerB){
@@ -5838,6 +6456,19 @@ function attachPageHandlers(){
     hubOwner.addEventListener("change",()=>{
       document.getElementById("app").innerHTML = pageTeamHub(hubOwner.value);
       attachPageHandlers();
+    });
+  }
+
+  const percentileScopeSelect = document.getElementById("percentileScopeSelect");
+  if(percentileScopeSelect){
+    percentileScopeSelect.addEventListener("change", ()=>{
+      const scope = percentileScopeSelect.value;
+      const owner = percentileScopeSelect.dataset.owner;
+      const rows = buildTeamPercentiles(owner, scope);
+      const container = document.getElementById("percentileChartContainer");
+      if(container) container.innerHTML = rows ? renderPercentileChart(rows) : '<p class="note">No data for this scope yet.</p>';
+      const sub = document.getElementById("percentileScopeSub");
+      if(sub) sub.textContent = `vs. the rest of the league, ${scope==="career"?"career":scope}`;
     });
   }
 
@@ -5891,16 +6522,6 @@ function attachPageHandlers(){
     playerSearchInput.addEventListener('input', ()=>{
       resultsEl.innerHTML = renderPlayerSearchResults(playerSearchInput.value);
     });
-  }
-
-  const compareTeamA = document.getElementById('compareTeamA');
-  const compareTeamB = document.getElementById('compareTeamB');
-  if(compareTeamA && compareTeamB){
-    const updateCompare = ()=>{
-      document.getElementById('compareTeamsResult').innerHTML = compareTeamsHtml(compareTeamA.value, compareTeamB.value);
-    };
-    compareTeamA.addEventListener('change', updateCompare);
-    compareTeamB.addEventListener('change', updateCompare);
   }
 
   function wireBoxScoreToggles(){
@@ -6152,6 +6773,9 @@ function setupBackToTop(){
   });
 }
 setupBackToTop();
+window.addEventListener("afterprint", ()=>{
+  document.body.classList.remove("print-mode-week","print-mode-season");
+});
 </script>
 </body>
 </html>
