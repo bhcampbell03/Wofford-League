@@ -25,9 +25,21 @@
     --green:#3D7A4E;
     --font-display:'Montserrat',sans-serif;
     --font-body:'Source Serif 4',serif;
+    /* unified card tokens -- every card-like block (.card, .mgr-card, .season-card,
+       .shame-card, .nemesis-card, .report-card, .trading-card) pulls from these so
+       spacing/radius/elevation stay consistent even though colors differ by card type */
+    --card-radius:10px;
+    --card-radius-lg:12px;
+    --card-pad:18px;
+    --card-pad-sm:14px;
+    --card-shadow:0 1px 2px rgba(0,0,0,0.04);
+    --card-shadow-hover:0 6px 14px rgba(0,0,0,0.10);
+    --card-shadow-deep:0 8px 24px rgba(0,0,0,0.3);
+    --card-border-top:3px solid var(--gold);
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);}
+  html{overflow-x:hidden;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);overflow-x:hidden;max-width:100vw;}
   ::-webkit-scrollbar{width:11px;height:11px;}
   ::-webkit-scrollbar-track{background:var(--panel2);}
   ::-webkit-scrollbar-thumb{background:var(--gold-deep);border-radius:6px;border:2px solid var(--panel2);}
@@ -105,8 +117,8 @@
   @media(max-width:820px){.grid.cols-5,.grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr 1fr;}}
   @media(max-width:560px){.grid.cols-5,.grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr;}}
 
-  .card{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--gold);box-shadow:0 1px 2px rgba(0,0,0,0.04), inset 0 3px 0 -2px var(--line);border-radius:10px;padding:18px;transition:transform .15s ease, box-shadow .15s ease;}
-  .card:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,0.10), inset 0 3px 0 -2px var(--line);}
+  .card{background:var(--panel);border:1px solid var(--line);border-top:var(--card-border-top);box-shadow:var(--card-shadow), inset 0 3px 0 -2px var(--line);border-radius:var(--card-radius);padding:var(--card-pad);transition:transform .15s ease, box-shadow .15s ease;}
+  .card:hover{transform:translateY(-2px);box-shadow:var(--card-shadow-hover), inset 0 3px 0 -2px var(--line);}
   .stat-card .num{font-family:var(--font-display);font-size:32px;font-weight:800;line-height:1;color:var(--gold-deep);}
   .stat-card .label{color:var(--muted);font-size:13px;margin-top:6px;font-family:var(--font-body);}
   .stat-card .who{font-size:15px;font-weight:700;margin-top:2px;font-family:var(--font-display);}
@@ -138,7 +150,7 @@
 
   /* wall of shame */
   .shame-row{display:flex;gap:14px;flex-wrap:wrap;}
-  .shame-card{flex:1;min-width:150px;background:var(--black);color:#F7F3E8;border-radius:8px;padding:14px;text-align:center;border-top:3px solid var(--red);}
+  .shame-card{flex:1;min-width:150px;background:var(--black);color:#F7F3E8;border-radius:var(--card-radius);padding:var(--card-pad-sm);text-align:center;border-top:3px solid var(--red);}
   .shame-year{font-family:var(--font-display);font-weight:800;color:#C9BB98;font-size:13px;}
   .shame-team{font-weight:700;margin-top:6px;font-size:14px;}
   .shame-rec{color:#B5A886;font-size:12px;margin-top:2px;}
@@ -162,7 +174,7 @@
   .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:var(--panel2);font-size:12px;font-weight:700;color:var(--muted);font-family:var(--font-display);}
   .rank-badge.gold{background:var(--gold);color:#fff;}
 
-  .season-card{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:12px;margin-bottom:20px;overflow:hidden;}
+  .season-card{background:var(--panel);border:1px solid var(--line);border-top:var(--card-border-top);border-radius:var(--card-radius-lg);margin-bottom:20px;overflow:hidden;}
   .season-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--panel2);cursor:pointer;}
   .season-head .yr{font-family:var(--font-display);font-size:24px;font-weight:800;}
   .season-head .champ-line{color:var(--gold-deep);font-size:14px;font-weight:700;margin-top:2px;font-family:var(--font-body);}
@@ -198,13 +210,13 @@
   .footnotes p{color:var(--muted);font-size:12px;margin:6px 0;line-height:1.5;}
 
   /* nemesis */
-  .nemesis-card{margin-top:10px;background:#1C1C1D;border:2px solid var(--red);border-radius:8px;padding:12px 16px;text-align:center;}
+  .nemesis-card{margin-top:10px;background:#1C1C1D;border:2px solid var(--red);border-radius:var(--card-radius);padding:var(--card-pad-sm) 16px;text-align:center;}
   .nemesis-label{font-family:var(--font-display);font-size:11px;letter-spacing:2px;color:var(--red);font-weight:800;}
   .nemesis-name{font-family:var(--font-display);font-size:18px;font-weight:800;color:#fff;margin-top:4px;}
   .nemesis-record{font-size:12px;color:#C9BFA6;margin-top:2px;}
 
   /* vs matchup card */
-  .vs-card{display:flex;align-items:center;justify-content:center;gap:20px;background:var(--black);border-radius:12px;padding:24px 16px;}
+  .vs-card{display:flex;align-items:center;justify-content:center;gap:20px;background:var(--black);border-radius:var(--card-radius-lg);padding:24px 16px;}
   .vs-team{flex:1;max-width:150px;text-align:center;}
   .vs-initials{width:56px;height:56px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:20px;color:#fff;border:2px solid var(--gold);}
   .vs-name{font-family:var(--font-display);font-weight:700;font-size:13px;color:#fff;line-height:1.25;min-height:2.5em;display:flex;align-items:center;justify-content:center;}
@@ -214,7 +226,7 @@
   .vs-meetings{font-size:11px;margin-top:6px;white-space:nowrap;}
 
   /* trading card */
-  .trading-card{width:260px;margin:0 auto;background:var(--black);border:4px solid var(--gold);border-radius:14px;padding:18px 16px;text-align:center;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+  .trading-card{width:260px;margin:0 auto;background:var(--black);border:4px solid var(--gold);border-radius:14px;padding:var(--card-pad) 16px;text-align:center;color:#fff;box-shadow:var(--card-shadow-deep);}
   .tc-topband{font-family:var(--font-display);font-size:10px;letter-spacing:2px;color:var(--gold);margin-bottom:12px;font-weight:800;}
   .tc-photo{width:100px;height:100px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;border:3px solid var(--gold);}
   .tc-photo span{font-family:var(--font-display);font-weight:800;font-size:32px;color:#fff;}
@@ -293,7 +305,7 @@
   .bylaw-article li ul li{font-size:13px;color:var(--muted);margin-bottom:4px;}
 
   /* team reports - compact single-view */
-  .report-card{background:var(--panel);border:2px solid var(--gold);border-radius:12px;overflow:hidden;max-width:720px;margin:0 auto;}
+  .report-card{background:var(--panel);border:2px solid var(--gold);border-radius:var(--card-radius-lg);overflow:hidden;max-width:720px;margin:0 auto;}
   .report-head{background:var(--black);color:#F7F3E8;padding:16px 22px;}
   .report-head .rname{font-family:var(--font-display);font-size:24px;font-weight:800;}
   .report-head .rteam{color:var(--gold);font-size:12px;margin-top:2px;font-family:var(--font-body);}
@@ -307,7 +319,7 @@
   .report-body td, .report-body th{padding:5px 8px;}
 
   /* managers */
-  .mgr-card{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:10px;padding:16px;}
+  .mgr-card{background:var(--panel);border:1px solid var(--line);border-top:var(--card-border-top);border-radius:var(--card-radius);padding:16px;}
   .mgr-team{font-family:var(--font-display);font-weight:800;font-size:17px;}
   .mgr-history{color:var(--muted);font-size:12px;margin-top:2px;}
   .blurb-box{margin-top:12px;min-height:60px;border:1px dashed var(--line);border-radius:6px;padding:10px;font-size:13px;color:var(--text);background:var(--panel2);}
@@ -326,6 +338,76 @@
   .award-card .ctx{font-size:12px;color:var(--muted);margin-top:2px;}
 
   footer{border-top:1px solid var(--line);padding:24px 0;text-align:center;color:var(--muted);font-size:13px;}
+
+  /* nav icons */
+  nav.tabs button{display:inline-flex;align-items:center;gap:6px;}
+  .nav-icon{width:13px;height:13px;flex:none;opacity:0.8;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+  /* frozen first column -- applied via .freeze-col on a .table-wrap/.h2h-wrap */
+  .freeze-col table th:first-child, .freeze-col table td:first-child{position:sticky;left:0;z-index:2;background:var(--panel);box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}
+  .freeze-col table th:first-child{background:var(--bg);z-index:3;}
+  .freeze-col table tbody tr:nth-child(even) td:first-child{background:var(--panel2);}
+  .freeze-col table tbody tr:hover td:first-child{background:#EFE3BE;}
+
+  /* hover tooltips on stat headers / labels -- usage: <th data-tip="explanation">Label</th> */
+  [data-tip]{position:relative;cursor:help;border-bottom:1px dotted var(--muted);}
+  [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#1C1C1D;color:#F7F3E8;padding:7px 11px;border-radius:6px;font-size:11px;font-weight:400;text-transform:none;letter-spacing:normal;white-space:normal;width:max-content;max-width:220px;line-height:1.4;z-index:90;box-shadow:0 4px 14px rgba(0,0,0,0.3);font-family:var(--font-body);}
+  [data-tip]:hover::before{content:"";position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1C1C1D;z-index:90;}
+
+  /* persistent-on-page filter chips (e.g. Current Season team focus) */
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+  .filter-chip{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;font-family:var(--font-display);color:var(--muted);cursor:pointer;transition:background .12s ease,color .12s ease,border-color .12s ease;}
+  .filter-chip:hover{color:var(--text);border-color:var(--gold);}
+  .filter-chip.active{background:var(--gold);border-color:var(--gold-deep);color:#fff;}
+  tr.focus-row td{background:rgba(219,165,20,0.16) !important;}
+  tr.focus-dim td{opacity:0.4;}
+  .focus-card.focus-dim{opacity:0.4;}
+  .focus-card.focus-row{outline:2px solid var(--gold);outline-offset:-2px;}
+
+  /* loading skeletons for heavy computations */
+  .skeleton{display:inline-block;min-width:36px;height:0.9em;border-radius:4px;background:linear-gradient(90deg, var(--panel2) 25%, var(--line) 45%, var(--panel2) 65%);background-size:300% 100%;animation:skeleton-shimmer 1.3s ease infinite;color:transparent !important;vertical-align:middle;}
+  @keyframes skeleton-shimmer{ 0%{background-position:200% 0;} 100%{background-position:-100% 0;} }
+  .chart-skeleton{position:absolute;inset:10px 12px;border-radius:6px;background:linear-gradient(90deg, var(--panel2) 25%, var(--line) 45%, var(--panel2) 65%);background-size:300% 100%;animation:skeleton-shimmer 1.3s ease infinite;z-index:1;}
+
+  /* matchup scouting report */
+  .scout-picker{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0;}
+  .scout-report{margin-top:6px;}
+  .scout-head{display:flex;justify-content:space-between;align-items:center;gap:16px;background:var(--black);color:#F7F3E8;border-radius:var(--card-radius-lg) var(--card-radius-lg) 0 0;padding:18px 22px;}
+  .scout-head .steam{flex:1;text-align:center;}
+  .scout-head .steam .sname{font-family:var(--font-display);font-weight:800;font-size:17px;}
+  .scout-head .steam .srank{color:var(--gold);font-size:12px;margin-top:2px;}
+  .scout-head .svs{color:#8A8A8B;font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:2px;flex:none;}
+  .scout-body{border:2px solid var(--gold);border-top:none;border-radius:0 0 var(--card-radius-lg) var(--card-radius-lg);padding:18px 22px;background:var(--panel);}
+  .scout-stat-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:2px 14px;align-items:center;}
+  .scout-stat-grid .sv{font-weight:700;font-family:var(--font-display);font-size:14px;}
+  .scout-stat-grid .sv.left{text-align:right;}
+  .scout-stat-grid .sl{color:var(--muted);font-size:11px;text-align:center;text-transform:uppercase;letter-spacing:0.04em;font-family:var(--font-display);white-space:nowrap;}
+  .scout-percentiles{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px;}
+  @media(max-width:640px){.scout-percentiles{grid-template-columns:1fr;}}
+
+  /* consistent iconography -- section-title icons, reusing the same visual
+     language as the nav icons */
+  .section-title{align-items:center;}
+  .section-icon{flex:none;width:16px;height:16px;stroke:var(--gold-deep);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+  /* condensed grade block (Team Hub) */
+  .grade-block{padding:16px 18px;}
+  .grade-block-top{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .grade-hero{flex:none;text-align:center;min-width:72px;}
+  .grade-hero .gnum{font-family:var(--font-display);font-weight:800;font-size:42px;line-height:1;color:var(--gold-deep);}
+  .grade-hero .glabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-top:2px;}
+  .grade-mini-grid{flex:1;min-width:170px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grade-mini{text-align:center;background:var(--panel2);border-radius:8px;padding:8px 4px;}
+  .grade-mini .gmnum{font-family:var(--font-display);font-weight:800;font-size:19px;}
+  .grade-mini .gmlabel{font-size:10px;color:var(--muted);margin-top:1px;}
+  .grade-facts{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:13px;}
+  .grade-facts b{font-weight:700;}
+
+  /* CSV export */
+  .export-bar{display:flex;justify-content:flex-end;margin-bottom:6px;}
+  .export-csv-btn{display:inline-flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:0.03em;transition:color .12s ease,border-color .12s ease;}
+  .export-csv-btn:hover{color:var(--gold-deep);border-color:var(--gold);}
+  .export-csv-btn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
 </style>
 </head>
 <body>
@@ -1047,9 +1129,52 @@ let adminAuthed = false;
 const ADMIN_USERNAME = "bhcampbell";
 const ADMIN_PASSWORD = "Wofford2025";
 
+const NAV_ICONS = {
+  "Home": '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  "Current Season": '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/>',
+  "Analytics": '<path d="M4 20V10M12 20V4M20 20v-7"/>',
+  "History": '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/>',
+  "Rivalries": '<path d="M6 3l7 7-4 4-7-7 4-4z"/><path d="M18 21l-7-7 4-4 7 7-4 4z"/><path d="M13 10l-3 3"/>',
+  "Records & Awards": '<circle cx="12" cy="8" r="6"/><path d="M9 13.5L7 22l5-3 5 3-2-8.5"/>',
+  "Leaderboards": '<path d="M4 20V10M12 20V4M20 20v-7"/><path d="M2 20h20"/>',
+  "Draft": '<path d="M9 4h11v3H9z"/><path d="M4 12l5-5 5 5-5 5z"/><path d="M9 17h11"/>',
+  "Trades": '<path d="M7 8h13l-4-4"/><path d="M17 16H4l4 4"/>',
+  "Team Hub": '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>',
+  "Guide": '<path d="M4 4.5A2.5 2.5 0 016.5 2H20v17H6.5A2.5 2.5 0 004 21.5v-17z"/><path d="M20 19H6.5a2.5 2.5 0 00-2.5 2.5"/>'
+};
+
+// Section-title icon set -- same visual language as NAV_ICONS (24x24 viewBox,
+// stroke-only), used to give recurring stat categories a consistent glyph
+// wherever their section appears across the site.
+const ICONS = {
+  standings: NAV_ICONS["Current Season"],
+  power: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+  sos: '<path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/>',
+  scout: NAV_ICONS["Rivalries"],
+  bench: '<circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M17 8a3 3 0 100-6"/><path d="M22 20c0-2.7-1.8-4.9-4.3-5.7"/>',
+  schedule: NAV_ICONS["Current Season"],
+  roster: '<circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M17 8a3 3 0 100-6"/><path d="M22 20c0-2.7-1.8-4.9-4.3-5.7"/>',
+  print: '<path d="M6 9V2h12v7"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17h12v5H6z"/>',
+  grade: NAV_ICONS["Records & Awards"],
+  percentile: NAV_ICONS["Analytics"],
+  careerReport: NAV_ICONS["Guide"],
+  chart: NAV_ICONS["Analytics"],
+  odds: '<path d="M2 12h4l3-9 4 18 3-9h6"/>',
+  h2h: NAV_ICONS["Rivalries"],
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  trade: NAV_ICONS["Trades"],
+  draft: NAV_ICONS["Draft"],
+  timeline: NAV_ICONS["History"]
+};
+function iconSvg(key, size){
+  size = size || 16;
+  if(!key || !ICONS[key]) return '';
+  return `<svg class="section-icon" width="${size}" height="${size}" viewBox="0 0 24 24">${ICONS[key]}</svg>`;
+}
+
 function renderNav(){
   const tabs = document.getElementById("tabs");
-  tabs.innerHTML = PAGES.map(p=>`<button data-page="${p}" class="${p===currentPage?'active':''}">${p}</button>`).join("");
+  tabs.innerHTML = PAGES.map(p=>`<button data-page="${p}" class="${p===currentPage?'active':''}"><svg class="nav-icon" viewBox="0 0 24 24">${NAV_ICONS[p]||''}</svg>${p}</button>`).join("");
   tabs.querySelectorAll("button").forEach(btn=>{
     btn.addEventListener("click",()=>{ currentPage=btn.dataset.page; renderNav(); renderPage(); window.scrollTo(0,0); });
   });
@@ -1383,15 +1508,15 @@ function pageHistory(){
   }).sort((a,b)=> b.grade-a.grade);
 
   return `
-    <div class="section-title">League History Timeline <span class="sub">champions, franchise changes, and all-time records</span></div>
+    <div class="section-title">${iconSvg('timeline')}League History Timeline <span class="sub">champions, franchise changes, and all-time records</span></div>
     ${renderTimelineHtml()}
 
-    <div class="section-title">All-Time Results <span class="sub">2022&ndash;2025</span></div>
+    <div class="section-title">${iconSvg('grid')}All-Time Results <span class="sub">2022&ndash;2025</span></div>
     <div class="view-toggle" style="margin-bottom:12px">
       <button type="button" id="stdViewBtn" class="toggle-btn active">Standard</button>
       <button type="button" id="extViewBtn" class="toggle-btn">Extended</button>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap freeze-col">
     <table id="standingsTable" class="sortable">
       <thead><tr>
         <th>Team</th><th class="num-cell">Grade</th><th class="num-cell">W</th><th class="num-cell">L</th>
@@ -1430,7 +1555,7 @@ function pageHistory(){
     <p class="note" style="margin-top:6px">**Bench Left is career total points left on the bench, 2024&ndash;2025 only (see the Records &amp; Awards page for the full explanation and per-week rate).</p>
 
     <div class="section-title" style="margin-top:32px">League Parity Over Time <span class="sub">regular season win% standard deviation, by year</span></div>
-    <div class="chart-wrap" style="height:320px"><canvas id="chartParity"></canvas></div>
+    <div class="chart-wrap" style="height:320px"><div class="chart-skeleton" id="skel-chartParity"></div><canvas id="chartParity"></canvas></div>
 
     <div class="section-title" style="margin-top:32px">Playoff Bracket Heat Map <span class="sub">how far each team advanced, by year</span></div>
     ${renderBracketHeatmapHtml()}
@@ -1645,7 +1770,7 @@ function pageRecords(){
   }
 
   return `
-    <div class="section-title">Head-to-Head Records <span class="sub">2024&ndash;2025 matchup data</span></div>
+    <div class="section-title">${iconSvg('h2h')}Head-to-Head Records <span class="sub">2024&ndash;2025 matchup data</span></div>
     <p class="note">Pick two teams to see their record against each other and how they compare career-wide.</p>
     <div class="grid cols-2" style="margin:14px 0 24px">
       <select id="ownerA">${ids.map(id=>`<option value="${id}">${currentTeamName(id)}</option>`).join("")}</select>
@@ -1656,8 +1781,8 @@ function pageRecords(){
       <div id="compareTeamsResult">${compareTeamsHtml(ids[0], ids[1])}</div>
     </div>
 
-    <div class="section-title" style="margin-top:32px">Full Grid <span class="sub">green = winning record, red = losing record</span></div>
-    <div class="h2h-wrap">
+    <div class="section-title" style="margin-top:32px">${iconSvg('grid')}Full Grid <span class="sub">green = winning record, red = losing record</span></div>
+    <div class="h2h-wrap freeze-col">
     <table>
       <thead><tr><th></th>${ids.map(id=>`<th>${abbrev(currentTeamName(id))}</th>`).join("")}</tr></thead>
       <tbody>
@@ -1848,7 +1973,7 @@ function pageAnalytics(){
       {id:'jump-sos', label:'Strength of Schedule'},
       {id:'jump-oddscalc', label:'Playoff Odds by Start'}
     ])}
-    <div class="section-title">Analytics <span class="sub">scoring, luck, and charts</span></div>
+    <div class="section-title">${iconSvg('chart')}Analytics <span class="sub">scoring, luck, and charts</span></div>
 
     <div id="jump-charts" class="section-title" style="font-size:17px">Charts</div>
     <div class="chart-toolbar">
@@ -1880,12 +2005,12 @@ function pageAnalytics(){
         </select>
       </div>
     </div>
-    <div class="chart-wrap" style="height:400px"><canvas id="chartAnalyticsMain"></canvas></div>
+    <div class="chart-wrap" style="height:400px"><div class="chart-skeleton" id="skel-chartAnalyticsMain"></div><canvas id="chartAnalyticsMain"></canvas></div>
     <p class="note" id="analyticsChartNote" style="margin:10px 0 28px"></p>
 
     ${combinedTable()}
 
-    <div id="jump-sos" class="section-title" style="margin-top:32px;font-size:17px">Strength of Schedule <span class="sub">avg. SOS index, 2024&ndash;2025</span></div>
+    <div id="jump-sos" class="section-title" style="margin-top:32px;font-size:17px">${iconSvg('sos')}Strength of Schedule <span class="sub">avg. SOS index, 2024&ndash;2025</span></div>
     <div class="table-wrap">
     <table class="sortable">
       <thead><tr><th>Team</th><th class="num-cell">Avg. SOS Index</th><th class="num-cell">Seasons</th></tr></thead>
@@ -1895,7 +2020,7 @@ function pageAnalytics(){
     </table>
     </div>
 
-    <div id="jump-oddscalc" class="section-title" style="margin-top:32px;font-size:17px">Playoff Odds by Start</div>
+    <div id="jump-oddscalc" class="section-title" style="margin-top:32px;font-size:17px">${iconSvg('odds')}Playoff Odds by Start</div>
     <div class="chart-toolbar">
       <select id="oddsWins">${Array.from({length:9},(_,i)=>i).map(n=>`<option value="${n}" ${n===1?'selected':''}>${n} win${n===1?'':'s'}</option>`).join("")}</select>
       <select id="oddsLosses">${Array.from({length:9},(_,i)=>i).map(n=>`<option value="${n}">${n} loss${n===1?'':'es'}</option>`).join("")}</select>
@@ -2145,6 +2270,17 @@ if(typeof Chart !== "undefined"){
   Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.plugins.tooltip.cornerRadius = 6;
   Chart.defaults.plugins.tooltip.displayColors = false;
+  // Loading skeletons: every chart-wrap gets a shimmering placeholder (see the
+  // .chart-skeleton CSS + the skel-<canvasId> divs next to each <canvas>) that's
+  // removed here once that chart's own draw animation finishes.
+  Chart.defaults.animation = Chart.defaults.animation || {};
+  Chart.defaults.animation.onComplete = function(ctx){
+    const chart = (ctx && ctx.chart) || this;
+    const canvas = chart && chart.canvas;
+    if(!canvas) return;
+    const skel = document.getElementById('skel-'+canvas.id);
+    if(skel) skel.remove();
+  };
 }
 
 const _chartInstances = {};
@@ -2421,9 +2557,20 @@ function renderHistogramChart(yearSel){
 }
 
 function renderScoringChart(type, year){
+  let rangeNote = null;
   renderStaticChart('chartAnalyticsMain', canvas=>{
     if(type==="range"){
       const rows = teamScoringRange(year);
+      // With very few weeks played, a team's min/Q1/median/Q3/max are all
+      // nearly (or exactly, at 1 game) the same score, so the box and
+      // whiskers collapse to zero width and only the median tick was ever
+      // visible -- not a rendering bug, just not enough data for a range
+      // yet. Below that threshold we draw a single dot instead (so there's
+      // still something to see) and explain why in the chart note.
+      const weeksPlayed = (MATCHUPS[year]||[]).filter(w=>!w.playoff).length;
+      if(weeksPlayed>0 && weeksPlayed<3){
+        rangeNote = `Only ${weeksPlayed} week${weeksPlayed===1?'':'s'} played in ${year} so far &mdash; with that few games, each team's low/typical/high score are nearly identical, so the box and whiskers collapse to a single dot below. Pick a completed season above for the full boom/bust picture.`;
+      }
       // The box, whiskers and median are all drawn by this plugin rather than
       // relying on Chart.js's native floating-bar renderer for the box (which
       // doesn't reliably draw across configs) -- the dataset below only exists
@@ -2445,6 +2592,18 @@ function renderScoringChart(type, year){
             const xMed = x.getPixelForValue(r.median);
             const xQ3 = x.getPixelForValue(r.q3);
             const xMax = x.getPixelForValue(r.max);
+            if(xMax - xMin < 3){
+              // Degenerate case: too few games for any spread. A zero-width
+              // box/whiskers would be invisible, so draw a dot marking the
+              // one score on record instead of leaving it blank.
+              ctx.fillStyle = '#DBA514';
+              ctx.strokeStyle = '#B23B3B'; ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(xMed, cy, Math.min(7, halfH*0.6), 0, Math.PI*2);
+              ctx.fill();
+              ctx.stroke();
+              return;
+            }
             ctx.strokeStyle = '#8A6E4B'; ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(xMin, cy); ctx.lineTo(xQ1, cy);
@@ -2498,9 +2657,13 @@ function renderScoringChart(type, year){
   });
   const noteEl = document.getElementById('analyticsChartNote');
   if(noteEl){
-    noteEl.textContent = type==="range"
-      ? "Box-and-whisker plot of each team's weekly scores that regular season. The gold box spans the 25th-75th percentile (the typical week); the red line is the median; the whiskers reach out to the lowest and highest score."
-      : "Every season with weekly matchup data on record combined into one career total per team (including 2026's games so far): how many more (or fewer) games a team won than its weekly scoring pace suggested it should have. A week counts as an \"expected win\" if the team scored at or above that week's league average, regardless of who they played.";
+    if(type==="range"){
+      noteEl.innerHTML = rangeNote
+        ? rangeNote
+        : "Box-and-whisker plot of each team's weekly scores that regular season. The gold box spans the 25th-75th percentile (the typical week); the red line is the median; the whiskers reach out to the lowest and highest score.";
+    } else {
+      noteEl.textContent = "Every season with weekly matchup data on record combined into one career total per team (including 2026's games so far): how many more (or fewer) games a team won than its weekly scoring pace suggested it should have. A week counts as an \"expected win\" if the team scored at or above that week's league average, regardless of who they played.";
+    }
   }
 }
 
@@ -2657,7 +2820,7 @@ function pageAwards(){
   ];
 
   return `
-    <div class="section-title">Superlatives &amp; Awards</div>
+    <div class="section-title">${iconSvg('grade')}Superlatives &amp; Awards</div>
     <div class="grid cols-3">
       ${tieCard(ICON_TROPHY, "Most Championships", a.titleLeaders.map(id=>currentTeamName(id)), `${a.maxTitles} ring${a.maxTitles===1?'':'s'} each`)}
       ${card(ICON_STAR, "Best All-Time Win%", currentTeamName(a.bestPct), pctFmt(careerStats()[a.bestPct].w/(careerStats()[a.bestPct].w+careerStats()[a.bestPct].l)))}
@@ -2849,7 +3012,7 @@ function pageDraftTrades(){
     ])}
     ${renderDraftValueHtml()}
 
-    <div id="jump-draft" class="section-title" style="margin-top:20px">Draft</div>
+    <div id="jump-draft" class="section-title" style="margin-top:20px">${iconSvg('draft')}Draft</div>
     ${draftHtml}
   `;
 }
@@ -3111,9 +3274,9 @@ function pageTrades(){
   const sorted = [...TRADES].sort((a,b)=> new Date(b.date) - new Date(a.date));
   const defaultIndex = sorted.findIndex(t=>t.year===defaultYear);
   return `
-    <div class="section-title">Trades</div>
+    <div class="section-title">${iconSvg('trade')}Trades</div>
 
-    <div class="section-title" style="font-size:17px">All-Time Trade Leaderboard <span class="sub">one row per team, every trade on record</span></div>
+    <div class="section-title" style="font-size:17px">${iconSvg('trade')}All-Time Trade Leaderboard <span class="sub">one row per team, every trade on record</span></div>
     <div style="margin-bottom:24px">${renderTeamTradeLeaderboardHtml()}</div>
 
     <div class="section-title" style="font-size:17px">Trade Network <span class="sub">line thickness = how often that pair has traded</span></div>
@@ -4426,24 +4589,29 @@ function pageLiveSeason(){
   const remSOS = computeRemainingSOS(year);
   const remSOSById = {}; remSOS.forEach(r=>{ remSOSById[r.id]=r; });
 
-  const champOdds = simulateChampionshipOdds(year);
-
+  // Championship Odds (2,000-sim Monte Carlo) is the heaviest computation on this
+  // page -- it's deferred until just after first paint (see fillChampionshipOdds,
+  // scheduled from attachPageHandlers) so the rest of Current Season renders
+  // instantly and those two columns show a loading skeleton in the meantime.
   const allPlayById = {}; allPlay.forEach(r=>{ allPlayById[r.owner]=r; });
-  const champOddsById = {}; champOdds.forEach(r=>{ champOddsById[r.owner]=r; });
 
   return `
     <div class="section-title">Current Season <span class="sub">${year}</span></div>
+    <div class="chip-row" id="seasonFocusChips">
+      <span class="filter-chip active" data-focus="">All Teams</span>
+      ${standings.map(r=>`<span class="filter-chip" data-focus="${r.owner}">${abbrev(currentTeamName(r.owner))}</span>`).join("")}
+    </div>
+    <p class="note" style="margin:-10px 0 18px">Pick a team above to highlight it through Standings, Power Rankings, and Blended SOS below.</p>
 
-    <div class="section-title" style="font-size:17px">Standings</div>
+    <div class="section-title" style="font-size:17px">${iconSvg('standings')}Standings</div>
     <p class="note" style="margin-bottom:10px">All-Play is the record each team would have if they'd played every team, every week, instead of just their actual schedule. Make Playoffs/Win League come from a 2,000-simulation Monte Carlo projection of the rest of the season and a ${CURRENT_SEASON_PLAYOFF_SPOTS}-team playoff bracket.</p>
     <div class="table-wrap">
     <table class="sortable">
-      <thead><tr><th>#</th><th>Team</th><th class="num-cell">W-L</th><th class="num-cell">PF</th><th class="num-cell">PA</th><th class="num-cell">SOS</th><th class="num-cell">All Play W-L</th><th class="num-cell">Make Playoffs</th><th class="num-cell">Win League</th></tr></thead>
-      <tbody>
+      <thead><tr><th>#</th><th>Team</th><th class="num-cell">W-L</th><th class="num-cell">PF</th><th class="num-cell">PA</th><th class="num-cell" data-tip="Average opponent scoring pace so far this season, indexed to 100 = league average. 110 = 10% tougher schedule.">SOS</th><th class="num-cell" data-tip="Record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">All Play W-L</th><th class="num-cell" data-tip="Odds of making the playoffs from a 2,000-simulation Monte Carlo projection of the rest of the season.">Make Playoffs</th><th class="num-cell" data-tip="Odds of winning the league title from the same 2,000-simulation projection.">Win League</th></tr></thead>
+      <tbody id="standingsBody" data-year="${year}">
         ${standings.map(r=>{
           const ap = allPlayById[r.owner];
-          const co = champOddsById[r.owner];
-          return `<tr>
+          return `<tr data-owner="${r.owner}" class="focus-row-target">
           <td class="num-cell">${r.rank}</td>
           <td class="team-name">${currentTeamName(r.owner)}</td>
           <td class="num-cell">${r.w}-${r.l}</td>
@@ -4451,15 +4619,15 @@ function pageLiveSeason(){
           <td class="num-cell">${r.pa.toFixed(1)}</td>
           <td class="num-cell">${sosById[r.owner] ? sosById[r.owner].index.toFixed(1) : '&mdash;'}</td>
           <td class="num-cell">${ap ? `${ap.w}-${ap.l}` : '&mdash;'}</td>
-          <td class="num-cell">${co ? (co.playoffPct*100).toFixed(1)+'%' : '&mdash;'}</td>
-          <td class="num-cell" style="font-weight:700">${co ? (co.champPct*100).toFixed(1)+'%' : '&mdash;'}</td>
+          <td class="num-cell" id="mpCell-${r.owner}"><span class="skeleton" style="width:34px">--</span></td>
+          <td class="num-cell" id="wlCell-${r.owner}" style="font-weight:700"><span class="skeleton" style="width:34px">--</span></td>
         </tr>`;
         }).join("")}
       </tbody>
     </table>
     </div>
 
-    <div class="section-title" style="margin-top:24px;font-size:17px">Power Rankings</div>
+    <div class="section-title" style="margin-top:24px;font-size:17px">${iconSvg('power')}Power Rankings</div>
     <p class="note" style="margin-bottom:10px">Blends current record (50%) with each team's last 3 games of scoring form (50%), indexed to the league average.</p>
     <div class="table-wrap">
     <table class="sortable table-compact">
@@ -4474,7 +4642,7 @@ function pageLiveSeason(){
             else if(delta<0) moveHtml = `<span class="luck-neg">&#9660;${Math.abs(delta)}</span>`;
             else moveHtml = `<span class="note">&#9679;</span>`;
           }
-          return `<tr>
+          return `<tr data-owner="${r.owner}" class="focus-row-target">
             <td class="num-cell">${r.rank} <span style="font-size:10px">${moveHtml}</span></td>
             <td class="team-name">${currentTeamName(r.owner)}</td>
             <td class="num-cell">${r.w}-${r.l}</td>
@@ -4485,7 +4653,7 @@ function pageLiveSeason(){
     </table>
     </div>
 
-    <div class="section-title" style="margin-top:24px;font-size:17px">Blended SOS <span class="sub">win% + scoring, this year blended with last year &middot; plus what's left on the schedule</span></div>
+    <div class="section-title" style="margin-top:24px;font-size:17px">${iconSvg('sos')}Blended SOS <span class="sub">win% + scoring, this year blended with last year &middot; plus what's left on the schedule</span></div>
     ${(()=>{
       const rows = computeBayesianSOS(year);
       if(!rows.length || rows.every(r=>r.sosIndex==null)) return `<p class="note">Not enough data to compute this yet.</p>`;
@@ -4496,11 +4664,11 @@ function pageLiveSeason(){
         <p class="note" style="margin-bottom:10px">With ${gp} game${gp===1?'':'s'} played, the blend is weighted roughly ${(avgWeight*100).toFixed(0)}% this season / ${(100-avgWeight*100).toFixed(0)}% last season.</p>
         <div class="table-wrap">
         <table class="sortable">
-          <thead><tr><th>Team</th><th class="num-cell">Win% Index</th><th class="num-cell">Scoring Index</th><th class="num-cell">SOS Index</th><th class="num-cell">Games Left</th><th class="num-cell">Remaining SOS</th></tr></thead>
+          <thead><tr><th>Team</th><th class="num-cell" data-tip="Win% so far, shrunk toward last season's number early in the year, indexed to 100 = league average.">Win% Index</th><th class="num-cell" data-tip="Points-for pace so far, shrunk toward last season's number early in the year, indexed to 100 = league average.">Scoring Index</th><th class="num-cell" data-tip="Average of Win% Index and Scoring Index -- higher means a tougher schedule faced so far.">SOS Index</th><th class="num-cell">Games Left</th><th class="num-cell" data-tip="Index of how tough the remaining schedule is, using each opponent's current scoring pace.">Remaining SOS</th></tr></thead>
           <tbody>
             ${rows.map(r=>{
               const rem = remSOSById[r.owner];
-              return `<tr>
+              return `<tr data-owner="${r.owner}" class="focus-row-target">
               <td class="team-name">${currentTeamName(r.owner)}</td>
               <td class="num-cell">${r.winIndex!=null?r.winIndex.toFixed(1):'&mdash;'}</td>
               <td class="num-cell">${r.pfIndex!=null?r.pfIndex.toFixed(1):'&mdash;'}</td>
@@ -4515,10 +4683,20 @@ function pageLiveSeason(){
       `;
     })()}
 
-    <div class="section-title" style="margin-top:24px;font-size:17px">Bench Management</div>
+    <div class="section-title" style="margin-top:24px;font-size:17px">${iconSvg('scout')}Matchup Scouting Report</div>
+    <p class="note" style="margin-bottom:10px">Pick any two teams to build a head-to-head scouting report using this season's data &mdash; record, SOS, power rank, and this year's percentile profile side by side.</p>
+    <div class="scout-picker">
+      <select id="scoutTeamA">${standings.map((r,i)=>`<option value="${r.owner}" ${i===0?'selected':''}>${currentTeamName(r.owner)}</option>`).join("")}</select>
+      <span class="note" style="font-weight:700">vs.</span>
+      <select id="scoutTeamB">${standings.map((r,i)=>`<option value="${r.owner}" ${i===1?'selected':''}>${currentTeamName(r.owner)}</option>`).join("")}</select>
+      <button type="button" id="scoutGenerateBtn" class="toggle-btn active">Generate Report</button>
+    </div>
+    <div id="scoutReportWrap">${buildScoutingReportHtml(year, standings[0].owner, standings.length>1?standings[1].owner:standings[0].owner)}</div>
+
+    <div class="section-title" style="margin-top:24px;font-size:17px">${iconSvg('bench')}Bench Management</div>
     ${renderBenchManagementHtml(year)}
 
-    <div class="section-title" style="margin-top:24px;font-size:17px">Schedule</div>
+    <div class="section-title" style="margin-top:24px;font-size:17px">${iconSvg('schedule')}Schedule</div>
     ${(()=>{
       const playedByWeek = {};
       weeks.forEach(wk=>{ playedByWeek[wk.w] = wk; });
@@ -4557,10 +4735,10 @@ function pageLiveSeason(){
       `;
     })()}
 
-    <div class="section-title" style="margin-top:24px;font-size:17px">Team Rosters</div>
+    <div class="section-title" style="margin-top:24px;font-size:17px">${iconSvg('roster')}Team Rosters</div>
     ${renderRostersHtml(year)}
 
-    <div class="section-title" style="margin-top:24px;font-size:17px">Print Recaps</div>
+    <div class="section-title" style="margin-top:24px;font-size:17px">${iconSvg('print')}Print Recaps</div>
     <div class="no-print" style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;margin-bottom:8px">
       <div>
         <div class="note" style="font-weight:700;margin-bottom:4px">Week Recap</div>
@@ -4593,6 +4771,82 @@ function pageLiveSeason(){
   `;
 }
 
+// Runs the 2,000-sim Championship Odds Monte Carlo after Current Season's first
+// paint (called from attachPageHandlers via setTimeout) and fills in the
+// skeleton-loading Make Playoffs / Win League cells left by pageLiveSeason.
+function fillChampionshipOdds(year){
+  const champOdds = simulateChampionshipOdds(year);
+  champOdds.forEach(r=>{
+    const mp = document.getElementById(`mpCell-${r.owner}`);
+    const wl = document.getElementById(`wlCell-${r.owner}`);
+    if(mp) mp.innerHTML = (r.playoffPct*100).toFixed(1)+'%';
+    if(wl) wl.innerHTML = (r.champPct*100).toFixed(1)+'%';
+  });
+}
+
+// Matchup Scouting Report -- head-to-head card for the Current Season page,
+// built from this season's live standings/power/SOS plus a this-season
+// percentile profile for each team (same percentile engine as Team Hub).
+function buildScoutingReportHtml(year, idA, idB){
+  if(!idA || !idB) return `<p class="note">Pick two teams.</p>`;
+  const standings = computeCurrentStandings(year);
+  const rowA = standings.find(r=>r.owner===idA), rowB = standings.find(r=>r.owner===idB);
+  if(!rowA || !rowB) return `<p class="note">No current-season data for one of these teams yet.</p>`;
+  const sosRows = computeSOS(year); const sosById = {}; sosRows.forEach(r=>{ sosById[r.id]=r; });
+  const power = computePowerRankings(year); const powerById = {}; power.forEach(r=>{ powerById[r.owner]=r; });
+  const allPlay = computeAllPlayRecord(year); const allPlayById = {}; allPlay.forEach(r=>{ allPlayById[r.owner]=r; });
+  const h2h = h2hRecord(idA, idB);
+  const games = allGames().filter(g=>g.year===year && ((g.oA===idA&&g.oB===idB)||(g.oA===idB&&g.oB===idA))).sort((x,y)=>x.week-y.week);
+  const lastMeeting = games.length ? games[games.length-1] : null;
+  const initials = id => currentTeamName(id).split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join("");
+
+  const row = (label, a, b) => `<div class="sv left">${a}</div><div class="sl">${label}</div><div class="sv">${b}</div>`;
+
+  const percA = buildTeamPercentiles(idA, year);
+  const percB = buildTeamPercentiles(idB, year);
+
+  return `
+    <div class="scout-report">
+      <div class="scout-head">
+        <div class="steam">
+          <div class="sname">${currentTeamName(idA)}</div>
+          <div class="srank">#${rowA.rank} &middot; ${rowA.w}-${rowA.l}</div>
+        </div>
+        <div class="svs">VS</div>
+        <div class="steam">
+          <div class="sname">${currentTeamName(idB)}</div>
+          <div class="srank">#${rowB.rank} &middot; ${rowB.w}-${rowB.l}</div>
+        </div>
+      </div>
+      <div class="scout-body">
+        <div class="scout-stat-grid">
+          ${row('Record', `${rowA.w}-${rowA.l}`, `${rowB.w}-${rowB.l}`)}
+          ${row('Points For', rowA.pf.toFixed(1), rowB.pf.toFixed(1))}
+          ${row('Points Against', rowA.pa.toFixed(1), rowB.pa.toFixed(1))}
+          ${row('SOS Index', sosById[idA]?sosById[idA].index.toFixed(1):'&mdash;', sosById[idB]?sosById[idB].index.toFixed(1):'&mdash;')}
+          ${row('Power Rank', powerById[idA]?'#'+powerById[idA].rank:'&mdash;', powerById[idB]?'#'+powerById[idB].rank:'&mdash;')}
+          ${row('All-Play W-L', allPlayById[idA]?`${allPlayById[idA].w}-${allPlayById[idA].l}`:'&mdash;', allPlayById[idB]?`${allPlayById[idB].w}-${allPlayById[idB].l}`:'&mdash;')}
+        </div>
+        <div class="note" style="text-align:center;margin-top:14px">
+          ${(h2h.aWins+h2h.bWins)>0
+            ? `All-time head-to-head: ${currentTeamName(idA)} leads ${h2h.aWins}-${h2h.bWins}${lastMeeting?` &middot; met this season Wk ${lastMeeting.week}: ${lastMeeting.tA} ${lastMeeting.sA} &ndash; ${lastMeeting.sB} ${lastMeeting.tB}`:''}`
+            : "No head-to-head meetings on record."}
+        </div>
+        <div class="scout-percentiles">
+          <div>
+            <div class="note" style="font-weight:700;margin-bottom:4px;text-align:center">${currentTeamName(idA)} &middot; ${year} percentile profile</div>
+            ${percA ? renderPercentileChart(percA) : '<p class="note">Not enough data yet.</p>'}
+          </div>
+          <div>
+            <div class="note" style="font-weight:700;margin-bottom:4px;text-align:center">${currentTeamName(idB)} &middot; ${year} percentile profile</div>
+            ${percB ? renderPercentileChart(percB) : '<p class="note">Not enough data yet.</p>'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 const GLOSSARY = [
   {term:"Team Grade", def:"A single 0&ndash;100 composite score, school-letter scale. Blends career win%, average finish, top-3 finishes, bottom-3 finishes, titles, playoff appearance rate, semifinal appearance rate, and points scored. Win%, finish, top-3s, bottom-3s, and titles cover the full 2022&ndash;2025 history; playoff/semifinal rate and points scored are limited to 2024&ndash;2025, the only seasons with bracket and weekly-scoring data. Formula: 55 + 0.5935&times;[0.20&times;win% + 0.15&times;finish-rank score + top-3 bonus (capped) + title bonus (capped) &minus; bottom-3 penalty + 0.08&times;playoff rate + 0.10&times;semifinal rate + 0.10&times;points-scored score]. Calibrated so an exactly-average hypothetical team lands near a C."},
   {term:"Win% format", def:'Shown as ".643" style, no leading zero &mdash; a common shorthand for a decimal win percentage.'},
@@ -4613,9 +4867,13 @@ const GLOSSARY = [
 
 const FAQS = [
   {q:"How is Team Grade calculated?", a:"See the Team Grade entry in the Stats Glossary above for the exact formula. In short: win%, average finish, top-3 and bottom-3 finish rates, titles, playoff/semifinal appearance rate, and points scored, blended into one 0&ndash;100 number on a school-letter scale."},
-  {q:"Why don't 2022 and 2023 have weekly stats, charts, or box scores?", a:"Only final season standings were kept from those years &mdash; no week-by-week scores survived. Anything that needs weekly data (Luck, SOS, charts, box scores, Analytics) is scoped to 2024&ndash;2025 for that reason."},
+  {q:"Why don't 2022 and 2023 have weekly stats, charts, or box scores?", a:"Only final season standings were kept from those years &mdash; no week-by-week scores survived. The historical Analytics tools, career percentiles, and award-book entries that need weekly data are scoped to 2024&ndash;2025 for that reason. The season currently in progress is the exception: Current Season and the year-selectable Analytics charts (Scoring Range, Points For vs. Against, Standings by Week) include it once it has games on the board."},
+  {q:"Why does a chart look like it's just a dot or a flat line early in the season?", a:"A handful of Analytics charts (like the Team Scoring Range box-and-whisker) need several weeks of scores to show real spread. With only 1&ndash;2 games played, a team's low/typical/high score are nearly identical, so there's nothing to draw a box or whiskers around yet &mdash; those charts show a single dot and a note instead, and fill back in normally as more weeks are played. Pick a completed season from the year dropdown for the full picture in the meantime."},
   {q:"Does the site update itself automatically?", a:"No &mdash; this is a static file with no backend. Updates happen by generating a new version and re-uploading it wherever the site is hosted (see the GitHub Pages instructions if you're hosting it there)."},
   {q:"What's the difference between the Rivalries and Records & Awards pages?", a:"Rivalries covers head-to-head history, flagged rivalries with milestones, and notable games between teams. Records & Awards covers season-driven superlatives (most championships, best win%, etc.) and the all-time Record Book of single-game/season bests."},
+  {q:"What does the Matchup Scouting Report on Current Season do?", a:"Pick any two teams and click Generate to get a head-to-head card built from this season's live data &mdash; record, points for/against, SOS, power rank, all-play record, all-time head-to-head, and each team's this-season percentile profile side by side. It's separate from the career Compare Teams tool on the Rivalries page, which looks at all-time numbers instead."},
+  {q:"Can I export a table to a spreadsheet?", a:"Yes &mdash; any table with an Export CSV button above it (Standings, Power Rankings, Leaderboards, Full Grid, Draft Skill, and most other data tables) downloads exactly what's on screen, respecting whatever sort order you've clicked into, as a .csv file you can open in Excel or Google Sheets."},
+  {q:"What does clicking a team chip on Current Season do?", a:"It highlights that team's row across Standings, Power Rankings, and Blended SOS at once so it's easy to track one team through all three tables, and dims the rest. It only applies while you're on the Current Season page &mdash; navigating away and back resets it to All Teams."},
   {q:"Why are some Team Profile locations missing?", a:"Only the locations that have actually been provided are shown. Any team without one on file is noted plainly rather than guessed at."}
 ];
 
@@ -5459,7 +5717,7 @@ function renderLeaderboardHtml(metric, scope){
 function pageLeaderboards(){
   const allYears = [...new Set([...Object.keys(SEASONS).map(Number), ...Object.keys(MATCHUPS).map(Number), ...Object.keys(PLAYER_SCORES).map(Number)])].sort((a,b)=>a-b);
   return `
-    <div class="section-title">Team Leaderboards</div>
+    <div class="section-title">${iconSvg('grid')}Team Leaderboards</div>
     <div class="chart-toolbar">
       <select id="lbMetric">${LEADERBOARD_METRICS.map(m=>`<option value="${m.id}">${m.label}</option>`).join("")}</select>
       <select id="lbScopeType">
@@ -5667,7 +5925,7 @@ function renderDraftValueHtml(){
   }
 
   return `
-    <div id="jump-pickvalue" class="section-title">Draft Pick Value</div>
+    <div id="jump-pickvalue" class="section-title">${iconSvg('draft')}Draft Pick Value</div>
 
     <div id="jump-playersearch" class="section-title" style="margin-top:18px;font-size:17px">Player Search</div>
     <div class="chart-toolbar">
@@ -5676,7 +5934,7 @@ function renderDraftValueHtml(){
     <div id="playerSearchResults"></div>
 
     <div id="jump-curve" class="section-title" style="margin-top:18px;font-size:17px">League-Wide Draft Value Curve</div>
-    <div class="chart-wrap" style="height:220px"><canvas id="chartDraftValueCurve"></canvas></div>
+    <div class="chart-wrap" style="height:220px"><div class="chart-skeleton" id="skel-chartDraftValueCurve"></div><canvas id="chartDraftValueCurve"></canvas></div>
 
     <div id="jump-skill" class="section-title" style="margin-top:18px;font-size:17px">Draft Skill by Team</div>
     <div class="table-wrap">
@@ -5920,37 +6178,24 @@ function pageTeamHub(selectedId){
   const worstPhase = phaseRows.length ? [...phaseRows].sort((a,b)=>a.row.avgValue-b.row.avgValue)[0] : null;
 
   const gradesHtml = `
-    <div class="section-title" style="font-size:17px">Grades</div>
-    <div class="card stat-card" style="text-align:center;padding:22px 12px;border-top-width:4px;">
-      <div class="num" style="font-size:56px">${managerLetter}</div>
-      <div class="who" style="font-size:18px">Manager Grade</div>
-      <div class="label">${managerScore.toFixed(0)}/100</div>
-    </div>
-    <div class="grid cols-2" style="margin-top:12px">
-      <div class="card stat-card" style="text-align:center">
-        <div class="num">${tLetter}</div>
-        <div class="who">Team Grade</div>
-        <div class="label">${tGrade.toFixed(0)}/100</div>
+    <div class="section-title" style="font-size:17px">${iconSvg('grade')}Grades</div>
+    <div class="card grade-block">
+      <div class="grade-block-top">
+        <div class="grade-hero">
+          <div class="gnum">${managerLetter}</div>
+          <div class="glabel">Manager &middot; ${managerScore.toFixed(0)}</div>
+        </div>
+        <div class="grade-mini-grid">
+          <div class="grade-mini"><div class="gmnum">${tLetter}</div><div class="gmlabel">Team &middot; ${tGrade.toFixed(0)}</div></div>
+          <div class="grade-mini"><div class="gmnum">${dLetter}</div><div class="gmlabel">Draft &middot; ${dGrade.toFixed(0)}</div></div>
+        </div>
       </div>
-      <div class="card stat-card" style="text-align:center">
-        <div class="num">${dLetter}</div>
-        <div class="who">Draft Grade</div>
-        <div class="label">${dGrade.toFixed(0)}/100</div>
+      <div class="grade-facts">
+        <div><b>Steal/Bust:</b> ${sbRow ? `${(sbRow.stealRate*100).toFixed(0)}% / ${(sbRow.bustRate*100).toFixed(0)}%` : 'n/a'}</div>
+        <div><b>Best phase:</b> ${bestPhase ? `${bestPhase.label} <span class="luck-pos">+${bestPhase.row.avgValue.toFixed(1)}</span>` : 'n/a'}</div>
+        <div><b>Worst phase:</b> ${worstPhase ? `${worstPhase.label} <span class="luck-neg">${worstPhase.row.avgValue.toFixed(1)}</span>` : 'n/a'}</div>
       </div>
-    </div>
-    <p class="note" style="margin:10px 0 0">Manager Grade weights Team Grade 65% and Draft Grade 35%.</p>
-
-    <div class="grid cols-2" style="margin-top:14px">
-      <div class="card">
-        <div class="note" style="font-weight:700;margin-bottom:4px">Steal / Bust Rate</div>
-        <div style="font-size:14px">${sbRow ? `${(sbRow.stealRate*100).toFixed(0)}% steal / ${(sbRow.bustRate*100).toFixed(0)}% bust` : 'n/a'}</div>
-        <div class="note">${sbRow ? `${sbRow.total} picks, whole draft` : ''}</div>
-      </div>
-      <div class="card">
-        <div class="note" style="font-weight:700;margin-bottom:4px">Best / Worst Draft Phase</div>
-        <div style="font-size:13px">${bestPhase ? `${bestPhase.label}: <span class="luck-pos">+${bestPhase.row.avgValue.toFixed(1)}</span>` : 'n/a'}</div>
-        <div style="font-size:13px">${worstPhase ? `${worstPhase.label}: <span class="luck-neg">${worstPhase.row.avgValue.toFixed(1)}</span>` : ''}</div>
-      </div>
+      <p class="note" style="margin:10px 0 0;font-size:11px">Manager Grade weights Team Grade 65% and Draft Grade 35%.</p>
     </div>
   `;
 
@@ -5963,7 +6208,7 @@ function pageTeamHub(selectedId){
   const defaultPercScope = defaultPercYear!=null ? String(defaultPercYear) : "career";
   const initialPercentiles = buildTeamPercentiles(id, defaultPercScope);
   const percentileHtml = `
-    <div class="section-title" style="margin-top:28px;font-size:17px">Percentile Rankings <span class="sub" id="percentileScopeSub">vs. the rest of the league, ${defaultPercScope==="career"?"career":defaultPercScope}</span></div>
+    <div class="section-title" style="margin-top:28px;font-size:17px">${iconSvg('percentile')}Percentile Rankings <span class="sub" id="percentileScopeSub">vs. the rest of the league, ${defaultPercScope==="career"?"career":defaultPercScope}</span></div>
     <div class="no-print" style="margin-bottom:10px">
       <select id="percentileScopeSelect" data-owner="${id}">
         ${percYears.map(y=>`<option value="${y}" ${String(y)===defaultPercScope?'selected':''}>${y} Season</option>`).join("")}
@@ -6006,7 +6251,7 @@ function pageTeamHub(selectedId){
   const firstYear = seasons.length ? Math.min(...seasons.map(s=>s.year)) : "";
 
   const reportHtml = `
-    <div class="section-title" style="margin-top:28px;font-size:17px">Career Report <span class="sub">export or print the card</span></div>
+    <div class="section-title" style="margin-top:28px;font-size:17px">${iconSvg('careerReport')}Career Report <span class="sub">export or print the card</span></div>
     <div class="view-toggle no-print" style="margin-bottom:16px">
       <button type="button" id="reportViewBtn" class="toggle-btn active">Full Report</button>
       <button type="button" id="cardViewBtn" class="toggle-btn">Trading Card</button>
@@ -6155,7 +6400,7 @@ function pageTeamHub(selectedId){
   `;
 
   return `
-    <div class="section-title">Team Hub <span class="sub">grades, career report, and profile in one place</span></div>
+    <div class="section-title">${iconSvg('roster')}Team Hub <span class="sub">grades, career report, and profile in one place</span></div>
     <div style="margin-bottom:16px" class="no-print"><select id="hubOwner">${ids.map(oid=>`<option value="${oid}" ${oid===id?'selected':''}>${currentTeamName(oid)}</option>`).join("")}</select></div>
 
     ${gradesHtml}
@@ -6223,6 +6468,71 @@ function makeSortable(table){
       });
       rows.forEach(r=>tbody.appendChild(r));
     });
+  });
+}
+
+// ---- CSV export (every real data table on the site) ----
+// Walks a <table>'s rows/cells as rendered (so sorting is respected) and
+// downloads it as a CSV. Works off textContent, so badges/arrows collapse
+// to their plain text.
+function exportTableToCSV(table, filename){
+  const rows = [];
+  table.querySelectorAll('tr').forEach(tr=>{
+    const cells = [...tr.children].map(cell=>{
+      let text = cell.textContent.replace(/\s+/g,' ').trim();
+      text = text.replace(/"/g,'""');
+      return `"${text}"`;
+    });
+    if(cells.length) rows.push(cells.join(','));
+  });
+  if(!rows.length) return;
+  const csv = rows.join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (filename || 'wofford-league-table') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+// Best-effort filename: walk backward through siblings/ancestors for the
+// nearest section-title text.
+function guessTableName(wrap){
+  let el = wrap;
+  let hops = 0;
+  while(el && hops<12){
+    let sib = el.previousElementSibling;
+    while(sib){
+      if(sib.classList && sib.classList.contains('section-title')){
+        return sib.textContent.trim().replace(/\s+/g,'-').replace(/[^\w-]/g,'').toLowerCase() || 'wofford-league-table';
+      }
+      sib = sib.previousElementSibling;
+    }
+    el = el.parentElement;
+    hops++;
+  }
+  return 'wofford-league-table';
+}
+// Adds a small "Export CSV" bar above every table that lives in a
+// .table-wrap/.h2h-wrap (the site's real data tables -- Standings, Power
+// Rankings, Leaderboards, Full Grid, Draft Skill, etc.). Safe to call
+// repeatedly (skips tables that already have a bar) so it's re-run after
+// any partial re-render that swaps in a fresh table.
+function wireExportButtons(){
+  document.querySelectorAll('.table-wrap table, .h2h-wrap table').forEach(table=>{
+    const wrap = table.closest('.table-wrap, .h2h-wrap');
+    if(!wrap || wrap.querySelector('.export-csv-btn') || !table.rows.length) return;
+    const bar = document.createElement('div');
+    bar.className = 'export-bar no-print';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'export-csv-btn';
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg>Export CSV';
+    btn.addEventListener('click', ()=>exportTableToCSV(table, guessTableName(wrap)));
+    bar.appendChild(btn);
+    wrap.insertBefore(bar, table);
   });
 }
 
@@ -6544,6 +6854,7 @@ function attachPageHandlers(){
       const bustsWrap = document.getElementById('weeklyBustsWrap');
       if(bustsWrap) bustsWrap.innerHTML = renderWeeklyBustsHtml(y,w);
       wireBoxScoreToggles();
+      wireExportButtons();
     });
   }
 
@@ -6556,12 +6867,52 @@ function attachPageHandlers(){
     });
   }
 
+  // Current Season: defer the heaviest computation (Championship Odds, a
+  // 2,000-sim Monte Carlo) until just after first paint so the skeleton-loading
+  // Make Playoffs/Win League cells have a moment to show before filling in.
+  const standingsBody = document.getElementById('standingsBody');
+  if(standingsBody){
+    setTimeout(()=>fillChampionshipOdds(+standingsBody.dataset.year), 30);
+  }
+
+  // Current Season: team focus chips -- a filter that persists only while you're
+  // on this page (it resets whenever the page is re-rendered, e.g. by navigating
+  // away and back), highlighting one team's rows in Standings/Power/Blended SOS.
+  const seasonFocusChips = document.getElementById('seasonFocusChips');
+  if(seasonFocusChips){
+    seasonFocusChips.addEventListener('click', e=>{
+      const chip = e.target.closest('.filter-chip');
+      if(!chip) return;
+      seasonFocusChips.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      const owner = chip.dataset.focus;
+      const rows = document.querySelectorAll('.focus-row-target');
+      rows.forEach(tr=>{
+        if(!owner){ tr.classList.remove('focus-row','focus-dim'); return; }
+        if(tr.dataset.owner===owner){ tr.classList.add('focus-row'); tr.classList.remove('focus-dim'); }
+        else { tr.classList.add('focus-dim'); tr.classList.remove('focus-row'); }
+      });
+    });
+  }
+
+  // Current Season: Matchup Scouting Report generator
+  const scoutGenerateBtn = document.getElementById('scoutGenerateBtn');
+  if(scoutGenerateBtn && standingsBody){
+    scoutGenerateBtn.addEventListener('click', ()=>{
+      const a = document.getElementById('scoutTeamA').value;
+      const b = document.getElementById('scoutTeamB').value;
+      const wrap = document.getElementById('scoutReportWrap');
+      if(wrap) wrap.innerHTML = buildScoutingReportHtml(+standingsBody.dataset.year, a, b);
+    });
+  }
+
   const oddsWins = document.getElementById('oddsWins');
   const oddsLosses = document.getElementById('oddsLosses');
   if(oddsWins && oddsLosses){
     const updateOdds = ()=>{
       const wrap = document.getElementById('oddsResult');
       if(wrap) wrap.innerHTML = renderPlayoffOddsHtml(+oddsWins.value, +oddsLosses.value);
+      wireExportButtons();
     };
     oddsWins.addEventListener('change', updateOdds);
     oddsLosses.addEventListener('change', updateOdds);
@@ -6589,6 +6940,7 @@ function attachPageHandlers(){
       }
       const wrap = document.getElementById('lbResult');
       if(wrap) wrap.innerHTML = renderLeaderboardHtml(lbMetric.value, scope);
+      wireExportButtons();
     };
     lbMetric.addEventListener('change', updateLb);
     lbScopeType.addEventListener('change', updateLb);
@@ -6598,6 +6950,7 @@ function attachPageHandlers(){
   }
 
   wireBoxScoreToggles();
+  wireExportButtons();
 
   document.querySelectorAll('input[type="file"][data-owner]').forEach(inp=>{
     inp.addEventListener('change', e=>{
