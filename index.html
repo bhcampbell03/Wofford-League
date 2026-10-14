@@ -3111,8 +3111,7 @@ function pageHome(){
     <div class="section-title" style="margin-top:32px">Year-by-Year Podium</div>
     <div class="podium-grid">
       ${years.map(year=>{
-        const roster = [...SEASONS[year]].sort((a,b)=>a.rank-b.rank);
-        const [first,second,third] = roster;
+        const [first,second,third] = playoffPodium(year);
         return `<div>
           <div class="podium-year">${year}</div>
           <div class="podium-bars">
@@ -3281,6 +3280,29 @@ function renderTimelineHtml(){
         </div>`).join("")}
     </div>
   `;
+}
+
+// Top three finishers for a season's podium. Where a playoff bracket is on file
+// this follows the real results: the championship game gives 1st and 2nd, and the
+// third-place game between the two semifinal losers gives 3rd. SEASONS[].rank is the
+// regular-season finish, which can differ (a #2 seed that loses in round 1 is not
+// the runner-up). Years without bracket data fall back to that rank order.
+function playoffPodium(year){
+  const roster = [...SEASONS[year]].sort((a,b)=>a.rank-b.rank);
+  const fallback = roster.slice(0,3);
+  if(!PLAYOFF_QUALIFIERS[year]) return fallback;
+  const {rounds, placementGames} = buildChampionshipPath(year);
+  if(!rounds.length) return fallback;
+  const last = rounds[rounds.length-1];
+  const fin = last.games.find(g=>g.isChamp) || last.games[0];
+  if(!fin) return fallback;
+  const champ = fin.sA>fin.sB ? fin.oA : fin.oB, runner = fin.sA>fin.sB ? fin.oB : fin.oA;
+  const semiLosers = rounds.length>1 ? rounds[rounds.length-2].games.map(g=>g.sA>g.sB ? g.oB : g.oA) : [];
+  const tp = placementGames.find(g=>g.label===last.label && semiLosers.includes(g.oA) && semiLosers.includes(g.oB));
+  const third = tp ? (tp.sA>tp.sB ? tp.oA : tp.oB) : (roster.find(t=>![champ,runner].includes(t.owner))||{}).owner;
+  const byOwner = {}; roster.forEach(t=>{ byOwner[t.owner]=t; });
+  const out = [byOwner[champ], byOwner[runner], byOwner[third]];
+  return out.every(Boolean) ? out : fallback;
 }
 
 // The same podium visual the Home page's Year-by-Year Podium uses, reused
