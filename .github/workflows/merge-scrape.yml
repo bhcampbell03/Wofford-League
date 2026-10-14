@@ -1,0 +1,49 @@
+name: Merge scrape into data.js
+
+# Runs whenever a scrape JSON is uploaded to the incoming/ folder (or when you
+# click "Run workflow" on the Actions tab). It updates data.js, moves the scrape
+# to incoming/processed/, and commits the result, which republishes the site.
+on:
+  push:
+    paths:
+      - 'incoming/*.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Merge each new scrape (oldest name first)
+        run: |
+          shopt -s nullglob
+          files=(incoming/*.json)
+          if [ ${#files[@]} -eq 0 ]; then echo "No scrape files in incoming/"; exit 0; fi
+          mkdir -p incoming/processed
+          for f in $(printf '%s\n' "${files[@]}" | sort); do
+            echo "== Merging $f"
+            python3 tools/merge_scrape.py "$f"
+            mv "$f" incoming/processed/
+          done
+          rm -f data.js.bak
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.js incoming
+          if git diff --cached --quiet; then echo "Nothing changed"; exit 0; fi
+          git commit -m "Merge weekly scrape into data.js"
+          git push
