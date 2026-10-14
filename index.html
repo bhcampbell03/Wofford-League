@@ -212,11 +212,12 @@ if(typeof Chart==="undefined"){
 
   .grid{display:grid;gap:16px;}
   .grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  .span-2{grid-column:span 2;}
   .grid.cols-5{grid-template-columns:repeat(5,1fr);}
   .grid.cols-3{grid-template-columns:repeat(3,1fr);}
   .grid.cols-2{grid-template-columns:repeat(2,1fr);}
   @media(max-width:820px){.grid.cols-5,.grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr 1fr;}}
-  @media(max-width:560px){.grid.cols-5,.grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr;}}
+  @media(max-width:560px){.grid.cols-5,.grid.cols-4,.grid.cols-3,.grid.cols-2{grid-template-columns:1fr;} .span-2{grid-column:auto;}}
 
   .card{background:var(--panel);border:1px solid var(--line);border-top:var(--card-border-top);box-shadow:var(--card-shadow), inset 0 3px 0 -2px var(--line);border-radius:var(--card-radius);padding:var(--card-pad);transition:transform .15s ease, box-shadow .15s ease;}
   .card:hover{transform:translateY(-2px);box-shadow:var(--card-shadow-hover), inset 0 3px 0 -2px var(--line);}
@@ -2955,13 +2956,12 @@ function renderPage(){
 
 function renderSiteMapContent(){
   const sections = [
-    {page:"Dashboard", blurb:"At-a-glance view: league KPIs, this week's most interesting game, records within reach, a rotating set of fun facts, standings, and a power ranking chart.", items:[
+    {page:"Dashboard", blurb:"At-a-glance view: league KPIs, this week's most interesting game, records within reach, a rotating set of fun facts, and a mix of charts (scoring by position, weekly range, luck, margins).", items:[
       {id:'jump-dash-kpis', label:'League KPIs'},
       {id:'jump-dash-featured', label:'Most Interesting Game'},
       {id:'jump-dash-reach', label:'Records Within Reach'},
-      {id:'jump-dash-funfacts', label:'Interesting This Week'},
-      {id:'jump-dash-standings', label:'Standings'},
-      {id:'jump-dash-power', label:'Power Ranking Over Time'}
+      {id:'jump-dash-panels', label:'Charts'},
+      {id:'jump-dash-funfacts', label:'Interesting This Week'}
     ]},
     {page:"Current Season", blurb:"This year's live standings, SOS, rosters, full schedule, and league leaders.", items:[]},
     {page:"Analytics", blurb:"Scoring highs/lows, luck, the interactive chart selector, Stats Lab, team leaderboards, and draft value grades.", items:[
@@ -9414,34 +9414,30 @@ function computeLeagueKPIs(){
   });
   const allTimeBalance = balances.length ? balances.reduce((a,b)=>a+b,0)/balances.length : null;
 
-  const pct1 = v => v==null ? "&mdash;" : (v*100).toFixed(0)+"%";
+  const pct1 = v => v==null ? "&mdash;" : (v*100).toFixed(1)+"%";
   const num1 = v => v==null ? "&mdash;" : v.toFixed(1);
 
   return [
-    {label:"League Avg PPG", icon:'chart', season:num1(avgPPG(seasonGames)), allTime:num1(avgPPG(allRegGames)), note:"points per team per game"},
-    {label:"Scoring Volatility", icon:'sos', season:num1(stdDev(seasonGames)), allTime:num1(stdDev(allRegGames)), note:"std. dev. of weekly scores"},
-    {label:"Competitive Balance", icon:'grid', season:pct1(seasonBalance), allTime:pct1(allTimeBalance), note:"win% spread, lower = tighter"},
-    {label:"Blowout Rate", icon:'odds', season:pct1(blowoutRate(seasonGames)), allTime:pct1(blowoutRate(allRegGames)), note:"share of games decided by 30+"}
+    {label:"Avg PPG", icon:'chart', season:num1(avgPPG(seasonGames)), allTime:num1(avgPPG(allRegGames)), note:"per team per game"},
+    {label:"Volatility", icon:'sos', season:num1(stdDev(seasonGames)), allTime:num1(stdDev(allRegGames)), note:"std. dev. of scores"},
+    {label:"Parity Gap", icon:'grid', season:pct1(seasonBalance), allTime:pct1(allTimeBalance), note:"win% spread, top to bottom"},
+    {label:"Blowout Rate", icon:'odds', season:pct1(blowoutRate(seasonGames)), allTime:pct1(blowoutRate(allRegGames)), note:"games decided by 30+"}
   ];
 }
 
 function renderLeagueKPIsHtml(kpis){
-  return `<div class="grid cols-4">
-    ${kpis.map(k=>`
-      <div class="card" style="padding:9px 12px">
-        <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin-bottom:6px">${iconSvg(k.icon,12)}${k.label}</div>
-        <div style="display:flex;gap:14px">
-          <div>
-            <div style="font-family:var(--font-display);font-weight:900;font-size:19px;line-height:1">${k.season}</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.02em">This Season</div>
-          </div>
-          <div>
-            <div style="font-family:var(--font-display);font-weight:900;font-size:19px;line-height:1;color:var(--muted)">${k.allTime}</div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.02em">All&#8209;Time</div>
-          </div>
-        </div>
-        <p class="note" style="margin-top:4px;font-size:10.5px">${k.note}</p>
-      </div>`).join("")}
+  // Every metric uses the identical four-line cell: label, this-season value,
+  // all-time value, one-line note. Same sizes, same decimals, same alignment.
+  const cell = k=>`
+    <div style="min-width:0" title="${k.label}: ${k.note}">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);white-space:nowrap">${k.label}</div>
+      <div style="font-family:var(--font-display);font-weight:900;font-size:24px;line-height:1.15;margin-top:3px">${k.season}</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.3">${k.allTime} <span style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.03em">all-time</span></div>
+      <div class="note" style="font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.note}</div>
+    </div>`;
+  return `<div class="card span-2" style="padding:9px 14px">
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin-bottom:8px">${iconSvg('chart',12)}League Pulse <span style="margin-left:auto;font-weight:600;text-transform:none;letter-spacing:0">large = this season</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">${kpis.map(cell).join("")}</div>
   </div>`;
 }
 
@@ -10086,6 +10082,267 @@ function renderFunFactsHtml(facts){
   </div>`;
 }
 
+// ---- Dashboard: "Season Snapshot" tiles -------------------------------------
+// A second KPI band in different formats from the number-pair tiles above:
+// leader cards (a team + a figure), a progress ring, a weekly sparkline, a split
+// bar (East vs West) and a score histogram. Regular season only.
+function computeSeasonSnapshot(year){
+  const regWeeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff).sort((a,b)=>a.w-b.w);
+  if(!regWeeks.length) return null;
+  const standings = computeCurrentStandings(year).filter(r=>r.games>0);
+  const power = computePowerRankingsV2(year);
+  const totalWeeks = (FULL_SCHEDULE[year]||[]).filter(w=>!w.playoff).length || regWeeks.length;
+  const byPf = standings.slice().sort((a,b)=>(b.pf/b.games)-(a.pf/a.games))[0];
+  const byRec = standings.slice().sort((a,b)=>b.pct-a.pct || b.pf-a.pf)[0];
+  const hot = power.slice().sort((a,b)=>b.recentAvg-a.recentAvg)[0];
+  const luck = standings.map(r=>({id:r.owner, lr:luckRating(r.owner, year)})).filter(x=>x.lr && x.lr.luck!=null)
+    .sort((a,b)=>b.lr.luck-a.lr.luck);
+  // weekly league average scoring
+  const weekAvg = regWeeks.map(w=>{
+    const s = w.g.flatMap(g=>[g[1],g[3]]);
+    return {w:w.w, avg:s.reduce((a,b)=>a+b,0)/s.length};
+  });
+  const allScores = regWeeks.flatMap(w=>w.g.flatMap(g=>[g[1],g[3]]));
+  const seasonAvg = allScores.reduce((a,b)=>a+b,0)/allScores.length;
+  // East vs West
+  const divNames = Object.keys(CURRENT_DIVISIONS);
+  const divOf = {}; divNames.forEach(d=>CURRENT_DIVISIONS[d].forEach(id=>{ divOf[id]=d; }));
+  const cross = {}; divNames.forEach(d=>{ cross[d]=0; });
+  let crossGames = 0; const divPts = {}, divN = {};
+  divNames.forEach(d=>{ divPts[d]=0; divN[d]=0; });
+  regWeeks.forEach(w=>w.g.forEach(([tA,sA,tB,sB])=>{
+    const a = ownerForTeam(year,tA), b = ownerForTeam(year,tB);
+    if(divOf[a]){ divPts[divOf[a]]+=sA; divN[divOf[a]]++; }
+    if(divOf[b]){ divPts[divOf[b]]+=sB; divN[divOf[b]]++; }
+    if(divOf[a] && divOf[b] && divOf[a]!==divOf[b]){
+      crossGames++; cross[sA>sB?divOf[a]:divOf[b]]++;
+    }
+  }));
+  // histogram
+  const lo = Math.floor(Math.min(...allScores)/10)*10, hi = Math.floor(Math.max(...allScores)/10)*10;
+  const step = Math.max(10, Math.ceil((hi-lo+10)/10/10)*10);
+  const buckets = [];
+  for(let s=lo; s<=hi; s+=step) buckets.push({from:s, n:0});
+  allScores.forEach(v=>{ const i = Math.min(buckets.length-1, Math.floor((v-lo)/step)); buckets[i].n++; });
+  const sorted = allScores.slice().sort((a,b)=>a-b);
+  const median = sorted[Math.floor(sorted.length/2)];
+  return {year, standings, played:regWeeks.length, totalWeeks, byPf, byRec, hot, luck, weekAvg, seasonAvg,
+          divNames, cross, crossGames, divPts, divN, buckets, step, median, n:allScores.length};
+}
+
+function buildSeasonSnapshotParts(year){
+  const s = computeSeasonSnapshot(year);
+  if(!s) return null;
+  const lbl = (txt, icon)=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin-bottom:6px">${iconSvg(icon,12)}${txt}</div>`;
+  const leader = (txt, icon, id, big, sub)=>`
+    <div class="card" style="padding:9px 12px;border-left:4px solid ${ownerColor(id)}">
+      ${lbl(txt, icon)}
+      <div style="font-family:var(--font-display);font-weight:800;font-size:15px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${currentTeamName(id)}</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:3px">
+        <span style="font-family:var(--font-display);font-weight:900;font-size:19px;line-height:1;color:var(--gold-deep)">${big}</span>
+        <span class="note" style="font-size:10.5px">${sub}</span>
+      </div>
+    </div>`;
+  const best = s.luck.length ? s.luck[0] : null, worst = s.luck.length ? s.luck[s.luck.length-1] : null;
+  const leaders = `
+    ${leader('Top Scorer','chart', s.byPf.owner, (s.byPf.pf/s.byPf.games).toFixed(1), 'points per game')}
+    ${leader('Best Record','rise', s.byRec.owner, `${s.byRec.w}-${s.byRec.l}`, `${s.byRec.pf.toFixed(1)} PF`)}
+    ${leader('Hottest Team','odds', s.hot.owner, s.hot.recentAvg.toFixed(1), `last 3 games &middot; season ${(()=>{const r=s.standings.find(x=>x.owner===s.hot.owner);return r?(r.pf/r.games).toFixed(1):'&mdash;'})()}`)}
+    ${best ? leader('Luckiest Team','star', best.id, (best.lr.luck>0?'+':'')+best.lr.luck.toFixed(1), `wins over expected`) : ''}`;
+
+  // progress ring
+  const pct = s.played/s.totalWeeks, R = 26, C = 2*Math.PI*R;
+  const ring = `<div class="card" style="padding:9px 12px">
+    ${lbl('Season Progress','schedule')}
+    <div style="display:flex;align-items:center;gap:12px">
+      <svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="${s.played} of ${s.totalWeeks} regular-season weeks played">
+        <circle cx="32" cy="32" r="${R}" fill="none" stroke="var(--line)" stroke-width="7"/>
+        <circle cx="32" cy="32" r="${R}" fill="none" stroke="var(--gold-deep)" stroke-width="7" stroke-linecap="round"
+          stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 32 32)"/>
+        <text x="32" y="36" text-anchor="middle" font-family="var(--font-display)" font-weight="900" font-size="14" fill="currentColor">${Math.round(pct*100)}%</text>
+      </svg>
+      <div>
+        <div style="font-family:var(--font-display);font-weight:900;font-size:19px;line-height:1">Wk ${s.played}<span style="color:var(--muted);font-size:13px"> of ${s.totalWeeks}</span></div>
+        <div class="note" style="font-size:10.5px;margin-top:3px">${s.totalWeeks-s.played} regular-season weeks left</div>
+      </div>
+    </div>
+  </div>`;
+
+  // sparkline
+  const W=150, H=38, pad=4;
+  const vals = s.weekAvg.map(x=>x.avg);
+  const vmin = Math.min(...vals), vmax = Math.max(...vals), span = (vmax-vmin)||1;
+  const px = i=> vals.length>1 ? pad + i*(W-2*pad)/(vals.length-1) : W/2;
+  const py = v=> pad + (1-(v-vmin)/span)*(H-2*pad);
+  const pts = vals.map((v,i)=>`${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+  const last = vals[vals.length-1], prev = vals.length>1 ? vals[vals.length-2] : null;
+  const d = prev==null ? null : last-prev;
+  const spark = `<div class="card" style="padding:9px 12px">
+    ${lbl('League Scoring by Week','timeline')}
+    <div style="display:flex;align-items:flex-end;gap:12px">
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="League average score by week" style="flex:none;overflow:visible">
+        <polyline points="${pts}" fill="none" stroke="var(--gold-deep)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        ${vals.map((v,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(v).toFixed(1)}" r="${i===vals.length-1?3.2:1.8}" fill="${i===vals.length-1?'var(--gold-deep)':'var(--panel)'}" stroke="var(--gold-deep)" stroke-width="1.2"><title>Week ${s.weekAvg[i].w}: ${v.toFixed(1)}</title></circle>`).join('')}
+      </svg>
+      <div>
+        <div style="font-family:var(--font-display);font-weight:900;font-size:19px;line-height:1">${last.toFixed(1)}</div>
+        <div style="font-size:10.5px;font-weight:700;color:${d==null?'var(--muted)':d>=0?'var(--green)':'var(--red)'}">${d==null?'&nbsp;':(d>=0?'&#9650; +':'&#9660; ')+d.toFixed(1)+' vs wk '+s.weekAvg[s.weekAvg.length-2].w}</div>
+      </div>
+    </div>
+    <p class="note" style="margin-top:4px;font-size:10.5px">avg team score each week &middot; season ${s.seasonAvg.toFixed(1)}</p>
+  </div>`;
+
+  // East vs West split bar
+  const [dA, dB] = s.divNames;
+  let split = '';
+  if(dA && dB){
+    const wA = s.cross[dA], wB = s.cross[dB], tot = Math.max(1, s.crossGames);
+    const ppgA = s.divN[dA] ? s.divPts[dA]/s.divN[dA] : 0, ppgB = s.divN[dB] ? s.divPts[dB]/s.divN[dB] : 0;
+    split = `<div class="card" style="padding:9px 12px">
+      ${lbl(`${dA} vs ${dB}`,'grid')}
+      <div style="display:flex;justify-content:space-between;font-family:var(--font-display);font-weight:900;font-size:19px;line-height:1">
+        <span>${wA}</span><span style="color:var(--muted)">${wB}</span>
+      </div>
+      <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0 4px" role="img" aria-label="${dA} ${wA} wins, ${dB} ${wB} wins in cross-division games">
+        <div style="width:${wA/tot*100}%;background:var(--gold-deep)"></div>
+        <div style="flex:1;background:var(--ink-soft,#6b6b6b);opacity:.55"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)">
+        <span>${dA}</span><span>${dB}</span>
+      </div>
+      <p class="note" style="margin-top:4px;font-size:10.5px">cross-division wins (${s.crossGames} games) &middot; PPG ${ppgA.toFixed(1)} vs ${ppgB.toFixed(1)}</p>
+    </div>`;
+  }
+
+  // histogram
+  const maxN = Math.max(...s.buckets.map(b=>b.n));
+  const medBucket = Math.min(s.buckets.length-1, Math.floor((s.median-s.buckets[0].from)/s.step));
+  const hist = `<div class="card" style="padding:9px 12px">
+    ${lbl('Score Distribution','sos')}
+    <div style="display:flex;align-items:flex-end;gap:3px;height:44px" role="img" aria-label="Histogram of all team scores this season">
+      ${s.buckets.map((b,i)=>`<div title="${b.from}&ndash;${b.from+s.step-1}: ${b.n} scores" style="flex:1;height:${Math.max(4,b.n/maxN*100)}%;background:${i===medBucket?'var(--gold-deep)':'var(--line)'};border-radius:2px 2px 0 0"></div>`).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>${s.buckets[0].from}</span><span>${s.buckets[s.buckets.length-1].from}+</span></div>
+    <p class="note" style="margin-top:2px;font-size:10.5px">${s.n} scores &middot; median ${s.median.toFixed(1)} (gold bar)</p>
+  </div>`;
+
+  return {leaders, ring, spark, split, hist};
+}
+
+// ---- Dashboard: mixed-format panels ------------------------------------------
+// Stat rows, a donut, a range-column chart, ranked bars, a diverging bar chart,
+// a three-bucket bar list and two small data tables. All inline SVG/HTML so they
+// render without the charting library. Regular season only.
+const DASH_POS_COLORS = {QB:'#b8892b', RB:'#2e7d4f', WR:'#3b6ea8', TE:'#7a5ca8', K:'#a83b3b', 'D/ST':'#6b6b6b'};
+
+function computeDashboardPanels(year){
+  const regWeeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff).sort((a,b)=>a.w-b.w);
+  if(!regWeeks.length) return null;
+  const totalWeeks = (FULL_SCHEDULE[year]||[]).filter(w=>!w.playoff).length || regWeeks.length;
+  const standings = computeCurrentStandings(year).filter(r=>r.games>0);
+  const games = regWeeks.flatMap(w=>w.g.map(([tA,sA,tB,sB])=>({week:w.w, tA, sA, tB, sB,
+    oA:ownerForTeam(year,tA), oB:ownerForTeam(year,tB), margin:Math.abs(sA-sB)})));
+  // points by position (starters only)
+  const pos = {QB:0,RB:0,WR:0,TE:0,K:0,'D/ST':0};
+  const weekSet = new Set(regWeeks.map(w=>String(w.w)));
+  const ps = PLAYER_SCORES[year] || {};
+  Object.keys(ps).forEach(wk=>{
+    if(!weekSet.has(wk)) return;
+    Object.values(ps[wk]).forEach(list=>list.forEach(p=>{ if(!p.bench && p.pos in pos) pos[p.pos]+=p.pts; }));
+  });
+  const ppg = standings.map(r=>({id:r.owner, v:r.pf/r.games})).sort((a,b)=>b.v-a.v);
+  const luck = standings.map(r=>{ const lr = luckRating(r.owner, year); return {id:r.owner, v:lr&&lr.luck!=null?lr.luck:0}; })
+    .sort((a,b)=>b.v-a.v);
+  const close = games.filter(g=>g.margin<10).length, mid = games.filter(g=>g.margin>=10&&g.margin<30).length, blow = games.filter(g=>g.margin>=30).length;
+  const scores = games.flatMap(g=>[{week:g.week, team:g.tA, owner:g.oA, pts:g.sA, opp:g.tB, won:g.sA>g.sB},
+                                    {week:g.week, team:g.tB, owner:g.oB, pts:g.sB, opp:g.tA, won:g.sB>g.sA}]);
+  const top = scores.slice().sort((a,b)=>b.pts-a.pts).slice(0,5);
+  const closest = games.slice().sort((a,b)=>a.margin-b.margin).slice(0,5);
+  const over120 = ppg.filter(x=>x.v>=120).length;
+  return {year, played:regWeeks.length, totalWeeks, pos, ppg, luck, close, mid, blow, n:games.length, top, closest, over120, teams:ppg.length};
+}
+
+function buildDashboardPanelParts(year){
+  const d = computeDashboardPanels(year);
+  if(!d) return null;
+  const panel = (title, icon, edge, body, extra)=>`<div class="card dash-panel" style="border-left:3px solid ${edge};padding:10px 14px;${extra||''}">
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin-bottom:8px">${iconSvg(icon,12)}${title}</div>${body}</div>`;
+  const rowStat = (label, big, word, color)=>`<div style="display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)">
+      <span style="flex:1;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">${label}</span>
+      <span style="font-family:var(--font-display);font-weight:900;font-size:22px;line-height:1;color:${color}">${big}</span>
+      <span style="width:84px;font-size:11px;color:var(--muted)">${word}</span></div>`;
+
+  // 1) overall status stat rows
+  const status = rowStat('Season', Math.round(d.played/d.totalWeeks*100)+'%', 'complete', 'var(--gold-deep)')
+    + rowStat('Close games', Math.round(d.close/d.n*100)+'%', 'decided by &lt;10', 'var(--green)')
+    + rowStat('120+ club', `${d.over120}<span style="font-size:13px;color:var(--muted)"> of ${d.teams}</span>`, 'teams averaging', 'var(--red)');
+
+  // 2) donut: points by position
+  const posTot = Object.values(d.pos).reduce((a,b)=>a+b,0)||1, R=44, C=2*Math.PI*R;
+  let off = 0;
+  const arcs = Object.keys(d.pos).map(k=>{
+    const frac = d.pos[k]/posTot, len = C*frac;
+    const el = `<circle cx="60" cy="60" r="${R}" fill="none" stroke="${DASH_POS_COLORS[k]}" stroke-width="18" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 60 60)"><title>${k}: ${(frac*100).toFixed(1)}%</title></circle>`;
+    off += len; return el;
+  }).join('');
+  const donut = `<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Share of starter points by position" style="flex:none">${arcs}
+      <text x="60" y="58" text-anchor="middle" font-family="var(--font-display)" font-weight="900" font-size="15" fill="currentColor">${Math.round(posTot).toLocaleString()}</text>
+      <text x="60" y="72" text-anchor="middle" font-size="8" fill="var(--muted)">starter pts</text></svg>
+    <div style="display:grid;grid-template-columns:auto auto;gap:3px 12px;font-size:11.5px">
+      ${Object.keys(d.pos).map(k=>`<span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${DASH_POS_COLORS[k]};margin-right:5px"></span>${k}</span><b>${(d.pos[k]/posTot*100).toFixed(1)}%</b>`).join('')}
+    </div></div>`;
+
+  // 4) ranked horizontal bars: scoring leaders
+  const maxP = Math.max(...d.ppg.map(x=>x.v));
+  const minP = Math.min(...d.ppg.map(x=>x.v))*0.8;
+  const bars = d.ppg.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:2px 0">
+      <span style="width:104px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${currentTeamName(x.id)}</span>
+      <div style="flex:1;height:9px;background:var(--panel2);border-radius:4px;overflow:hidden"><div style="width:${((x.v-minP)/(maxP-minP)*100).toFixed(1)}%;height:100%;background:${ownerColor(x.id)}"></div></div>
+      <b style="width:38px;text-align:right">${x.v.toFixed(1)}</b></div>`).join('');
+
+  // 5) diverging bars: luck
+  const maxL = Math.max(1, ...d.luck.map(x=>Math.abs(x.v)));
+  const lbars = d.luck.map(x=>{
+    const pct = Math.abs(x.v)/maxL*50;
+    return `<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:2px 0">
+      <span style="width:104px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${currentTeamName(x.id)}</span>
+      <div style="flex:1;position:relative;height:9px"><div style="position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--muted);opacity:.5"></div>
+        <div style="position:absolute;top:0;height:100%;border-radius:3px;background:${x.v>=0?'var(--green)':'var(--red)'};${x.v>=0?`left:50%;width:${pct}%`:`right:50%;width:${pct}%`}"></div></div>
+      <b style="width:34px;text-align:right;color:${x.v>=0?'var(--green)':'var(--red)'}">${x.v>=0?'+':''}${x.v.toFixed(1)}</b></div>`;
+  }).join('');
+
+  // 6) three-bucket bar list: game margins
+  const mx = Math.max(d.close, d.mid, d.blow, 1);
+  const bucket = (label, n, color)=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;margin:7px 0">
+      <span style="width:74px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;font-size:10px;font-weight:700">${label}</span>
+      <div style="flex:1;height:16px;background:var(--panel2);border-radius:3px;overflow:hidden"><div style="width:${n/mx*100}%;height:100%;background:${color}"></div></div>
+      <b style="width:22px;text-align:right">${n}</b></div>`;
+  const margins = bucket('Under 10', d.close, 'var(--green)') + bucket('10 to 30', d.mid, 'var(--gold)') + bucket('30 and up', d.blow, 'var(--red)')
+    + `<p class="note" style="font-size:10.5px;margin-top:6px">${d.n} games played</p>`;
+
+  // data strip
+  const th = 'style="text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:3px 6px"';
+  const topRows = d.top.map(t=>`<tr><td class="num-cell">${t.week}</td><td class="team-name">${currentTeamName(t.owner)}</td><td class="num-cell"><b>${t.pts.toFixed(1)}</b></td><td>${t.won?'W':'L'} vs ${t.opp}</td></tr>`).join('');
+  const closeRows = d.closest.map(g=>{ const w = g.sA>g.sB?g.oA:g.oB, l = g.sA>g.sB?g.oB:g.oA;
+    return `<tr><td class="num-cell">${g.week}</td><td class="team-name">${currentTeamName(w)}</td><td class="num-cell"><b>${g.margin.toFixed(2)}</b></td><td>over ${currentTeamName(l)}</td></tr>`; }).join('');
+  const strip = `<div style="border-top:2px dashed var(--line);margin-top:16px;padding-top:12px">
+    <div class="grid cols-2" style="gap:14px;align-items:start">
+      <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px">Top 5 Scores This Season</div>
+        <div class="table-wrap"><table class="table-compact"><thead><tr><th class="num-cell">Wk</th><th>Team</th><th class="num-cell">Score</th><th>Result</th></tr></thead><tbody>${topRows}</tbody></table></div></div>
+      <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px">Closest 5 Games</div>
+        <div class="table-wrap"><table class="table-compact"><thead><tr><th class="num-cell">Wk</th><th>Winner</th><th class="num-cell">Margin</th><th>Opponent</th></tr></thead><tbody>${closeRows}</tbody></table></div></div>
+    </div></div>`;
+  return {
+    status: panel('Overall Status','dashboard','var(--gold)',status),
+    donut: panel('Points by Position','chart','var(--green)',donut),
+    margins: panel('Game Margins','odds','var(--red)',margins),
+    leaders: panel('Scoring Leaders (PPG)','rise','var(--gold)',bars),
+    luck: panel('Luck Meter (wins vs expected)','star','var(--green)',lbars),
+    strip
+  };
+}
+
 function pageDashboard(){
   const years = Object.keys(MATCHUPS).map(Number);
   if(!years.length) return `<div class="section-title">Dashboard</div><p class="note">No data yet.</p>`;
@@ -10093,12 +10350,18 @@ function pageDashboard(){
   const nxt = nextUnplayedWeek();
 
   return `
-    <div class="section-title">${iconSvg('dashboard')}Dashboard</div>
-    <p class="note" style="margin-bottom:14px">Data current through ${nxt.lastPlayed ? `${year} Week ${nxt.lastPlayed}` : `the start of ${year}`}.</p>
+    <div id="jump-dash-kpis">${(()=>{
+      const sn = buildSeasonSnapshotParts(year), pn = buildDashboardPanelParts(year);
+      if(!sn || !pn) return '';
+      return `
+      <div class="grid cols-4">${renderLeagueKPIsHtml(computeLeagueKPIs())}${sn.ring}${sn.split}</div>
+      <div class="grid cols-4" style="margin-top:10px">${sn.leaders}</div>
+      <div class="grid cols-3" style="margin-top:10px">${pn.status}${pn.donut}${pn.margins}</div>
+      <div class="grid cols-2" id="jump-dash-panels" style="margin-top:10px">${pn.leaders}${pn.luck}</div>
+      ${pn.strip}`;
+    })()}</div>
 
-    <div id="jump-dash-kpis" style="margin-bottom:6px">${renderLeagueKPIsHtml(computeLeagueKPIs())}</div>
-
-    <div class="grid cols-2" style="align-items:start;gap:14px;margin-top:12px">
+    <div class="grid cols-2" style="align-items:start;gap:14px;margin-top:18px">
       <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
         <div>
           <div id="jump-dash-featured" class="section-title minor" style="margin-bottom:4px">${iconSvg('spotlight')}Most Interesting Game${nxt.week ? ` &mdash; Week ${nxt.week}` : ''}</div>
@@ -10110,29 +10373,17 @@ function pageDashboard(){
           ${renderRecordsWithinReachHtml(computeRecordsWithinReach(year))}
         </div>
 
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
         <div class="card" style="padding:12px 14px">
           <div id="jump-dash-funfacts" class="section-title minor" style="margin-bottom:8px">${iconSvg('star')}Interesting This Week <span class="sub">rotates on every visit</span></div>
           <div id="funFactsBody">${renderFunFactsHtml(drawFunFacts(year, 5))}</div>
           <button type="button" class="toggle-btn" style="margin-top:10px;width:100%;border-radius:6px" onclick="cycleFunFacts()">Show Me More &rarr;</button>
         </div>
       </div>
-
-      <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
-        <div>
-          <div id="jump-dash-standings" class="section-title minor" style="margin-bottom:4px">${iconSvg('standings')}Standings</div>
-          ${renderDashboardStandingsTable(year)}
-        </div>
-
-        <div>
-          <div id="jump-dash-power" class="section-title minor" style="margin-bottom:4px">${iconSvg('power')}Power Ranking Over Time</div>
-          ${(()=>{
-            const layout = buildPowerBumpLayout(year);
-            if(!layout.lines.length || !layout.weekLabels.length) return `<p class="note">Not enough weeks played yet to chart a progression.</p>`;
-            return `<div style="width:100%;aspect-ratio:${layout.width}/${layout.height};overflow:visible">${renderPowerBumpSVG(layout, layout.width)}</div>`;
-          })()}
-        </div>
-      </div>
     </div>
+
+    <p class="note" style="margin-top:20px;text-align:center">Data current through ${nxt.lastPlayed ? `${year} Week ${nxt.lastPlayed}` : `the start of ${year}`}.</p>
   `;
 }
 
@@ -10636,15 +10887,12 @@ function pageLiveSeason(){
       </div>
     </div>` : ''}
     ${renderJumpNav([
-      {id:'jump-cs-thisweek',label:'This Week'},{id:'jump-cs-standings',label:'Standings'},{id:'jump-cs-scenarios',label:'Scenarios'},
+      {id:'jump-cs-standings',label:'Standings'},{id:'jump-cs-scenarios',label:'Scenarios'},
       {id:'jump-primetime',label:'Primetime'},{id:'jump-cs-power',label:'Power Rankings'},{id:'jump-cs-positional',label:'Positional Strength'},
       {id:'jump-cup',label:"Commissioner's Cup"},{id:'jump-cs-bracket',label:'Bracket'},{id:'jump-cs-scout',label:'Scouting'},
       {id:'jump-cs-bench',label:'Bench'},{id:'jump-cs-rosters',label:'Rosters'},{id:'jump-cs-print',label:'Print Recaps'}
     ])}
-    <div id="jump-cs-thisweek" class="section-title">${iconSvg('spotlight')}This Week <span class="sub">Week ${nextUnplayedWeek().week||''} matchups</span></div>
-    ${renderThisWeekCardHtml(year, standings)}
-
-    <div id="jump-cs-standings" class="section-title" style="margin-top:24px">${iconSvg('standings')}Standings</div>
+    <div id="jump-cs-standings" class="section-title">${iconSvg('standings')}Standings</div>
     ${(()=>{
       const divNames = Object.keys(CURRENT_DIVISIONS);
       const covered = new Set(divNames.flatMap(d=>CURRENT_DIVISIONS[d]));
