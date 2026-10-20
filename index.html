@@ -484,6 +484,28 @@ if(typeof MATCHUPS==="undefined"){
   .dc-latest .dc-year{background:var(--gold);color:#1a1a1b;}
   .dc-foot{text-align:center;font-size:12px;padding:9px 12px;background:rgba(219,165,20,.14);border-top:1px solid var(--gold);color:var(--gold-deep);}
   .fd-more>summary{cursor:pointer;font-weight:700;color:var(--gold-deep);font-size:13px;}
+
+  /* ---- polish: sticky jump-nav, collapsible sections, column toggle, motion ---- */
+  .jump-nav{position:sticky;top:var(--jn-top,93px);z-index:40;background:var(--bg);padding-top:8px;margin-top:-8px;}
+  .jump-nav a.active{color:var(--gold-deep);border-bottom-color:var(--gold);}
+  .section-title{scroll-margin-top:calc(var(--jn-top,93px) + 52px);}
+  .section-title.sec-toggle{cursor:pointer;user-select:none;}
+  .section-title.sec-toggle::after{content:"\25BE";margin-left:10px;font-size:.8em;color:var(--muted);display:inline-block;transition:transform .2s ease;transform:rotate(-90deg);}
+  .section-title.sec-toggle.sec-open::after{transform:none;}
+  .section-title.sec-toggle:hover{color:var(--gold-deep);}
+  .sec-body[hidden]{display:none;}
+  .cols-toggle{display:inline-block;font-size:12px;font-weight:700;color:var(--gold-deep);background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:3px 12px;margin:0 0 6px;cursor:pointer;}
+  .cols-toggle:hover{border-color:var(--gold);}
+  table.cols-collapsed th:nth-child(n+9), table.cols-collapsed td:nth-child(n+9){display:none;}
+  .chart-pills{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .chart-pill{font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:16px;padding:5px 14px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
+  .chart-pill:hover{border-color:var(--gold);}
+  .chart-pill.active{background:var(--black);color:var(--gold);border-color:var(--black);}
+  @keyframes grow-x{from{transform:scaleX(0);}to{transform:scaleX(1);}}
+  .winprob-fill, .anim-bar{transform-origin:left center;animation:grow-x .5s ease-out both;}
+  tbody tr{transition:background-color .15s ease;}
+  @media (prefers-reduced-motion: reduce){ .winprob-fill, .anim-bar{animation:none;} tbody tr{transition:none;} }
+  @media print{ .sec-body[hidden]{display:block !important;} table.cols-collapsed th, table.cols-collapsed td{display:table-cell !important;} .cols-toggle{display:none;} .jump-nav{position:static;} }
   .info-i{border-bottom:none !important;cursor:help;color:var(--muted);font-size:.8em;font-weight:400;margin-left:4px;}
   .ticker-wrap{overflow:hidden;background:var(--black);border-radius:8px;margin:12px 0;padding:7px 0;white-space:nowrap;}
   .ticker-track{display:inline-flex;animation:ticker-scroll 32s linear infinite;}
@@ -4127,7 +4149,7 @@ const STATS_LAB_METRICS = {
   sos: { label:'SOS Index', higherBetter:true, format:v=>v.toFixed(1),
     get:(id,year)=>{ const row = computeSOS(year).find(r=>r.id===id); return row ? row.index : null; } },
   power: { label:'Power Ranking Score', higherBetter:true, format:v=>Math.round(v).toString(),
-    get:(id,year)=>{ const row = computePowerRankings(year).find(r=>r.owner===id); return row ? row.elo : null; } }
+    get:(id,year)=>{ const row = computePowerRankingsV2(year).find(r=>r.owner===id); return row ? row.powerScore : null; } }
 };
 
 // Single-season Stats Lab view: a percentile-rank strip in the same visual
@@ -4789,17 +4811,27 @@ function pageAnalytics(){
 
     <div id="jump-charts" class="section-title">Charts</div>
     <div class="chart-toolbar">
-      <select id="analyticsChartType" style="min-width:280px">
-        <option value="luck">Schedule Merchants (Wins Over/Under Expected)</option>
-        <option value="range">Team Scoring Range (boom/bust)</option>
-        <option value="pfpa">Points For vs. Points Against</option>
-        <option value="allplaywin">All-Play Win% vs. Actual Win%</option>
-        <option value="standings">Standings by Week</option>
-        <option value="power">Power Rankings Over Time</option>
-        <option value="radar">Team Profile (Radar)</option>
-        <option value="draftpos">Draft Position, Skill &amp; Final Standing</option>
-        <option value="hist">League-Wide Scoring Histogram</option>
-        <option value="primetime">Primetime PPG Differential</option>
+      <div class="chart-pills" id="analyticsChartPills">
+        <button type="button" class="chart-pill" data-chart="luck">Schedule Merchants</button>
+        <button type="button" class="chart-pill" data-chart="standings">Standings by Week</button>
+        <button type="button" class="chart-pill" data-chart="power">Power Rankings</button>
+        <button type="button" class="chart-pill" data-chart="pfpa">Points For vs. Against</button>
+      </div>
+      <select id="analyticsChartType" style="min-width:200px">
+        <optgroup label="Featured">
+          <option value="luck">Schedule Merchants (Wins Over/Under Expected)</option>
+          <option value="standings">Standings by Week</option>
+          <option value="power">Power Rankings Over Time</option>
+          <option value="pfpa">Points For vs. Points Against</option>
+        </optgroup>
+        <optgroup label="Explore more">
+          <option value="range">Team Scoring Range (boom/bust)</option>
+          <option value="allplaywin">All-Play Win% vs. Actual Win%</option>
+          <option value="radar">Team Profile (Radar)</option>
+          <option value="draftpos">Draft Position, Skill &amp; Final Standing</option>
+          <option value="hist">League-Wide Scoring Histogram</option>
+          <option value="primetime">Primetime PPG Differential</option>
+        </optgroup>
       </select>
       <div id="analyticsRadarControls" style="display:none">
         <select id="radarTeam">${radarIds.map(id=>`<option value="${id}">${currentTeamName(id)}</option>`).join("")}</select>
@@ -5189,7 +5221,7 @@ const _chartInstances = {};
 // A quick jump-nav bar for long pages -- items: [{id, label}, ...].
 function renderJumpNav(items){
   return `<div class="jump-nav">
-    ${items.map(i=>`<a href="#${i.id}" onclick="event.preventDefault();var e=document.getElementById('${i.id}');if(e)e.scrollIntoView({behavior:'smooth',block:'start'});">${i.label}</a>`).join("")}
+    ${items.map(i=>`<a href="#${i.id}" onclick="event.preventDefault();var e=document.getElementById('${i.id}');if(e){if(window.openSection)openSection(e);e.scrollIntoView({behavior:'smooth',block:'start'});}">${i.label}</a>`).join("")}
   </div>`;
 }
 
@@ -5302,8 +5334,7 @@ function renderPFPAChart(year){
       const highScore = r.x>=avgX, highAgainst = r.y>=avgY;
       if(highScore && !highAgainst) r.color = '#3D7A4E';      // green: high scoring, lucky
       else if(!highScore && highAgainst) r.color = '#B23B3B'; // red: low scoring, bad luck
-      else if(highScore && highAgainst) r.color = '#C99A3E';  // amber: high scoring, bad luck
-      else r.color = '#2F5D8A';                                // blue: low scoring, lucky
+      else r.color = '#9A927E';                                // gray: mixed
     });
 
     // Team name labels: greedy placement that tries a few offsets around each point
@@ -5360,8 +5391,7 @@ function renderAllPlayWinPctChart(year){
       const highActual = r.x>=avgX, highAllPlay = r.y>=avgY;
       if(highActual && highAllPlay) r.color = '#3D7A4E';        // green: winning and deserving it
       else if(!highActual && !highAllPlay) r.color = '#B23B3B'; // red: losing and deserving it
-      else if(highActual && !highAllPlay) r.color = '#C99A3E';  // amber: record better than the process -- lucky
-      else r.color = '#2F5D8A';                                  // blue: process better than the record -- unlucky
+      else r.color = '#9A927E';                                  // gray: record and process disagree
     });
 
     const teamLabelPlugin = makeTeamLabelPlugin(rows);
@@ -5519,6 +5549,8 @@ function renderDraftValueCurveChart(){
   });
 }
 
+// Restrained line palette: gold accent first, then charcoal and neutral tones.
+const LINE_PALETTE = ['#DBA514','#282829','#5E7186','#9A927E','#8F6B0D','#B8B2A2','#4A4A4C','#C9A94D','#7C8A99','#6B6455','#D8C58A','#A0A8B0'];
 function renderStandingsChart(year){
   renderStaticChart('chartAnalyticsMain', canvas=>{
     const {weekLabels, series, ids} = computeStandingsByWeek(year);
@@ -5526,7 +5558,7 @@ function renderStandingsChart(year){
       type:'line',
       data:{
         labels: weekLabels.map(w=>'Wk '+w),
-        datasets: ids.map(id=>({ label:currentTeamName(id), data:series[id], borderColor:ownerColor(id), backgroundColor:ownerColor(id), tension:0.15, pointRadius:3, borderWidth:2.5, hidden: !(series[id] && series[id].length && series[id][series[id].length-1]<=3) }))
+        datasets: (()=>{ const lastOf=id=>{ const a=series[id]||[]; return a.length?a[a.length-1]:99; }; const order=[...ids].sort((a,b)=>lastOf(a)-lastOf(b)); return ids.map(id=>{ const c=LINE_PALETTE[order.indexOf(id)%LINE_PALETTE.length]; return {id,c}; }); })().map(({id,c})=>({ label:currentTeamName(id), data:series[id], borderColor:c, backgroundColor:c, tension:0.15, pointRadius:3, borderWidth:2.5, hidden: !(series[id] && series[id].length && series[id][series[id].length-1]<=3) }))
       },
       options:{ maintainAspectRatio:false,
         plugins:{ legend:{position:'bottom', labels:{boxWidth:10, font:{size:10}}} },
@@ -5549,7 +5581,7 @@ function renderStatsLabChart(teamIds, years, metricKey){
         datasets: teamIds.map(id=>({
           label: currentTeamName(id),
           data: years.map(y=>metric.get(id,y)),
-          borderColor: ownerColor(id), backgroundColor: ownerColor(id),
+          borderColor: LINE_PALETTE[teamIds.indexOf(id)%LINE_PALETTE.length], backgroundColor: LINE_PALETTE[teamIds.indexOf(id)%LINE_PALETTE.length],
           tension:0.2, pointRadius:3, borderWidth:2, spanGaps:true
         }))
       },
@@ -8962,24 +8994,7 @@ function computePowerRankings(year, throughWeek){
     .map((r,i)=>({...r, rank:i+1}));
 }
 
-// ---- Power Rankings v2: a composite "Power Score" blending three signals
-// instead of Elo alone -- (1) Elo rating (results + margin of victory,
-// persists across seasons), (2) point differential per game vs. league
-// average (pure scoring dominance), (3) current roster Site Model value
-// (the same dynasty-value engine behind the Trade Calculator -- underlying
-// roster strength, independent of schedule luck), and (4) recent-form
-// momentum (last-3-games average vs. that team's own season average, so a
-// hot or cold stretch shows up even before Elo has fully caught up to it).
-// Each signal is standardized to a z-score across the league first, since
-// the four run on different scales (Elo points, PPG, a 100-pivot index,
-// PPG again), then blended by the weights below and rescaled onto a
-// familiar base-100 index (one standard deviation of the composite = 15
-// points, roughly matching Elo's own spread). Elo keeps the largest weight
-// since it's the only signal built from actual head-to-head results;
-// Roster value (teamRosterValueIndex) was pulled out of the blend for now
-// while it gets fleshed out; the other three weights are the old 40/20/15
-// rescaled proportionally to sum to 100% (40/75, 20/75, 15/75).
-const POWER_V2_WEIGHTS = { elo: 0.40/0.75, pointDiff: 0.20/0.75, momentum: 0.15/0.75 };
+// ---- Power Rankings: see POWER_V3_WEIGHTS / computePowerRankingsV2 below. Elo (computePowerRankings) is kept only as the base roster of teams and for the Elo glossary term.
 function zScores(values){
   const n = values.length;
   if(!n) return [];
@@ -9077,29 +9092,47 @@ function renderPositionalHeatmapHtml(){
     </div>
   `;
 }
+// Power Score (v3): 40% actual win%, 25% last-3 average PF, 20% Pythagorean win%,
+// 15% all-play win%. Each input is a z-score across the league, rescaled to a base of 100.
+const POWER_V3_WEIGHTS = { win:0.40, last3:0.25, pyth:0.20, allPlay:0.15 };
 function computePowerRankingsV2(year, throughWeek){
   const base = computePowerRankings(year, throughWeek);
   if(!base.length) return base;
   const standings = throughWeek!=null ? computeStandingsThroughWeek(year, throughWeek) : computeCurrentStandings(year);
   const standingsById = {}; standings.forEach(r=>{ standingsById[r.owner] = r; });
+  // all-play win% through the chosen week
+  const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff && (throughWeek==null || w.w<=throughWeek));
+  const apW = {}, apN = {};
+  weeks.forEach(wk=>{
+    const m = {};
+    wk.g.forEach(([tA,sA,tB,sB])=>{ const a=ownerForTeam(year,tA), b=ownerForTeam(year,tB); if(a) m[a]=sA; if(b) m[b]=sB; });
+    const ids = Object.keys(m);
+    ids.forEach(id=>{ ids.forEach(o=>{ if(o===id) return; apN[id]=(apN[id]||0)+1; apW[id]=(apW[id]||0)+(m[id]>m[o]?1:m[id]===m[o]?0.5:0); }); });
+  });
   const rows = base.map(r=>{
     const s = standingsById[r.owner];
-    const pointDiff = s && s.games ? (s.pf - s.pa)/s.games : 0;
-    const seasonAvg = s && s.games ? s.pf/s.games : r.recentAvg;
+    const g = s && s.games ? s.games : r.games;
+    const pf = s ? s.pf : 0, pa = s ? s.pa : 0;
+    const pointDiff = g ? (pf - pa)/g : 0;
+    const seasonAvg = g ? pf/g : r.recentAvg;
     const momentum = r.recentAvg - seasonAvg;
-    return { ...r, pointDiff, momentum };
+    const winPct = r.games ? r.w/r.games : 0;
+    const pyth = (pf>0 && pa>0) ? Math.pow(pf,2.4)/(Math.pow(pf,2.4)+Math.pow(pa,2.4)) : 0.5;
+    const allPlay = apN[r.owner] ? apW[r.owner]/apN[r.owner] : 0.5;
+    return { ...r, pf, pointDiff, momentum, winPct, pyth, allPlay };
   });
-  const eloZ = zScores(rows.map(r=>r.elo));
-  const diffZ = zScores(rows.map(r=>r.pointDiff));
-  const momZ = zScores(rows.map(r=>r.momentum));
-  const w = POWER_V2_WEIGHTS;
+  const zW = zScores(rows.map(r=>r.winPct));
+  const zL = zScores(rows.map(r=>r.recentAvg));
+  const zP = zScores(rows.map(r=>r.pyth));
+  const zA = zScores(rows.map(r=>r.allPlay));
+  const w = POWER_V3_WEIGHTS;
   return rows.map((r,i)=>{
-    const compositeZ = w.elo*eloZ[i] + w.pointDiff*diffZ[i] + w.momentum*momZ[i];
-    const powerScore = 100 + compositeZ*15;
-    return { ...r, powerScore };
-  }).sort((a,b)=>b.powerScore-a.powerScore)
+    const compositeZ = w.win*zW[i] + w.last3*zL[i] + w.pyth*zP[i] + w.allPlay*zA[i];
+    return { ...r, powerScore: 100 + compositeZ*15 };
+  }).sort((a,b)=>b.powerScore-a.powerScore || b.pf-a.pf)
     .map((r,i)=>({ ...r, rank:i+1 }));
 }
+
 
 // Power Rankings recomputed as of the end of each week, so the weekly rank
 // movement (not just the current snapshot) can be charted -- same Elo engine
@@ -9117,7 +9150,7 @@ function computePowerRankingsByWeek(year){
   const series = {}; ids.forEach(id=>{ series[id] = []; });
   const weekLabels = [];
   weeks.forEach(week=>{
-    const ranked = computePowerRankings(year, week.w);
+    const ranked = computePowerRankingsV2(year, week.w);
     const rankById = {}; ranked.forEach(r=>{ rankById[r.owner] = r.rank; });
     ids.forEach(id=>{ series[id].push(rankById[id]!=null ? rankById[id] : null); });
     weekLabels.push(week.w);
@@ -10355,7 +10388,7 @@ function renderLeagueKPIsHtml(kpis){
   const cell = k=>`
     <div style="min-width:0" title="${k.label}: ${k.note}">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);white-space:nowrap">${k.label}</div>
-      <div style="font-family:var(--font-display);font-weight:900;font-size:24px;line-height:1.15;margin-top:3px">${k.season}</div>
+      <div class="kpi-num" style="font-family:var(--font-display);font-weight:900;font-size:24px;line-height:1.15;margin-top:3px">${k.season}</div>
       <div style="font-size:11px;color:var(--muted);line-height:1.3">${k.allTime} <span style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.03em">all-time</span></div>
       <div class="note" style="font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.note}</div>
     </div>`;
@@ -11637,7 +11670,7 @@ function buildDashboardPanelParts(year){
   const minP = Math.min(...d.ppg.map(x=>x.v))*0.8;
   const bars = d.ppg.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:2px 0">
       <span style="width:104px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${currentTeamName(x.id)}</span>
-      <div style="flex:1;height:9px;background:var(--panel2);border-radius:4px;overflow:hidden"><div style="width:${((x.v-minP)/(maxP-minP)*100).toFixed(1)}%;height:100%;background:${ownerColor(x.id)}"></div></div>
+      <div style="flex:1;height:9px;background:var(--panel2);border-radius:4px;overflow:hidden"><div class="anim-bar" style="width:${((x.v-minP)/(maxP-minP)*100).toFixed(1)}%;height:100%;background:${ownerColor(x.id)}"></div></div>
       <b style="width:38px;text-align:right">${x.v.toFixed(1)}</b></div>`).join('');
 
   // 5) diverging bars: luck
@@ -12227,7 +12260,7 @@ function pageLiveSeason(){
     </div>` : ''}
     ${renderJumpNav([
       {id:'jump-cs-standings',label:'Standings'},{id:'jump-cs-scenarios',label:'Scenarios'},
-      {id:'jump-primetime',label:'Primetime'},{id:'jump-cs-power',label:'Power Rankings'},{id:'jump-cs-positional',label:'Positional Strength'},
+      {id:'jump-cs-power',label:'Power Rankings'},{id:'jump-primetime',label:'Primetime'},{id:'jump-cs-positional',label:'Positional Strength'},
       {id:'jump-cup',label:"Commissioner's Cup"},{id:'jump-cs-bracket',label:'Bracket'},{id:'jump-cs-scout',label:'Scouting'},
       {id:'jump-cs-bench',label:'Bench'},{id:'jump-cs-rosters',label:'Rosters'},{id:'jump-cs-print',label:'Print Recaps'}
     ])}
@@ -12314,6 +12347,35 @@ function pageLiveSeason(){
     <div id="jump-cs-scenarios" class="section-title" style="margin-top:24px;">${iconSvg('target')}Playoff Scenarios <span class="sub">what each team needs to make the playoffs</span></div>
     <div id="scenarioWrap">${(()=>{ const w = nextUnplayedWeek(); const left = ((FULL_SCHEDULE[year]||[]).filter(x=>!x.playoff).length) - (MATCHUPS[year]||[]).filter(x=>!x.playoff).length; return left<=SCENARIO_WEEKS_LEFT && left>0 ? '<p class="note">Working out every scenario&hellip;</p>' : renderPlayoffScenariosHtml(year); })()}</div>
 
+    <div id="jump-cs-power" class="section-title" style="margin-top:24px;">${iconSvg('power')}Power Rankings</div>
+    <div class="table-wrap" style="max-width:760px">
+    <table class="sortable table-compact">
+      <thead><tr><th>#</th><th>Team</th><th class="num-cell">Record</th><th class="num-cell" data-tip="Average of the last 3 games played.">Last 3 Avg</th><th class="num-cell" data-tip="Composite Power Score: 40% win%, 25% last-3 average PF, 20% Pythagorean win%, 15% all-play win%. Base 100.">Power Score</th><th data-tip="Power Rankings rank, week by week this season. Green = trending up, red = trending down.">Trend</th></tr></thead>
+      <tbody>
+        ${powerNow.map(r=>{
+          const prev = prevRankById[r.owner];
+          let moveHtml = `<span class="note">&mdash;</span>`;
+          if(prev!=null){
+            const delta = prev - r.rank;
+            if(delta>0) moveHtml = `<span class="luck-pos">&#9650;${delta}</span>`;
+            else if(delta<0) moveHtml = `<span class="luck-neg">&#9660;${Math.abs(delta)}</span>`;
+            else moveHtml = `<span class="note">&#9679;</span>`;
+          }
+          return `<tr data-owner="${r.owner}" class="focus-row-target">
+            <td class="num-cell">${r.rank} <span style="font-size:10px">${moveHtml}</span></td>
+            <td class="team-name">${currentTeamName(r.owner)}</td>
+            <td class="num-cell">${r.w}-${r.l}</td>
+            <td class="num-cell">${r.recentAvg.toFixed(1)}</td>
+            <td class="num-cell" title="Win ${(r.winPct*100).toFixed(0)}% &middot; Last 3 ${r.recentAvg.toFixed(1)} &middot; Pythagorean ${(r.pyth*100).toFixed(0)}% &middot; All-play ${(r.allPlay*100).toFixed(0)}%">${Math.round(r.powerScore)}</td>
+            <td>${renderRankSparkline(rankByWeek.series[r.owner]||[], rankByWeek.ids.length)}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+    </div>
+    <p class="note" style="margin-top:6px">Power Score (100 = average): 40% win% &middot; 25% last-3 average PF &middot; 20% Pythagorean win% &middot; 15% all-play win%.</p>
+
+
     <div id="jump-primetime" class="section-title" style="margin-top:24px;">${iconSvg('spotlight')}Primetime Performance</div>
     ${(()=>{
       const trackedWeeks = Object.keys(PRIMETIME_SCHEDULE[year]||{}).map(Number).sort((a,b)=>a-b);
@@ -12373,35 +12435,6 @@ function pageLiveSeason(){
       </div>`;
     })()}
 
-    <div id="jump-cs-power" class="section-title" style="margin-top:24px;">${iconSvg('power')}Power Rankings</div>
-    <div class="table-wrap" style="max-width:760px">
-    <table class="sortable table-compact">
-      <thead><tr><th>#</th><th>Team</th><th class="num-cell">Record</th><th class="num-cell" data-tip="Average of the last 3 games played.">Last 3 Avg</th><th class="num-cell" data-tip="Opponents faced so far, indexed on their win% and PF/g vs. league average. 100 = average schedule.">SOS</th><th class="num-cell" data-tip="Composite Power Score: 53% Elo, 27% point differential/game, 20% recent-form momentum. Base 100.">Power Score</th><th data-tip="Power Rankings rank, week by week this season. Green = trending up, red = trending down.">Trend</th></tr></thead>
-      <tbody>
-        ${powerNow.map(r=>{
-          const prev = prevRankById[r.owner];
-          let moveHtml = `<span class="note">&mdash;</span>`;
-          if(prev!=null){
-            const delta = prev - r.rank;
-            if(delta>0) moveHtml = `<span class="luck-pos">&#9650;${delta}</span>`;
-            else if(delta<0) moveHtml = `<span class="luck-neg">&#9660;${Math.abs(delta)}</span>`;
-            else moveHtml = `<span class="note">&#9679;</span>`;
-          }
-          return `<tr data-owner="${r.owner}" class="focus-row-target">
-            <td class="num-cell">${r.rank} <span style="font-size:10px">${moveHtml}</span></td>
-            <td class="team-name">${currentTeamName(r.owner)}</td>
-            <td class="num-cell">${r.w}-${r.l}</td>
-            <td class="num-cell">${r.recentAvg.toFixed(1)}</td>
-            <td class="num-cell">${r.sos!=null ? r.sos.toFixed(0) : '&mdash;'}</td>
-            <td class="num-cell" title="Elo ${Math.round(r.elo)} &middot; Point diff/g ${r.pointDiff>=0?'+':''}${r.pointDiff.toFixed(1)} &middot; Momentum ${r.momentum>=0?'+':''}${r.momentum.toFixed(1)}">${Math.round(r.powerScore)}</td>
-            <td>${renderRankSparkline(rankByWeek.series[r.owner]||[], rankByWeek.ids.length)}</td>
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table>
-    </div>
-    <p class="note" style="margin-top:6px">Power Score (100 = average): 53% Elo &middot; 27% point differential per game &middot; 20% recent form (last 3 vs. season average).</p>
-
     <div id="jump-cs-positional" class="section-title" style="margin-top:24px;">${iconSvg('power')}Positional Strength <span class="info-i" data-tip="Average Site Model trade value of each team&#39;s best healthy lineup at each position (QB, RB, WR, TE, FLEX). IR players are excluded.">&#9432;</span></div>
     
     ${renderPositionalHeatmapHtml()}
@@ -12457,7 +12490,7 @@ function pageLiveSeason(){
     <div class="footnotes">
       <p>SOS is average opponent scoring pace so far this season, indexed to a league-average schedule of 100 (110 = 10% tougher than average, 90 = 10% easier).</p>
       <p>All-Play Record compares each team's weekly score against every OTHER team's score that week, not just their actual opponent &mdash; a truer read on who's really playing well than the schedule-dependent real record, especially early in a season.</p>
-      <p>Power Rankings are a composite Power Score -- 53% Elo (a persistent strength rating that carries across seasons, with some regression to the mean at each year's start, moving more after a blowout than a close game), 27% point differential per game, and 20% recent-form momentum (last 3 games vs. this team's own season average). The up/down arrow compares to the ranking as of the prior week.</p>
+      <p>Power Rankings are a composite Power Score -- 40% actual win%, 25% last-3 average points for, 20% Pythagorean win% (the win% implied by points for and against, exponent 2.4), and 15% all-play win% (record against all 11 teams every week). Each input is standardized across the league and rescaled so 100 is average. The up/down arrow compares to the ranking as of the prior week.</p>
       <p>Championship Odds run 5,000 simulated seasons using this season's data only: each remaining game is scored using each team's own projected points-per-game (blended from this season's actual PPG and their current roster's Site Model-implied scoring, weighted toward the roster the fewer games they've played) and that team's own week-to-week scoring volatility, shrunk toward the league-wide figure for small samples -- so a historically streaky roster is simulated with wider variance than a steady one. Standings are ranked by simulated wins (ties by points for). Each division's leader auto-qualifies and gets a top-two seed per League Bylaws Article V.1, with the remaining ${CURRENT_SEASON_PLAYOFF_SPOTS-2} spots going to the next-best records league-wide; that ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field plays out a simulated single-elimination bracket. Hover a team's Playoff Odds cell for their projected final record and how often they land the overall 1-seed. Divisions for the season in progress are entered by hand and the format is an assumption until the real bracket is set &mdash; treat these as rough odds, not certainties, especially in the season's first few weeks when there's little current-season data to project from.</p>
       <p>Print Recaps: pick a week or season above and click Print &mdash; only the recap prints, not the rest of the page.</p>
     </div>
@@ -12502,7 +12535,7 @@ function buildScoutingReportHtml(year, idA, idB){
   const rowA = standings.find(r=>r.owner===idA), rowB = standings.find(r=>r.owner===idB);
   if(!rowA || !rowB) return `<p class="note">No current-season data for one of these teams yet.</p>`;
   const sosRows = computeSOS(year); const sosById = {}; sosRows.forEach(r=>{ sosById[r.id]=r; });
-  const power = computePowerRankings(year); const powerById = {}; power.forEach(r=>{ powerById[r.owner]=r; });
+  const power = computePowerRankingsV2(year); const powerById = {}; power.forEach(r=>{ powerById[r.owner]=r; });
   const allPlay = computeAllPlayRecord(year); const allPlayById = {}; allPlay.forEach(r=>{ allPlayById[r.owner]=r; });
   const h2h = h2hRecord(idA, idB);
   const games = allGames().filter(g=>g.year===year && ((g.oA===idA&&g.oB===idB)||(g.oA===idB&&g.oB===idA))).sort((x,y)=>x.week-y.week);
@@ -12592,7 +12625,7 @@ const GLOSS_TIPS = {
   "PLAYOFF%": "Chance of making the playoffs, from simulating the rest of the season.",
   "TITLE%": "Chance of winning the championship, from simulating the rest of the season.",
   "MAGIC #": "Combined wins by this team (and losses by the team on the bubble) needed to clinch a playoff spot, or to stay alive if currently out.",
-  "POWER SCORE": "Composite index (100 = average): 53% Elo rating, 27% point differential per game, 20% recent form.",
+  "POWER SCORE": "Composite index (100 = average): 40% win%, 25% last-3 average PF, 20% Pythagorean win%, 15% all-play win%.",
   "ELO": "Elo rating: a strength score that rises with wins and moves more after a blowout than a close game."
 };
 const GLOSS_INLINE = {
@@ -12642,7 +12675,7 @@ const GLOSSARY = [
   {term:"SOS (Strength of Schedule)", def:"Indexed to that season's league-average schedule at 100, based on the average points-per-game of a team's opponents. 110 means a schedule 10% tougher than average; 90 means 10% easier."},
   {term:"Playoff Qualifiers", def:"The teams that actually made the real playoff bracket that year (6 teams in 2024, 7 in 2025) &mdash; separate from the consolation/placement ladder played by everyone else."},
   {term:"Playoff Odds / Title Odds (Current Season Standings)", def:`Come from a 5,000-simulation Monte Carlo projection of the rest of the season, blending each team's own PPG with their current roster's Site Model-implied scoring and each team's own week-to-week volatility, and a ${CURRENT_SEASON_PLAYOFF_SPOTS}-team playoff bracket: both division winners auto-qualify and get the top two seeds, and the rest of the field is filled by record league-wide.`},
-  {term:"Power Score (Current Season Power Rankings)", def:"A composite index blending Elo (53%), point differential per game (27%), and recent-form momentum (20%) into one base-100 number, replacing a plain Elo-only ranking."},
+  {term:"Power Score (Current Season Power Rankings)", def:"A composite index blending actual win% (40%), last-3 average points (25%), Pythagorean win% (20%) and all-play win% (15%) into one base-100 number."},
   {term:"Team Profile radar axes", def:"Reg. Season W% covers all four seasons (2022&ndash;2025). Playoff W%, High Scoring, Luck, Consistency, and Record vs. Playoff Teams are 2024&ndash;2025 only. Each axis is scaled 0&ndash;100 relative to the rest of the league. Consistency rewards a smaller week-to-week scoring swing, not higher scoring."},
   {term:"Draft Phase buckets", def:"Draft Tendencies groups picks into R1, R2-4, R5-8, R9-12, and R13-16 to show which positions a manager prioritizes at each stretch of the draft."},
   {term:"Standings Boost/Drop", def:"Compares a team's cumulative regular-season rank right before and right after a given week &mdash; a simple proxy for how much that week's results reshuffled the race. Not a true playoff-odds simulation."},
@@ -15220,7 +15253,7 @@ function attachPageHandlers(){
         renderHistogramChart(years.length>1 ? years : year);
       }
       else {
-        if(noteEl) noteEl.textContent = type==="draftpos" ? `Each dot is one team's season: horizontal position is where they drafted, vertical position is where they finished, and color is how well they actually drafted that year (red = below the league's own baseline, green = above it). Compare the two to see whether draft position or draft skill tracks final standing more closely.${years.length>1 ? ` Showing ${years[0]}–${years[years.length-1]}.` : ` Showing ${year}.`}` : (type==="allplaywin" ? `All-Play Win% is each team's record if they'd played every other team every week, not just their actual opponent.${yearSuffix} A team above the dashed lines on both axes is legitimately good; one with a strong all-play mark but a weak actual record has run into tough matchup timing.` : (type==="power" ? `Power Rank is an Elo rating that carries across seasons and moves more after a blowout than a close game, recomputed as of each week${yearSuffix}. Hit Slomo Progression for a zoomed-in, panning replay of the whole league's movement week by week.` : (type==="pfpa" ? `Each dot is a team: points scored runs left to right, points allowed runs top to bottom (fewer allowed is higher). The dashed lines are league averages, so the corners separate high and low scorers who got lucky or unlucky schedules.${yearSuffix}` : (type==="standings" ? `Cumulative rank after each regular-season week, with rank 1 at the top${yearSuffix}. The current top three show by default. Click a team in the legend to add or hide its line.` : (type==="radar" ? `Each axis is scored 0 to 100 against the other 11 teams (100 = best in the league). Pick a second team to overlay for a head-to-head comparison. Playoff axes only use seasons with a bracket on record.` : "")))));
+        if(noteEl) noteEl.textContent = type==="draftpos" ? `Each dot is one team's season: horizontal position is where they drafted, vertical position is where they finished, and color is how well they actually drafted that year (red = below the league's own baseline, green = above it). Compare the two to see whether draft position or draft skill tracks final standing more closely.${years.length>1 ? ` Showing ${years[0]}–${years[years.length-1]}.` : ` Showing ${year}.`}` : (type==="allplaywin" ? `All-Play Win% is each team's record if they'd played every other team every week, not just their actual opponent.${yearSuffix} A team above the dashed lines on both axes is legitimately good; one with a strong all-play mark but a weak actual record has run into tough matchup timing.` : (type==="power" ? `Power Rank is a composite of win% (40%), last-3 average PF (25%), Pythagorean win% (20%) and all-play win% (15%), recomputed as of each week${yearSuffix}. Hit Slomo Progression for a zoomed-in, panning replay of the whole league's movement week by week.` : (type==="pfpa" ? `Each dot is a team: points scored runs left to right, points allowed runs top to bottom (fewer allowed is higher). The dashed lines are league averages, so the corners separate high and low scorers who got lucky or unlucky schedules.${yearSuffix}` : (type==="standings" ? `Cumulative rank after each regular-season week, with rank 1 at the top${yearSuffix}. The current top three show by default. Click a team in the legend to add or hide its line.` : (type==="radar" ? `Each axis is scored 0 to 100 against the other 11 teams (100 = best in the league). Pick a second team to overlay for a head-to-head comparison. Playoff axes only use seasons with a bracket on record.` : "")))));
         if(type==="pfpa") renderPFPAChart(year);
         else if(type==="allplaywin") renderAllPlayWinPctChart(year);
         else if(type==="standings") renderStandingsChart(year);
@@ -15333,6 +15366,10 @@ function attachPageHandlers(){
       refreshEverything();
     }));
     if(analyticsChartType) analyticsChartType.addEventListener("change", updateAnalyticsChart);
+    const chartPills = document.querySelectorAll('#analyticsChartPills .chart-pill');
+    const syncPills = ()=>{ chartPills.forEach(b=>b.classList.toggle('active', analyticsChartType && b.dataset.chart===analyticsChartType.value)); };
+    chartPills.forEach(b=>b.addEventListener('click', ()=>{ if(!analyticsChartType) return; analyticsChartType.value=b.dataset.chart; analyticsChartType.dispatchEvent(new Event('change')); }));
+    if(analyticsChartType){ analyticsChartType.addEventListener('change', syncPills); syncPills(); }
     if(scoringTableType) scoringTableType.addEventListener("change", refreshScoringLuckTable);
     if(radarTeam) radarTeam.addEventListener("change", updateAnalyticsChart);
     if(radarTeam2) radarTeam2.addEventListener("change", updateAnalyticsChart);
@@ -15987,6 +16024,92 @@ window.addEventListener("afterprint", ()=>{
 });
 
 
+
+// ---- Page polish: collapsible sections, wide-table column toggle, count-up numbers, sticky jump-nav scrollspy ----
+const COLLAPSE_SECTION_IDS = ['jump-cs-bench','jump-cs-rosters','jump-cs-print','jump-phase','jump-position','jump-diamonds','jump-diamondspos','jump-injury','jump-bestworst','jump-teamreports','jump-th-percentiles'];
+function openSection(title){
+  if(!title || !title.classList || !title.classList.contains('sec-toggle')) return;
+  const body = title.nextElementSibling;
+  if(body && body.classList.contains('sec-body') && body.hidden){ body.hidden=false; title.classList.add('sec-open'); }
+}
+function collapseSections(app){
+  COLLAPSE_SECTION_IDS.forEach(id=>{
+    const t = document.getElementById(id);
+    if(!t || !app.contains(t) || t.dataset.secDone || !t.classList.contains('section-title')) return;
+    t.dataset.secDone="1";
+    const body = document.createElement('div'); body.className='sec-body'; body.hidden=true;
+    let n = t.nextElementSibling;
+    while(n && !n.classList.contains('section-title') && !n.classList.contains('footnotes') && !n.classList.contains('th-sticky')){
+      const nx = n.nextElementSibling; body.appendChild(n); n = nx;
+    }
+    t.after(body);
+    t.classList.add('sec-toggle');
+    t.addEventListener('click', e=>{
+      if(e.target.closest('.info-i')) return;
+      body.hidden = !body.hidden; t.classList.toggle('sec-open', !body.hidden);
+      if(!body.hidden) window.dispatchEvent(new Event('resize'));
+    });
+  });
+}
+function collapseWideTables(app){
+  app.querySelectorAll('table.sortable, table.table-compact').forEach(tb=>{
+    if(tb.dataset.colsDone) return;
+    const heads = tb.querySelectorAll('thead tr');
+    if(heads.length!==1 || [...tb.querySelectorAll('[colspan]')].some(c=>!c.closest('.playoff-line-row'))) { tb.dataset.colsDone="skip"; return; }
+    if(tb.closest('.heatmap-wrap, .no-collapse, .report-card, .trading-card')) { tb.dataset.colsDone="skip"; return; }
+    const n = heads[0].children.length;
+    if(n<=9){ tb.dataset.colsDone="skip"; return; }
+    tb.dataset.colsDone="1";
+    tb.classList.add('cols-collapsed');
+    const wrap = tb.closest('.table-wrap') || tb;
+    const btn = document.createElement('button'); btn.type='button'; btn.className='cols-toggle no-print';
+    const label = ()=> tb.classList.contains('cols-collapsed') ? `Show all ${n} columns` : 'Show fewer columns';
+    btn.textContent = label();
+    btn.addEventListener('click', ()=>{ tb.classList.toggle('cols-collapsed'); btn.textContent = label(); });
+    wrap.parentNode.insertBefore(btn, wrap);
+  });
+}
+function animateNumbers(app){
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  app.querySelectorAll('.kpi-num:not([data-counted]), .odds-big:not([data-counted]), .report-stat .v:not([data-counted])').forEach(el=>{
+    el.dataset.counted="1";
+    if(el.children.length) return;
+    const m = el.textContent.trim().match(/^([^0-9+\-−]*)([+\-−]?)([0-9][0-9,]*\.?[0-9]*)(.*)$/);
+    if(!m) return;
+    const target = parseFloat(m[3].replace(/,/g,'')); if(!isFinite(target)) return;
+    const dec = (m[3].split('.')[1]||'').length, comma = m[3].includes(',');
+    const fmt = v=>{ let t = v.toFixed(dec); if(comma){ const p=t.split('.'); p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,','); t=p.join('.'); } return m[1]+m[2]+t+m[4]; };
+    const t0 = performance.now(), dur = 600;
+    const tick = now=>{ const k=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-k,3); el.textContent = fmt(target*e); if(k<1) requestAnimationFrame(tick); else el.textContent = fmt(target); };
+    requestAnimationFrame(tick);
+  });
+}
+function updateJumpNavOffset(){
+  const hdr = document.querySelector('header.top'), th = document.querySelector('.th-sticky');
+  const top = (hdr?hdr.offsetHeight:93) + (th?th.offsetHeight:0);
+  document.documentElement.style.setProperty('--jn-top', top+'px');
+}
+function updateJumpNavSpy(){
+  const nav = document.querySelector('.jump-nav'); if(!nav) return;
+  const links = [...nav.querySelectorAll('a')]; if(!links.length) return;
+  const line = nav.getBoundingClientRect().bottom + 24;
+  let active = null;
+  links.forEach(a=>{ const el=document.getElementById(a.getAttribute('href').slice(1)); if(el && el.getBoundingClientRect().top<=line) active=a; });
+  links.forEach(a=>a.classList.toggle('active', a===active));
+  if(active){ const nb=nav.getBoundingClientRect(), ab=active.getBoundingClientRect(); if(ab.left<nb.left||ab.right>nb.right) nav.scrollTo({left:active.offsetLeft-40,behavior:'smooth'}); }
+}
+function polishPage(app){
+  collapseSections(app); collapseWideTables(app); animateNumbers(app); updateJumpNavOffset(); updateJumpNavSpy();
+}
+(function(){
+  let ticking=false;
+  window.addEventListener('scroll', ()=>{ if(ticking) return; ticking=true; requestAnimationFrame(()=>{ ticking=false; updateJumpNavSpy(); }); }, {passive:true});
+  window.addEventListener('resize', updateJumpNavOffset);
+  const restore=[];
+  window.addEventListener('beforeprint', ()=>{ document.querySelectorAll('.sec-body[hidden]').forEach(b=>{ b.hidden=false; restore.push(b); }); });
+  window.addEventListener('afterprint', ()=>{ restore.splice(0).forEach(b=>{ b.hidden=true; }); });
+})();
+
 // Condense: descriptive subtitles and notes under a section title become an (i) hover tooltip on the title.
 function condenseNotes(root){
   const app = root || document.getElementById("app"); if(!app) return;
@@ -16038,7 +16161,7 @@ function condenseNotes(root){
 (function(){
   const app = document.getElementById("app"); if(!app || typeof MutationObserver==="undefined") return;
   let t=null;
-  new MutationObserver(()=>{ clearTimeout(t); t=setTimeout(()=>{ try{ condenseNotes(app); }catch(e){} }, 120); }).observe(app,{childList:true,subtree:true});
+  new MutationObserver(()=>{ clearTimeout(t); t=setTimeout(()=>{ try{ condenseNotes(app); polishPage(app); }catch(e){} }, 120); }).observe(app,{childList:true,subtree:true});
 })();
 // Tables and notes that fill in after first paint (Analytics, simulations) get their hover definitions too.
 (function(){
