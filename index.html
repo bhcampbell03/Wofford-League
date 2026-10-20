@@ -47,6 +47,14 @@ if(typeof Chart==="undefined"){
 </script>
 
 <script src="data.js"></script>
+<script>
+/* If data.js didn't load (index.html opened on its own, or uploaded without it),
+   try the published copy once before giving up; the main script then shows a
+   plain explanation instead of a ReferenceError. */
+if(typeof MATCHUPS==="undefined"){
+  document.write('<script src="https://bhcampbell03.github.io/Wofford-League/data.js"><\/script>');
+}
+</script>
 
 <style>
   :root{
@@ -212,6 +220,25 @@ if(typeof Chart==="undefined"){
 
   .grid{display:grid;gap:16px;}
   .grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 12px;}
+  @media(max-width:560px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  .odds-tbl td,.odds-tbl th{vertical-align:middle}
+  .odds-tbl td:first-child,.odds-tbl th:first-child{white-space:nowrap}
+  .odds-fut td.num-cell,.odds-fut th.num-cell{text-align:center}
+  .odds-line{font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+  .odds-val{font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
+  .odds-lines td,.odds-lines th{padding-top:4px;padding-bottom:4px}
+  .odds-lines tbody.odds-game tr{background:transparent !important}
+  .odds-lines tbody.odds-game:nth-of-type(even) tr{background:var(--panel2) !important}
+  .odds-lines tbody.odds-game + tbody.odds-game tr:first-child td{border-top:3px solid var(--gold)}
+  .odds-lines tbody.odds-game tr:last-child td{border-bottom:0}
+  .odds-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  .odds-card{padding:10px 14px}
+  .odds-ou{display:flex;gap:28px;font-size:14px}
+  .odds-ou .odds-val{font-size:16px;margin-top:2px}
+  .odds-big{font-family:var(--font-display);font-weight:900;font-size:20px;line-height:1.1}
+    .odds-grid{align-items:start}
+  .rr-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px;}
   .span-2{grid-column:span 2;}
   .grid.cols-5{grid-template-columns:repeat(5,1fr);}
   .grid.cols-3{grid-template-columns:repeat(3,1fr);}
@@ -814,6 +841,14 @@ if(typeof Chart==="undefined"){
 <footer>Wofford League &middot; est. 2022 <span id="footerUpdated" class="footer-updated"></span></footer>
 
 <script>
+if(typeof MATCHUPS==="undefined"){
+  document.body.insertAdjacentHTML("afterbegin",
+    '<div style="max-width:560px;margin:60px auto;padding:20px 24px;font-family:system-ui,sans-serif;line-height:1.5;border:1px solid #c9b77a;border-radius:10px;background:#fffaf0">' +
+    '<h2 style="margin:0 0 8px">League data not found</h2>' +
+    '<p style="margin:0 0 8px">This page needs <code>data.js</code> in the same folder as <code>index.html</code>, and it could not be loaded.</p>' +
+    '<p style="margin:0">If you are viewing a local copy, keep both files together (or use <code>index-standalone.html</code>). On GitHub Pages, confirm <code>data.js</code> is in the repo root, then hard-refresh.</p></div>');
+  throw new Error("data.js not loaded");
+}
 /* ============ DATA ============ */
 
 const OWNERS = {
@@ -2555,16 +2590,26 @@ function renderDivisionChampionsHtml(){
   const liveYear = currentSeasonInProgressYear();
   const rows = allDivisionChampions().filter(r=>r.year!==liveYear);
   if(!rows.length) return '';
+  const names = [...new Set(rows.map(r=>r.division))].sort((a,b)=>{
+    const rank = n=>n==='East'?0:n==='West'?1:2; return rank(a)-rank(b) || String(a).localeCompare(String(b));
+  });
+  const section = name=>{
+    const rs = rows.filter(r=>r.division===name);
+    return `<div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin-bottom:6px">${name}</div>
+      <div class="table-wrap">
+        <table class="sortable table-compact">
+          <thead><tr><th>Year</th><th>Champion</th><th class="num-cell">Record</th></tr></thead>
+          <tbody>
+            ${rs.map(r=>`<tr><td class="num-cell">${r.year}</td><td class="team-name">${currentTeamName(r.owner)}</td><td class="num-cell">${r.w}-${r.l}</td></tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  };
   return `
     <div id="jump-division-champs" class="section-title" style="margin-top:32px">${iconSvg('power')}Division Champions</div>
-    <div class="table-wrap" style="max-width:520px">
-      <table class="sortable table-compact">
-        <thead><tr><th>Year</th><th>Division</th><th>Champion</th><th class="num-cell">Record</th></tr></thead>
-        <tbody>
-          ${rows.map(r=>`<tr><td class="num-cell">${r.year}</td><td>${r.division}</td><td class="team-name">${currentTeamName(r.owner)}</td><td class="num-cell">${r.w}-${r.l}</td></tr>`).join("")}
-        </tbody>
-      </table>
-    </div>
+    <div class="grid cols-2" style="max-width:760px;align-items:start;gap:18px">${names.map(section).join("")}</div>
   `;
 }
 function renderCommissionersCupHistoryHtml(){
@@ -2701,7 +2746,7 @@ const LAUREL_SVG = `<svg width="150" height="58" viewBox="0 0 150 58" fill="none
 
 /* ============ RENDER: NAV ============ */
 
-const PAGES = ["Home","Dashboard","Current Season","Analytics","History","Rivalries","Transactions","Trade Calculator","Franchise"];
+const PAGES = ["Home","Dashboard","Current Season","Odds","Analytics","History","Rivalries","Transactions","Trade Calculator","Franchise"];
 // Shorter label for the nav bar only -- the page id (routing, search index,
 // PLAYOFF_QUALIFIERS lookups, etc.) stays "Records & Awards" everywhere else.
 const NAV_LABELS = {"Trade Calculator": "Calculator"};
@@ -2730,6 +2775,7 @@ const NAV_ICONS = {
   "Home": '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
   "Dashboard": '<path d="M4 18a8 8 0 1116 0"/><path d="M12 18l4-6"/><circle cx="12" cy="18" r="1.5"/>',
   "Current Season": '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/>',
+  "Odds": '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="16" cy="16" r="1.3"/><circle cx="16" cy="8" r="1.3"/><circle cx="8" cy="16" r="1.3"/>',
   "Analytics": '<path d="M4 20V10M12 20V4M20 20v-7"/>',
   "History": '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/>',
   "Rivalries": '<path d="M6 3l7 7-4 4-7-7 4-4z"/><path d="M18 21l-7-7 4-4 7 7-4 4z"/><path d="M13 10l-3 3"/>',
@@ -2929,6 +2975,7 @@ function renderPage(){
   if(currentPage==="Home") app.innerHTML = pageHome();
   else if(currentPage==="Dashboard") app.innerHTML = pageDashboard();
   else if(currentPage==="Current Season") app.innerHTML = pageLiveSeason();
+  else if(currentPage==="Odds") app.innerHTML = pageOdds();
   else if(currentPage==="Analytics") app.innerHTML = pageAnalytics();
   else if(currentPage==="History") app.innerHTML = pageHistoryHub();
   else if(currentPage==="Rivalries") app.innerHTML = pageRecords();
@@ -2964,6 +3011,13 @@ function renderSiteMapContent(){
       {id:'jump-dash-funfacts', label:'Interesting This Week'}
     ]},
     {page:"Current Season", blurb:"This year's live standings, SOS, rosters, full schedule, and league leaders.", items:[]},
+    {page:"Odds", blurb:"Sportsbook-style board for the upcoming week: spreads, moneylines and totals, game and player props, season futures, and a tracker that grades every line. Display only; no bets.", items:[
+      {id:'jump-odds-lines', label:'Lines'},
+      {id:'jump-odds-futures', label:'Futures'},
+      {id:'jump-odds-props', label:'Props'},
+      {id:'jump-odds-players', label:'Player Props'},
+      {id:'jump-odds-tracker', label:'Tracker'}
+    ]},
     {page:"Analytics", blurb:"Scoring highs/lows, luck, the interactive chart selector, Stats Lab, team leaderboards, and draft value grades.", items:[
       {id:'jump-charts', label:'Charts'},
       {id:'jump-scoringluck', label:'Scoring & Luck'},
@@ -3728,10 +3782,8 @@ function pageRecords(){
       <select id="ownerA">${ids.map(id=>`<option value="${id}">${currentTeamName(id)}</option>`).join("")}</select>
       <select id="ownerB">${ids.map((id,i)=>`<option value="${id}" ${i===1?'selected':''}>${currentTeamName(id)}</option>`).join("")}</select>
     </div>
-    <div class="grid cols-2" style="align-items:start">
-      <div id="h2h-result"></div>
-      <div id="compareTeamsResult">${compareTeamsHtml(ids[0], ids[1])}</div>
-    </div>
+    <div id="h2h-result"></div>
+    <div id="rivalryReport"></div>
 
     <div class="section-title" style="margin-top:32px">${iconSvg('scout')}Rivalry Network <span class="sub">line thickness = meetings played, color = how lopsided the series is</span></div>
     <p class="note" style="margin-bottom:10px">Every team that's played every other team at least once, as a network &mdash; hover a line for the series record, or click a team to isolate its rivalries. Green lines are close series, gold is a real edge, red is dominance.</p>
@@ -3790,12 +3842,150 @@ function pageRecords(){
   `;
 }
 
+// ---- Rivalries: expanded rivalry report for any two teams -------------------
+// Everything below is computed from MATCHUPS / PLAYER_SCORES / TRADES /
+// FULL_SCHEDULE for the two picked teams: series stats and streaks, margin by
+// meeting, season-by-season record, position production against each other vs.
+// their usual, best individual games, trades between them, and next meeting.
+function rrRoster(year, week, teamName){
+  const wk = PLAYER_SCORES[year] && PLAYER_SCORES[year][String(week)];
+  if(!wk) return null;
+  if(wk[teamName]) return wk[teamName];
+  const norm = s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+  const key = Object.keys(wk).find(k=>norm(k)===norm(teamName));
+  return key ? wk[key] : null;
+}
+function rrPosTotals(list){
+  const out = {QB:0,RB:0,WR:0,TE:0,K:0,'D/ST':0};
+  (list||[]).forEach(p=>{ if(!p.bench && p.pos in out) out[p.pos]+=p.pts; });
+  return out;
+}
+function computeRivalryReport(a, b){
+  const all = allGames().filter(g=>g.oA&&g.oB);
+  const meetings = all.filter(g=>(g.oA===a&&g.oB===b)||(g.oA===b&&g.oB===a))
+    .sort((x,y)=>x.year-y.year||x.week-y.week).map(g=>{
+      const aIsA = g.oA===a;
+      return {year:g.year, week:g.week, playoff:g.playoff, champ:g.champ,
+        sa:aIsA?g.sA:g.sB, sb:aIsA?g.sB:g.sA, ta:aIsA?g.tA:g.tB, tb:aIsA?g.tB:g.tA};
+    });
+  meetings.forEach(m=>{ m.margin = m.sa-m.sb; m.winner = m.margin>0?a:b; });
+  const n = meetings.length;
+  const aWins = meetings.filter(m=>m.margin>0).length, bWins = n-aWins;
+  const sum = f=>meetings.reduce((t,m)=>t+f(m),0);
+  // streaks
+  let cur = null, longest = {[a]:0,[b]:0}, run = 0, prev = null;
+  meetings.forEach(m=>{ run = m.winner===prev ? run+1 : 1; prev = m.winner; if(run>longest[m.winner]) longest[m.winner]=run; });
+  if(n) cur = {owner:prev, n:run};
+  // season splits
+  const byYear = {};
+  meetings.forEach(m=>{ const y = byYear[m.year] = byYear[m.year]||{year:m.year,a:0,b:0,pa:0,pb:0,g:0}; if(m.margin>0) y.a++; else y.b++; y.pa+=m.sa; y.pb+=m.sb; y.g++; });
+  // position production vs this opponent, and usual
+  const posKeys = ['QB','RB','WR','TE','K','D/ST'];
+  const pos = {};
+  [a,b].forEach(id=>{
+    const vs = {QB:0,RB:0,WR:0,TE:0,K:0,'D/ST':0}, usual = {QB:0,RB:0,WR:0,TE:0,K:0,'D/ST':0};
+    let nVs = 0, nUs = 0;
+    const opp = id===a ? b : a;
+    all.filter(g=>(g.oA===id||g.oB===id) && !(g.year===2024 && g.week===18)).forEach(g=>{
+      const isA = g.oA===id, name = isA?g.tA:g.tB, other = isA?g.oB:g.oA;
+      const r = rrRoster(g.year, g.week, name); if(!r) return;
+      const t = rrPosTotals(r);
+      if(other===opp){ posKeys.forEach(k=>vs[k]+=t[k]); nVs++; } else { posKeys.forEach(k=>usual[k]+=t[k]); nUs++; }
+    });
+    pos[id] = {nVs, nUs, vs:Object.fromEntries(posKeys.map(k=>[k, nVs?vs[k]/nVs:null])), usual:Object.fromEntries(posKeys.map(k=>[k, nUs?usual[k]/nUs:null]))};
+  });
+  // best individual games in the series
+  const best = {[a]:[], [b]:[]};
+  meetings.forEach(m=>{
+    [[a,m.ta],[b,m.tb]].forEach(([id,name])=>{
+      const r = rrRoster(m.year, m.week, name); if(!r) return;
+      r.filter(p=>!p.bench).forEach(p=>best[id].push({name:p.name,pos:p.pos,pts:p.pts,year:m.year,week:m.week}));
+    });
+  });
+  [a,b].forEach(id=>{ best[id].sort((x,y)=>y.pts-x.pts); best[id] = best[id].slice(0,3); });
+  // trades between the two
+  const trades = TRADES.filter(t=>(t.teamA===a&&t.teamB===b)||(t.teamA===b&&t.teamB===a));
+  // next meeting
+  const year = Math.max(...Object.keys(FULL_SCHEDULE).map(Number));
+  const played = new Set((MATCHUPS[year]||[]).map(w=>w.w));
+  let next = null;
+  (FULL_SCHEDULE[year]||[]).filter(w=>!played.has(w.w)).sort((x,y)=>x.w-y.w).some(w=>w.g.some(([tA,tB])=>{
+    const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+    if((oA===a&&oB===b)||(oA===b&&oB===a)){ next = {year, week:w.w, p:matchupWinProb(a,b,year)}; return true; }
+    return false;
+  }));
+  if(next && next.p){ /* pA is for owner a */ }
+  const closest = n ? meetings.slice().sort((x,y)=>Math.abs(x.margin)-Math.abs(y.margin))[0] : null;
+  const bigA = meetings.filter(m=>m.margin>0).sort((x,y)=>y.margin-x.margin)[0] || null;
+  const bigB = meetings.filter(m=>m.margin<0).sort((x,y)=>x.margin-y.margin)[0] || null;
+  return {a,b,meetings,n,aWins,bWins, avgAbs: n?sum(m=>Math.abs(m.margin))/n:null, avgTotal: n?sum(m=>m.sa+m.sb)/n:null,
+    ppgA: n?sum(m=>m.sa)/n:null, ppgB: n?sum(m=>m.sb)/n:null,
+    close: meetings.filter(m=>Math.abs(m.margin)<10).length, blow: meetings.filter(m=>Math.abs(m.margin)>=30).length,
+    cur, longest, byYear:Object.values(byYear), pos, posKeys, best, trades, next, closest, bigA, bigB};
+}
+
+function renderRivalryReportHtml(a, b){
+  if(a===b) return '';
+  const r = computeRivalryReport(a, b);
+  const A = currentTeamName(a), B = currentTeamName(b), cA = ownerColor(a), cB = ownerColor(b);
+  const gl = m=>`${m.year} Wk ${m.week}${m.champ?' &middot; Championship':m.playoff?' &middot; '+m.playoff:''}`;
+  const tile = (label, big, sub)=>`<div class="card" style="padding:9px 12px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin-bottom:4px">${label}</div>
+      <div style="font-family:var(--font-display);font-weight:900;font-size:20px;line-height:1.1">${big}</div>
+      <div class="note" style="font-size:10.5px;margin-top:3px">${sub}</div></div>`;
+  const head = `<div class="section-title" style="margin-top:28px">${iconSvg('h2h')}Rivalry Report <span class="sub">${A} vs ${B}</span></div>`;
+  if(!r.n) return head + `<p class="note">No meetings on record yet.</p>`;
+  const leadId = r.aWins===r.bWins ? null : (r.aWins>r.bWins?a:b);
+  const verdict = `${leadId ? `${currentTeamName(leadId)} leads ${Math.max(r.aWins,r.bWins)}&ndash;${Math.min(r.aWins,r.bWins)}` : `Series tied ${r.aWins}&ndash;${r.bWins}`}, `
+    + `${r.n} meeting${r.n===1?'':'s'} averaging a ${r.avgAbs.toFixed(1)}-point margin. `
+    + (r.cur ? `${currentTeamName(r.cur.owner)} has won the last ${r.cur.n===1?'meeting':r.cur.n+' straight'}. ` : '')
+    + (r.close ? `${r.close} of ${r.n} decided by under 10.` : `None decided by under 10.`);
+  const tiles = `<div class="grid cols-4" style="margin-top:10px">
+    ${tile('Series', `${r.aWins}&ndash;${r.bWins}`, `${A} &ndash; ${B}`)}
+    ${tile('Current Streak', r.cur ? `${r.cur.n} ${r.cur.n===1?'win':'wins'}` : '&mdash;', r.cur ? currentTeamName(r.cur.owner) : '')}
+    ${tile('Longest Streaks', `${r.longest[a]} &ndash; ${r.longest[b]}`, `${A} &ndash; ${B}`)}
+    ${tile('Avg Margin', r.avgAbs.toFixed(1), `${r.blow} game${r.blow===1?'':'s'} decided by 30+`)}
+    ${tile('Closest Game', Math.abs(r.closest.margin).toFixed(2), `${gl(r.closest)} &middot; ${currentTeamName(r.closest.winner)}`)}
+    ${tile('Biggest Win', r.bigA||r.bigB ? Math.max(r.bigA?r.bigA.margin:0, r.bigB?-r.bigB.margin:0).toFixed(1) : '&mdash;',
+      (()=>{ const m = (r.bigA && (!r.bigB || r.bigA.margin>=-r.bigB.margin)) ? r.bigA : r.bigB; return m ? `${currentTeamName(m.winner)} &middot; ${gl(m)}` : ''; })())}
+  </div>`;
+  // margin chart
+  const maxM = Math.max(...r.meetings.map(m=>Math.abs(m.margin)), 10);
+  const bars = r.meetings.map(m=>{
+    const h = Math.abs(m.margin)/maxM*100, up = m.margin>0;
+    return `<div style="flex:1;min-width:26px;display:flex;flex-direction:column;align-items:center" title="${gl(m)}: ${A} ${m.sa.toFixed(2)} &ndash; ${m.sb.toFixed(2)} ${B}">
+      <div style="height:70px;display:flex;align-items:flex-end;width:100%"><div style="width:100%;height:${up?h:0}%;background:${cA};border-radius:3px 3px 0 0"></div></div>
+      <div style="height:1px;width:100%;background:var(--muted)"></div>
+      <div style="height:70px;display:flex;align-items:flex-start;width:100%"><div style="width:100%;height:${up?0:h}%;background:${cB};border-radius:0 0 3px 3px"></div></div>
+      <div style="font-size:9.5px;color:var(--muted);margin-top:3px;white-space:nowrap">${String(m.year).slice(2)} W${m.week}</div>
+      <div style="font-size:10px;font-weight:700">${Math.abs(m.margin).toFixed(0)}</div></div>`;
+  }).join('');
+  const chart = `<div class="card dash-panel" style="border-left:3px solid var(--gold);padding:10px 14px">
+    <div class="rr-h">Margin by Meeting</div>
+    <div style="display:flex;gap:6px;align-items:stretch;overflow-x:auto">${bars}</div>
+    <p class="note" style="font-size:10.5px;margin-top:4px"><span style="color:${cA};font-weight:700">above the line: ${A} won</span> &middot; <span style="color:${cB};font-weight:700">below: ${B} won</span></p></div>`;
+  const seasons = `<div class="card dash-panel" style="border-left:3px solid var(--green);padding:10px 14px">
+    <div class="rr-h">By Season</div>
+    <table class="table-compact"><thead><tr><th>Year</th><th class="num-cell">${abbrev(A)}</th><th class="num-cell">${abbrev(B)}</th></tr></thead><tbody>
+    ${r.byYear.map(y=>`<tr><td>${y.year}</td><td class="num-cell"><b>${y.a}</b></td><td class="num-cell"><b>${y.b}</b></td></tr>`).join('')}
+    </tbody></table></div>`;
+  const log = `<div class="card" style="padding:10px 14px"><div class="rr-h">Every Meeting</div>
+    <div class="table-wrap"><table class="table-compact"><thead><tr><th>Game</th><th class="num-cell">${abbrev(A)}</th><th class="num-cell">${abbrev(B)}</th><th class="num-cell">Margin</th></tr></thead><tbody>
+    ${r.meetings.slice().reverse().map(m=>`<tr><td>${gl(m)}</td><td class="num-cell" style="${m.margin>0?'font-weight:800':''}">${m.sa.toFixed(2)}</td><td class="num-cell" style="${m.margin<0?'font-weight:800':''}">${m.sb.toFixed(2)}</td><td class="num-cell">${Math.abs(m.margin).toFixed(2)}</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+  return head
+    + `<p style="margin:0 0 4px;font-size:14px;line-height:1.5">${verdict}</p>`
+    + tiles
+    + `<div class="grid cols-2" style="margin-top:10px;align-items:start">${chart}${seasons}</div>`
+    + `<div style="margin-top:10px">${log}</div>`;
+}
+
 function renderH2HResult(){
   const a = document.getElementById("ownerA").value;
   const b = document.getElementById("ownerB").value;
   const box = document.getElementById("h2h-result");
-  const compareBox = document.getElementById("compareTeamsResult");
-  if(compareBox) compareBox.innerHTML = compareTeamsHtml(a,b);
+  const rrBox = document.getElementById("rivalryReport");
+  if(rrBox) rrBox.innerHTML = renderRivalryReportHtml(a,b);
   if(a===b){ box.innerHTML = `<p class="note">Pick two different teams.</p>`; return; }
   const rec = h2hRecord(a,b);
   const games = allGames().filter(g=>(g.oA===a&&g.oB===b)||(g.oA===b&&g.oB===a)).sort((x,y)=>x.year-y.year||x.week-y.week);
@@ -9063,8 +9253,10 @@ function simulateBracket(qualifiers, baseMean, sdByOwner, fallbackSd){
       else if(b && !a) next.push(b);
       else if(!a && !b) next.push(null);
       else {
-        const sA = randNormal(baseMean[a]!=null?baseMean[a]:110, (sdByOwner&&sdByOwner[a])||fallbackSd);
-        const sB = randNormal(baseMean[b]!=null?baseMean[b]:110, (sdByOwner&&sdByOwner[b])||fallbackSd);
+        // League Bylaws Article V: the higher seed gets +5 points in every playoff round
+        const aHigher = qualifiers.indexOf(a) < qualifiers.indexOf(b);
+        const sA = randNormal(baseMean[a]!=null?baseMean[a]:110, (sdByOwner&&sdByOwner[a])||fallbackSd) + (aHigher?5:0);
+        const sB = randNormal(baseMean[b]!=null?baseMean[b]:110, (sdByOwner&&sdByOwner[b])||fallbackSd) + (aHigher?0:5);
         next.push(sA>=sB ? a : b);
       }
     }
@@ -9155,6 +9347,611 @@ function simulateChampionshipOdds(year, playoffSpots, sims){
     oneSeedPct: oneSeedCount[id]/sims,
     projWins: winsSum[id]/sims
   })).sort((a,b)=>b.champPct-a.champPct || b.playoffPct-a.playoffPct);
+}
+
+/* ============ PAGE: ODDS ============ */
+
+// Read-only odds board built from the same projection model as Championship
+// Odds and the Dashboard win bars (teamBaseMean / teamScoreStdDev). Nothing here
+// takes bets or tracks money; it is a display of what the model thinks.
+//
+// Lines: closed-form from two independent normals per game.
+// Props, player props and futures: Monte Carlo, run once after first paint and
+// cached (the cache key is the year + the last week played).
+const _oddsCache = {};
+const ODDS_TRACK_FROM = {2026: 6};               // tracker starts with these weeks and counts forward
+const ODDS_WEEK_SIMS = 6000;
+const ODDS_ESPN_WEIGHT = 1;                      // share of a week's projection that comes from ESPN when it is on file (1 = ESPN only)
+function oddsEspn(year, week){
+  return (typeof ESPN_PROJECTIONS!=="undefined" && ESPN_PROJECTIONS[year] && ESPN_PROJECTIONS[year][week]) || null;
+}
+const ODDS_FUTURE_SIMS = 5000;
+const ODDS_ML_SHRINK = 0.6;                      // backtest on 2024-25: log-loss is lowest near 0.5-0.6
+
+function oddsFmt(p){
+  if(p < 0.002 || p > 0.998) return "\u2014";
+  p = Math.min(0.99, Math.max(0.01, p));
+  let a = p>=0.5 ? -(p/(1-p))*100 : ((1-p)/p)*100;
+  a = Math.abs(a) >= 1000 ? Math.round(a/50)*50 : Math.abs(a) >= 200 ? Math.round(a/10)*10 : Math.round(a/5)*5;
+  if(Math.abs(a) < 100) a = a<0 ? -100 : 100;
+  return (a>0?"+":"") + a;
+}
+
+// Fantasy scoring is streaky, so prices for "who finishes first" markets are pulled
+// toward an even split instead of following the raw simulation (which says a top team
+// has a 1-in-300 shot at the low score). Square-root flattening, then a blend with even odds.
+function oddsFluke(ps, keep){
+  keep = keep==null ? 0.65 : keep;
+  const q = ps.map(x=>Math.sqrt(Math.max(0,x))), tot = q.reduce((a,b)=>a+b,0) || 1, n = ps.length;
+  return q.map(x=>keep*x/tot + (1-keep)/n);
+}
+function oddsPull(p, base, lam){ return (1-lam)*p + lam*base; }
+function oddsHalf(x){ return Math.round(x*2)/2; }
+function oddsSpreadTxt(l){ return l===0 ? "PK" : (l>0?"+":"") + l.toFixed(1).replace(/\.0$/,".0"); }
+function oddsMedianLine(arr){            // nearest half-point line at the median, so over/under is about even
+  const s = arr.slice().sort((a,b)=>a-b);
+  const med = (s[Math.floor((s.length-1)/2)] + s[Math.ceil((s.length-1)/2)])/2;
+  return Math.floor(med) + 0.5;
+}
+function oddsOver(arr, line){ let n=0; for(let i=0;i<arr.length;i++) if(arr[i]>line) n++; return n/arr.length; }
+
+// Run fn with only the weeks before `week` visible for `year`, so a line can be
+// rebuilt from the data that existed before that week was played.
+function oddsWithDataBefore(year, week, fn){
+  const saved = MATCHUPS[year];
+  MATCHUPS[year] = (saved||[]).filter(w=>w.playoff || w.w < week);
+  try{ return fn(); } finally { MATCHUPS[year] = saved; }
+}
+
+// One game's lines from two teams' projected mean/SD.
+// Projected points per team, recentered so the league-wide average projection
+// equals the league's actual average PPG this season. The shared model blends in
+// roster strength, which runs high; this keeps each team's relative strength but
+// stops totals from drifting above what the league really scores.
+function oddsMeansMap(year, week){
+  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const raw = {}; owners.forEach(id=>{ raw[id] = teamBaseMean(id, year); });
+  const rows = computeCurrentStandings(year).filter(r=>r.games>0);
+  let shift = 0;
+  if(rows.length >= 6){
+    const actual = rows.reduce((a,r)=>a+r.pf/r.games,0)/rows.length;
+    const proj = owners.reduce((a,id)=>a+raw[id],0)/owners.length;
+    shift = proj - actual;
+  }
+  const out = {}; owners.forEach(id=>{ out[id] = raw[id] - shift; });
+  // ESPN's projected total for the week, when on file, carries most of the weight.
+  const espn = week ? oddsEspn(year, week) : null;
+  if(espn && espn.teams){
+    Object.entries(espn.teams).forEach(([team, pts])=>{
+      const id = ownerForTeam(year, team);
+      if(id && out[id]!=null) out[id] = ODDS_ESPN_WEIGHT*pts + (1-ODDS_ESPN_WEIGHT)*out[id];
+    });
+  }
+  return out;
+}
+function oddsGameLine(oA, oB, year, means){
+  means = means || oddsMeansMap(year);
+  const mA = means[oA], mB = means[oB];
+  const sdA = teamScoreStdDev(oA, year), sdB = teamScoreStdDev(oB, year);
+  return oddsBuildLine(oA, oB, mA, mB, sdA, sdB);
+}
+function oddsBuildLine(oA, oB, mA, mB, sdA, sdB){
+  const comb = Math.sqrt(sdA*sdA + sdB*sdB) || 1;
+  const diff = mA - mB;
+  const pA = 0.5 + ODDS_ML_SHRINK*(normalCDF(diff/comb)-0.5);   // weekly fantasy results are streaky: pull win odds toward even
+  const favIsA = diff >= 0;
+  const spreadLine = oddsHalf(Math.abs(diff));              // favorite lays this many
+  const pFavCover = 1 - normalCDF((spreadLine - Math.abs(diff))/comb);
+  const total = mA + mB;
+  const totalLine = oddsHalf(total) % 1 === 0 ? oddsHalf(total)+0.5 : oddsHalf(total);
+  const pOver = 1 - normalCDF((totalLine - total)/comb);
+  return {oA, oB, mA, mB, sdA, sdB, comb, diff, pA, favIsA, spreadLine, pFavCover, total, totalLine, pOver};
+}
+function oddsWeekLines(year, week){
+  const wk = (FULL_SCHEDULE[year]||[]).find(w=>w.w===week);
+  if(!wk) return [];
+  const means = oddsMeansMap(year, week);
+  return wk.g.map(([tA,tB])=>{
+    const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+    return (oA && oB) ? oddsGameLine(oA, oB, year, means) : null;
+  }).filter(Boolean);
+}
+// Lines as they stood before a played week: the frozen copy in ODDS_LOCKED
+// when one exists, otherwise rebuilt from the data that came before the week.
+function oddsLinesBefore(year, week){
+  if(typeof ODDS_LOCKED!=="undefined" && ODDS_LOCKED[year] && ODDS_LOCKED[year][week]){
+    return ODDS_LOCKED[year][week].map(r=>oddsBuildLine(r.a, r.b, r.mA, r.mB, r.sdA, r.sdB));
+  }
+  return oddsWithDataBefore(year, week, ()=>oddsWeekLines(year, week));
+}
+
+// ---- player pool for the player props (last week's starters, shrunk to position averages)
+function oddsPlayerPool(year, week){
+  const weeks = Object.keys(PLAYER_SCORES[year]||{}).map(Number).sort((a,b)=>a-b);
+  if(!weeks.length) return [];
+  const last = weeks[weeks.length-1];
+  const hist = {}, posScores = {};
+  weeks.forEach(w=>{
+    Object.entries(PLAYER_SCORES[year][w]).forEach(([team,list])=>{
+      list.forEach(p=>{
+        if(p.bench) return;
+        (hist[p.name] = hist[p.name] || []).push(p.pts);
+        (posScores[p.pos] = posScores[p.pos] || []).push(p.pts);
+      });
+    });
+  });
+  const posStat = {};
+  Object.keys(posScores).forEach(pos=>{
+    const a = posScores[pos], m = a.reduce((x,y)=>x+y,0)/a.length;
+    const sd = Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/a.length);
+    posStat[pos] = {mean:m, sd};
+  });
+  const pool = [];
+  Object.entries(PLAYER_SCORES[year][last]).forEach(([team,list])=>{
+    const owner = ownerForTeam(year, team);
+    if(!owner) return;
+    list.filter(p=>!p.bench).forEach(p=>{
+      const ps = posStat[p.pos]; if(!ps) return;
+      if(week && isOnByeWeek(year, week, p.name)) return;   // on a bye this week
+      const h = hist[p.name] || [], n = h.length, k = 2;
+      const mu = (h.reduce((x,y)=>x+y,0) + k*ps.mean) / (n + k);
+      pool.push({name:p.name, pos:p.pos, owner, mu, sd:ps.sd});
+    });
+  });
+  // ESPN's projected leaders replace the model's mean for those players (added to the
+  // pool if they were benched last week); everyone else on that team is capped at
+  // the team's third projected leader, since ESPN already named its top three.
+  const espn = week ? oddsEspn(year, week) : null;
+  if(espn && espn.leaders){
+    Object.entries(espn.leaders).forEach(([team, leaders])=>{
+      const owner = ownerForTeam(year, team); if(!owner) return;
+      const roster = (PLAYER_SCORES[year][last] || {})[team] || [];
+      const cap = Math.min(...leaders.map(l=>l[1]));
+      const named = new Set();
+      leaders.forEach(([abbr, pts])=>{
+        const m = abbr.match(/^([A-Z])\.\s+(.+?)(?:\.\.\.)?$/); if(!m) return;
+        const ini = m[1], rest = m[2].toLowerCase();
+        let hit = roster.find(p=>{ const t = p.name.split(/\s+/); return t[0][0]===ini && t.slice(1).join(' ').toLowerCase().startsWith(rest); });
+        const matches = p=>{ const t = p.name.split(/\s+/); return t[0][0]===ini && t.slice(1).join(' ').toLowerCase().startsWith(rest); };
+        if(!hit){
+          // not on last week's roster: look through this team's earlier weeks, then the whole league, then past years
+          const scopes = [
+            ()=>Object.values(PLAYER_SCORES[year]).flatMap(w=>w[team]||[]),
+            ()=>Object.values(PLAYER_SCORES[year]).flatMap(w=>Object.values(w).flat()),
+            ()=>Object.values(PLAYER_SCORES).flatMap(y=>Object.values(y).flatMap(w=>Object.values(w).flat()))
+          ];
+          for(const sc of scopes){ hit = sc().find(matches); if(hit) break; }
+        }
+        if(!hit) return;
+        named.add(hit.name);
+        const ps = posStat[hit.pos]; if(!ps) return;
+        const cur = pool.find(p=>p.name===hit.name && p.owner===owner);
+        if(cur){ cur.mu = ODDS_ESPN_WEIGHT*pts + (1-ODDS_ESPN_WEIGHT)*cur.mu; cur.espn = pts; }
+        else pool.push({name:hit.name, pos:hit.pos, owner, mu:pts, sd:ps.sd, espn:pts});
+      });
+      // Rest of the lineup: ESPN's team total minus its three named leaders, split across
+      // the other starters in proportion to their usual output. Lineup size comes from
+      // espn.slots (default 9 starters).
+      const total = espn.teams && espn.teams[team];
+      const slots = (espn.slots && espn.slots[team]) || 9;
+      const others = pool.filter(p=>p.owner===owner && !named.has(p.name)).sort((x,y)=>y.mu-x.mu);
+      others.slice(Math.max(0, slots-named.size)).forEach(p=>{ pool.splice(pool.indexOf(p),1); });
+      const kept = others.slice(0, Math.max(0, slots-named.size));
+      const leaderSum = leaders.reduce((a,l)=>a+l[1],0);
+      if(total!=null && kept.length){
+        const rest = Math.max(0, total - leaderSum), w = kept.reduce((a,p)=>a+p.mu,0);
+        if(w>0) kept.forEach(p=>{ p.mu = rest * p.mu / w; p.est = true; });
+      } else {
+        kept.forEach(p=>{ if(p.mu>cap) p.mu = cap; });
+      }
+    });
+  }
+  return pool;
+}
+
+// ---- weekly Monte Carlo for the props
+function oddsSimWeek(year, lines, week){
+  const nG = lines.length, nT = nG*2;
+  const pool = oddsPlayerPool(year, week);
+  const floor = 30;
+  const hiCut = (()=>{ const avg = lines.reduce((a,l)=>a+l.mA+l.mB,0)/nT; const sd = lines.reduce((a,l)=>a+l.sdA+l.sdB,0)/nT; return Math.round((avg+1.5*sd)/5)*5; })();
+  const loCut = (()=>{ const avg = lines.reduce((a,l)=>a+l.mA+l.mB,0)/nT; const sd = lines.reduce((a,l)=>a+l.sdA+l.sdB,0)/nT; return Math.round((avg-1.5*sd)/5)*5; })();
+  const S = ODDS_WEEK_SIMS;
+  const maxTeam = new Array(nT).fill(0), minTeam = new Array(nT).fill(0);
+  const closestG = new Array(nG).fill(0), blowG = new Array(nG).fill(0);
+  const closestM = [], blowM = [], highS = [], lowS = [], tot = [], upsets = [], under10 = [];
+  let anyHi = 0, anyLo = 0;
+  const pCount = new Array(pool.length).fill(0), posCount = {}, topPts = [];
+  for(let s=0; s<S; s++){
+    const sc = new Array(nT);
+    let hi=-1, hiI=0, lo=1e9, loI=0, total=0, cM=1e9, cG=0, bM=-1, bG=0, up=0, u10=0;
+    for(let g=0; g<nG; g++){
+      const L = lines[g];
+      const a = Math.max(floor, randNormal(L.mA, L.sdA)), b = Math.max(floor, randNormal(L.mB, L.sdB));
+      sc[g*2]=a; sc[g*2+1]=b; total += a+b;
+      const m = Math.abs(a-b);
+      if(m<cM){cM=m;cG=g;} if(m>bM){bM=m;bG=g;} if(m<10) u10++;
+      const aWon = a>b; if(aWon !== L.favIsA) up++;
+    }
+    for(let i=0;i<nT;i++){ if(sc[i]>hi){hi=sc[i];hiI=i;} if(sc[i]<lo){lo=sc[i];loI=i;} }
+    maxTeam[hiI]++; minTeam[loI]++; closestG[cG]++; blowG[bG]++;
+    closestM.push(cM); blowM.push(bM); highS.push(hi); lowS.push(lo); tot.push(total); upsets.push(up); under10.push(u10);
+    if(hi>=hiCut) anyHi++; if(lo<=loCut) anyLo++;
+    if(pool.length){
+      let best=-1, bi=0;
+      for(let i=0;i<pool.length;i++){ const p = pool[i]; const v = Math.max(0, randNormal(p.mu, p.sd)); if(v>best){best=v;bi=i;} }
+      pCount[bi]++; posCount[pool[bi].pos] = (posCount[pool[bi].pos]||0)+1; topPts.push(best);
+    }
+  }
+  return {S, lines, pool, hiCut, loCut, maxTeam, minTeam, closestG, blowG, closestM, blowM, highS, lowS, tot, upsets, under10,
+          anyHi: anyHi/S, anyLo: anyLo/S, pCount, posCount, topPts};
+}
+
+// ---- season futures Monte Carlo (title, playoffs, 1-seed, division, last place, scoring title, win totals)
+// Roster tilt from the NFL market: each fantasy team's starters (last week's lineup) are
+// mapped to their NFL teams, and the average of (projected NFL wins - 8.5) nudges the
+// team's rest-of-season scoring up or down by 1% per win of difference, capped at 2%.
+const ODDS_NFL_TILT_PER_WIN = 0.01;
+function oddsNflFactors(year){
+  const out = {};
+  if(typeof NFL_ODDS==="undefined") return out;
+  const wins = {}; NFL_ODDS.rows.forEach(r=>{ wins[r[0]] = r[8]; });
+  const weeks = Object.keys(PLAYER_SCORES[year]||{}).map(Number);
+  if(!weeks.length) return out;
+  const last = Math.max(...weeks), sums = {}, ns = {};
+  Object.entries(PLAYER_SCORES[year][last]).forEach(([team,list])=>{
+    const id = ownerForTeam(year, team); if(!id) return;
+    list.filter(p=>!p.bench).forEach(p=>{
+      const t = PLAYER_NFL_TEAM[p.name]; if(!t || wins[t]==null) return;
+      sums[id] = (sums[id]||0) + (wins[t]-8.5); ns[id] = (ns[id]||0)+1;
+    });
+  });
+  Object.keys(sums).forEach(id=>{
+    const avg = sums[id]/ns[id];
+    out[id] = Math.max(0.98, Math.min(1.02, 1 + ODDS_NFL_TILT_PER_WIN*avg));
+  });
+  return out;
+}
+// Byes and injuries over the rest of the season. Each starter (last week's lineup) who is on
+// an NFL bye in a given week costs his team (1 - R) of his usual output that week, where R is
+// what a replacement returns; a starter flagged as recently hurt is treated as missing 35% of
+// the time. R = 0.6 and 35% are assumptions, not fitted values.
+const ODDS_REPLACEMENT_SHARE = 0.6, ODDS_INJURY_MISS = 0.35;
+function oddsWeekLoss(year, weeks){
+  const pool = oddsPlayerPool(year);          // no week: plain history means, no ESPN overrides
+  const loss = {}, avg = {};
+  pool.forEach(p=>{
+    const hurt = recentlyInjuredFlag(year, p.name);
+    weeks.forEach(w=>{
+      let l = 0;
+      if(isOnByeWeek(year, w, p.name)) l = p.mu*(1-ODDS_REPLACEMENT_SHARE);
+      else if(hurt) l = ODDS_INJURY_MISS*p.mu*(1-ODDS_REPLACEMENT_SHARE);
+      if(l){ (loss[p.owner] = loss[p.owner] || {})[w] = ((loss[p.owner]||{})[w]||0) + l; }
+    });
+  });
+  Object.keys(loss).forEach(id=>{ avg[id] = weeks.length ? Object.values(loss[id]).reduce((a,b)=>a+b,0)/weeks.length : 0; });
+  return {loss, avg};
+}
+function oddsSimFutures(year, sims){
+  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const played = new Set((MATCHUPS[year]||[]).filter(w=>!w.playoff).map(w=>w.w));
+  const remaining = (FULL_SCHEDULE[year]||[]).filter(fw=>!played.has(fw.w) && !fw.playoff);
+  const sdL = leagueScoreStdDev(year);
+  const mean = {}, sdO = {};
+  const cal = oddsMeansMap(year);
+  const nflF = oddsNflFactors(year);
+  const wl = oddsWeekLoss(year, remaining.map(fw=>fw.w));
+  owners.forEach(id=>{ mean[id] = cal[id] * (nflF[id]||1); sdO[id] = teamScoreStdDev(id, year); });
+  const base = {};
+  computeCurrentStandings(year).forEach(r=>{ base[r.owner] = {w:r.w, l:r.l, pf:r.pf}; });
+  owners.forEach(id=>{ if(!base[id]) base[id] = {w:0,l:0,pf:0}; });
+  const z = ()=>owners.reduce((o,id)=>{ o[id]=0; return o; }, {});
+  const c = {title:z(), playoff:z(), seed1:z(), div:z(), last:z(), pts:z(), winsSum:z()};
+  const winsDist = {}; owners.forEach(id=>{ winsDist[id] = {}; });
+  for(let s=0; s<sims; s++){
+    const rec = {};
+    owners.forEach(id=>{ rec[id] = {w:base[id].w, l:base[id].l, pf:base[id].pf}; });
+    remaining.forEach(fw=>{
+      fw.g.forEach(([tA,tB])=>{
+        const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+        if(!oA || !oB || !rec[oA] || !rec[oB]) return;
+        const lA = (wl.loss[oA]||{})[fw.w]||0, lB = (wl.loss[oB]||{})[fw.w]||0;
+        const a = Math.max(30, randNormal(mean[oA]-lA, sdO[oA]||sdL)), b = Math.max(30, randNormal(mean[oB]-lB, sdO[oB]||sdL));
+        rec[oA].pf += a; rec[oB].pf += b;
+        if(a>b){ rec[oA].w++; rec[oB].l++; } else { rec[oB].w++; rec[oA].l++; }
+      });
+    });
+    const q = selectPlayoffQualifiers(rec, Math.min(CURRENT_SEASON_PLAYOFF_SPOTS, owners.length));
+    q.forEach(id=>{ c.playoff[id]++; });
+    if(q[0]) c.seed1[q[0]]++;
+    divisionLeadersFromRecords(rec).forEach(x=>{ c.div[x.owner]++; });
+    let lastId = owners[0], ptsId = owners[0];
+    owners.forEach(id=>{
+      c.winsSum[id] += rec[id].w;
+      winsDist[id][rec[id].w] = (winsDist[id][rec[id].w]||0)+1;
+      if(rec[id].w<rec[lastId].w || (rec[id].w===rec[lastId].w && rec[id].pf<rec[lastId].pf)) lastId = id;
+      if(rec[id].pf>rec[ptsId].pf) ptsId = id;
+    });
+    c.last[lastId]++; c.pts[ptsId]++;
+    const champ = simulateBracket(q, mean, sdO, sdL);
+    if(champ) c.title[champ]++;
+  }
+  const out = {};
+  owners.forEach(id=>{
+    const proj = c.winsSum[id]/sims;
+    const line = Math.round(proj-0.5)+0.5;
+    let over = 0; Object.entries(winsDist[id]).forEach(([w,n])=>{ if(+w>line) over += n; });
+    out[id] = {drag:wl.avg[id]||0, nfl:(nflF[id]||1)-1, title:c.title[id]/sims, playoff:c.playoff[id]/sims, seed1:c.seed1[id]/sims, div:c.div[id]/sims,
+               last:c.last[id]/sims, pts:c.pts[id]/sims, proj, line, pOver:over/sims};
+  });
+  return out;
+}
+
+function oddsGetSims(year){
+  const played = (MATCHUPS[year]||[]).map(w=>w.w);
+  const lastPlayed = played.length ? Math.max(...played) : 0;
+  const key = year + ":" + lastPlayed;
+  if(_oddsCache[key]) return _oddsCache[key];
+  const nxt = nextUnplayedWeek();
+  const res = {key, lastPlayed, week:null, props:null, futures:null, prior:null};
+  if(nxt.week && nxt.year===year){
+    res.week = nxt.week;
+    const lines = oddsWeekLines(year, nxt.week);
+    res.props = lines.length ? oddsSimWeek(year, lines, nxt.week) : null;
+    res.futures = oddsSimFutures(year, ODDS_FUTURE_SIMS);
+  }
+  _oddsCache[key] = res;
+  return res;
+}
+
+// ---- rendering helpers
+function oddsChip(p, label){
+  return `<span class="odds-chip">${label?`<span class="odds-lbl">${label}</span>`:''}${oddsFmt(p)}</span>`;
+}
+function oddsTeamCell(id){ return `<b>${currentTeamName(id)}</b>`; }
+function oddsListCard(title, rows, note){
+  // rows: [{label, p, right?}]
+  return `<div class="card odds-card"><div class="rr-h">${title}</div>
+    <table class="table-compact odds-tbl"><tbody>
+    ${rows.map(r=>`<tr><td>${r.label}</td><td class="num-cell">${r.right||''}</td><td class="num-cell odds-val">${oddsFmt(r.p)}</td></tr>`).join('')}
+    </tbody></table>${note?`<p class="note" style="font-size:10.5px;margin:6px 0 0">${note}</p>`:''}</div>`;
+}
+function oddsOUCard(title, line, pOver, note, unit){
+  return `<div class="card odds-card"><div class="rr-h">${title}</div>
+    <div class="odds-ou"><div><span class="odds-lbl">Over</span> <b>${line.toFixed(1)}${unit||''}</b><div class="odds-val">${oddsFmt(pOver)}</div></div>
+    <div><span class="odds-lbl">Under</span> <b>${line.toFixed(1)}${unit||''}</b><div class="odds-val">${oddsFmt(1-pOver)}</div></div></div>
+    ${note?`<p class="note" style="font-size:10.5px;margin:6px 0 0">${note}</p>`:''}</div>`;
+}
+function oddsYNCard(title, p, note){
+  return `<div class="card odds-card"><div class="rr-h">${title}</div>
+    <div class="odds-ou"><div><span class="odds-lbl">Yes</span><div class="odds-val">${oddsFmt(p)}</div></div>
+    <div><span class="odds-lbl">No</span><div class="odds-val">${oddsFmt(1-p)}</div></div></div>
+    ${note?`<p class="note" style="font-size:10.5px;margin:6px 0 0">${note}</p>`:''}</div>`;
+}
+
+function oddsLinesHtml(year, week){
+  const lines = oddsWeekLines(year, week);
+  if(!lines.length) return `<p class="note">No lines yet.</p>`;
+  const rec = {}; computeCurrentStandings(year).forEach(r=>{ rec[r.owner] = `${r.w}-${r.l}`; });
+  const body = lines.map(L=>{
+    const favId = L.favIsA ? L.oA : L.oB;
+    const row = (id, ou, first)=>{
+      const sp = id===favId ? oddsSpreadTxt(-L.spreadLine) : oddsSpreadTxt(L.spreadLine);
+      const spP = id===favId ? L.pFavCover : 1-L.pFavCover;
+      const pWin = id===L.oA ? L.pA : 1-L.pA;
+      const proj = id===L.oA ? L.mA : L.mB;
+      return `<tr class="${first?'odds-gstart':''}"><td><b>${currentTeamName(id)}</b></td><td class="num-cell">${rec[id]||''}</td><td class="num-cell">${proj.toFixed(1)}</td>
+        <td class="num-cell"><b>${sp}</b></td><td class="num-cell"><b>${oddsFmt(pWin)}</b></td>
+        <td class="num-cell">${ou==='o'?'O':'U'} <b>${L.totalLine.toFixed(1)}</b></td></tr>`;
+    };
+    return `<tbody class="odds-game">${row(L.oA,'o',true)}${row(L.oB,'u',false)}</tbody>`;
+  }).join('');
+  return `<div class="card odds-card" style="padding:4px 12px"><div class="table-wrap"><table class="table-compact odds-tbl odds-lines"><thead><tr>
+    <th>Team</th><th class="num-cell">Rec</th><th class="num-cell">Proj</th><th class="num-cell">Spread</th><th class="num-cell">Money</th><th class="num-cell">Total</th></tr></thead>${body}</table></div></div>
+    <p class="note" style="margin-top:8px">The favorite lays the points. Total is both teams' projected scores added together. ${oddsEspn(year, week) ? `Projected scores are ESPN's week ${week} projections.` : 'Projected scores come from the site model.'} Money odds are pulled toward even, since a single fantasy week is streaky.</p>`;
+}
+
+function oddsPropsHtml(sim){
+  if(!sim.props) return `<p class="note">No upcoming week on the schedule.</p>`;
+  const P = sim.props, S = P.S;
+  const nameOfSlot = i => { const L = P.lines[i>>1]; return (i&1) ? L.oB : L.oA; };
+  const teamRows = (counts)=>{ const f = oddsFluke(counts.map(n=>n/S)); return counts.map((n,i)=>({label:oddsTeamCell(nameOfSlot(i)), p:f[i]})).sort((a,b)=>b.p-a.p); };
+  const gameName = g => { const L = P.lines[g]; return `${currentTeamName(L.oA)} <span class="note">vs</span> ${currentTeamName(L.oB)}`; };
+  const gameRows = (counts)=>{ const f = oddsFluke(counts.map(n=>n/S), 0.6); return counts.map((n,g)=>({label:gameName(g), p:f[g]})).sort((a,b)=>b.p-a.p); };
+  const cl = oddsMedianLine(P.closestM), bl = oddsMedianLine(P.blowM);
+  const hl = oddsMedianLine(P.highS), ll = oddsMedianLine(P.lowS), tl = oddsMedianLine(P.tot);
+  const ul = 1.5, u10 = 2.5;
+  return `<div class="grid cols-3 odds-grid">
+    ${oddsListCard('Highest-Scoring Team', teamRows(P.maxTeam), 'Team with the most points on the week.')}
+    ${oddsListCard('Lowest-Scoring Team', teamRows(P.minTeam), 'Team with the fewest points on the week.')}
+    <div style="display:grid;gap:12px;align-content:start">
+      ${oddsOUCard('Week High Score', hl, oddsOver(P.highS, hl), 'Points scored by the week\'s top team.')}
+      ${oddsOUCard('Week Low Score', ll, oddsOver(P.lowS, ll), 'Points scored by the week\'s bottom team.')}
+    </div>
+    ${oddsListCard('Closest Game', gameRows(P.closestG), 'Matchup with the smallest margin.')}
+    ${oddsListCard('Biggest Blowout', gameRows(P.blowG), 'Matchup with the largest margin.')}
+    <div style="display:grid;gap:12px;align-content:start">
+      ${oddsOUCard('Closest Margin', cl, oddsOver(P.closestM, cl), 'Margin of the closest game.', ' pts')}
+      ${oddsOUCard('Biggest Blowout Margin', bl, oddsOver(P.blowM, bl), 'Margin of the largest blowout.', ' pts')}
+    </div>
+    ${oddsOUCard('League Total Points', tl, oddsOver(P.tot, tl), 'All 12 scores added together.')}
+    ${oddsOUCard('Upsets', ul, oddsOver(P.upsets, ul), 'Games won by the underdog (out of ' + P.lines.length + ').')}
+    ${oddsOUCard('Games Decided by Under 10', u10, oddsOver(P.under10, u10), 'Out of ' + P.lines.length + ' games.')}
+    ${oddsYNCard('A Team Scores ' + P.hiCut + '+', P.anyHi, 'At least one score at or above ' + P.hiCut + '.')}
+    ${oddsYNCard('A Team Scores ' + P.loCut + ' or Less', P.anyLo, 'At least one score at or below ' + P.loCut + '.')}
+  </div>`;
+}
+
+function oddsPlayerPropsHtml(sim){
+  if(!sim.props || !sim.props.pool.length) return `<p class="note">No box scores to project players from yet.</p>`;
+  const P = sim.props, S = P.S;
+  const fp = oddsFluke(P.pool.map((p,i)=>P.pCount[i]/S), 0.8);
+  const rows = P.pool.map((p,i)=>({label:`<b>${p.name}</b> <span class="note">${p.pos}</span>`, right:`<span class="note" style="font-size:11px">${currentTeamName(p.owner)}</span>`, p:fp[i], mu:p.mu}))
+    .sort((a,b)=>b.p-a.p).slice(0,10);
+  const posEntries = Object.entries(P.posCount).filter(([pos,n])=>n/S>=0.01);
+  const fpos = oddsFluke(posEntries.map(([pos,n])=>n/S), 0.7);
+  const posRows = posEntries.map(([pos,n],i)=>({label:`<b>${pos}</b>`, p:fpos[i]})).sort((a,b)=>b.p-a.p);
+  const tl = oddsMedianLine(P.topPts);
+  return `<div class="grid cols-3 odds-grid">
+    ${oddsListCard('Highest-Scoring Player', rows, 'Top 10 of ' + P.pool.length + ' starters. One player scores the most across all 12 lineups. Prices are pulled toward even; fantasy scoring is streaky.')}
+    ${oddsListCard('Position of the Top Scorer', posRows, 'Which position produces the week\'s best individual score.')}
+    ${oddsOUCard('Top Individual Score', tl, oddsOver(P.topPts, tl), 'Points scored by the week\'s highest-scoring starter.')}
+  </div>
+  <p class="note" style="margin-top:8px">Players are last week's starting lineups; each one's average is pulled toward his position's league average, and spread comes from position scoring variance. Where ESPN's data is on file for the week, its projected leaders are used as-is and the rest of each lineup is sized to ESPN's team total. It does not know about byes, injuries or lineup changes.</p>`;
+}
+
+
+function oddsFuturesHtml(sim){
+  if(!sim.futures) return `<p class="note">No remaining regular-season games to simulate.</p>`;
+  const F = sim.futures;
+  const n = Object.keys(F).length, nDiv = Object.keys(CURRENT_DIVISIONS).length;
+  // fantasy futures pulled toward an even split; the real NFL board is tighter than the raw simulation too
+  const CFG = {title:[1/n,0.4], seed1:[1/n,0.4], div:[nDiv/n,0.3], pts:[1/n,0.4], last:[1/n,0.4], playoff:[CURRENT_SEASON_PLAYOFF_SPOTS/n,0.3]};
+  // The pull toward even eases as the season fills in: backtest on 2024-25 playoff fields found ~50%
+  // best after 5 games and ~30% after 8, so it scales with games played (floor 15%).
+  const gp = Math.max(...computeCurrentStandings(+sim.key.split(':')[0]).map(r=>r.games), 0);
+  const lamF = Math.max(0.15, Math.min(0.5, 0.5 - 0.0667*(gp-5)))/0.3;
+  const adj = (p,k)=> oddsPull(p, CFG[k][0], Math.min(0.6, CFG[k][1]*lamF));
+  const ids = Object.keys(F).sort((a,b)=>adj(F[b].title,'title')-adj(F[a].title,'title') || F[b].playoff-F[a].playoff);
+  const rec = {}; computeCurrentStandings(+sim.key.split(':')[0]).forEach(r=>{ rec[r.owner] = `${r.w}-${r.l}`; });
+  const cell = (id,k)=>`<td class="num-cell">${oddsFmt(adj(F[id][k],k))}</td>`;
+  return `<div class="table-wrap"><table class="table-compact odds-tbl odds-fut"><thead><tr>
+    <th>Team</th><th class="num-cell">Record</th><th class="num-cell">Win Title</th><th class="num-cell">Make Playoffs</th><th class="num-cell">#1 Seed</th><th class="num-cell">Win Division</th><th class="num-cell">Most Points</th><th class="num-cell">Last Place</th><th class="num-cell">Wins O/U</th><th class="num-cell" title="Scoring nudge from the NFL teams in this roster's lineup">NFL Adj</th><th class="num-cell" title="Average points per game lost to NFL byes and injured starters over the rest of the season">Bye/Inj</th></tr></thead><tbody>
+    ${ids.map(id=>`<tr><td><b>${currentTeamName(id)}</b></td><td class="num-cell">${rec[id]||''}</td>
+      ${cell(id,'title')}${cell(id,'playoff')}${cell(id,'seed1')}${cell(id,'div')}${cell(id,'pts')}${cell(id,'last')}
+      <td class="num-cell"><b>${F[id].line.toFixed(1)}</b> O ${oddsFmt(F[id].pOver)}</td>
+      <td class="num-cell">${F[id].nfl?((F[id].nfl>0?'+':'')+(F[id].nfl*100).toFixed(1)+'%'):'&mdash;'}</td>
+      <td class="num-cell">${F[id].drag>0.05?'-'+F[id].drag.toFixed(1):'&mdash;'}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="note" style="margin-top:8px">${ODDS_FUTURE_SIMS.toLocaleString()} simulated seasons with the Championship Odds rules (7-team field, division winners seeded first, one bye for the top seed). Each team's scoring is nudged by the NFL market: its starters' NFL teams, weighted by projected NFL wins from the FTN/DVOA model (1% per win above or below an average team, capped at 2%). Byes and starters who have recently missed games cost their team points in the weeks they matter (Bye/Inj column). Prices are then pulled toward an even split, because fantasy outcomes are streakier than a pure simulation says; a backtest on the 2024 and 2025 playoff fields put that pull near 50% after five games and 30% after eight, so it eases as the season goes on. Playoff games give the higher seed +5 points, per the bylaws.</p>
+    ${oddsNflDetailsHtml()}`;
+}
+function oddsNflDetailsHtml(){
+  if(typeof NFL_ODDS==="undefined") return '';
+  const pr = x=> x==null ? '&mdash;' : (x>0?'+':'')+x;
+  const pct = x=> '~' + oddsFmt(x/100);
+  const rows = NFL_ODDS.rows.slice().sort((a,b)=>a[2]-b[2]);
+  return `<details style="margin-top:12px"><summary class="note" style="cursor:pointer;font-weight:700">NFL odds used for the tilt (as of ${NFL_ODDS.asOf})</summary>
+    <div class="table-wrap" style="margin-top:8px"><table class="table-compact odds-tbl"><thead><tr><th>Team</th><th class="num-cell">Super Bowl</th><th class="num-cell">Make Playoffs</th><th class="num-cell">Win Division</th><th class="num-cell">Proj Wins</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${r[1]}</td><td class="num-cell">${pr(r[2])}</td><td class="num-cell">${r[3]!=null?pr(r[3]):pct(r[5])}</td><td class="num-cell">${r[4]!=null?pr(r[4]):pct(r[6])}</td><td class="num-cell">${r[8].toFixed(1)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="note" style="margin-top:6px">Super Bowl: DraftKings, Oct 13 (FOX Sports). Make playoffs: DraftKings, Oct 7 (SI). Win division: consensus of major books, Oct 13 (SportsBettingDime). A "~" price is converted from the FTN/DVOA model probability because no book price was listed. Projected wins: FTN/DVOA model, Oct 13.</p></details>`;
+}
+
+// ---- tracker: lines as they stood before each week vs. what happened
+function oddsTrackerHtml(year){
+  const from = ODDS_TRACK_FROM[year];
+  const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff && from!=null && w.w>=from).map(w=>w.w).sort((a,b)=>a-b);
+  if(!weeks.length){
+    return `<p class="note">Tracking starts with week ${from||'?'}. Once those scores post, this section grades every line against the result: favorites straight up and against the spread, overs and unders, the biggest upset, and how far the projections were off.</p>`;
+  }
+  const rows = [], perTeam = {};
+  const t = id => (perTeam[id] = perTeam[id] || {suW:0,suL:0,atsW:0,atsL:0,o:0,u:0});
+  let favSU=0, favTot=0, favATS=0, ovr=0, undr=0, errM=0, errT=0, n=0, upset=null;
+  weeks.forEach(w=>{
+    const lines = oddsLinesBefore(year, w);
+    const wk = MATCHUPS[year].find(x=>x.w===w);
+    wk.g.forEach(([tA,sA,tB,sB])=>{
+      const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+      const L = lines.find(l=>(l.oA===oA&&l.oB===oB)||(l.oA===oB&&l.oB===oA));
+      if(!L) return;
+      const sFav = L.favIsA===(L.oA===oA) ? sA : sB;       // result lined up so "A" is the line's A
+      const aScore = L.oA===oA ? sA : sB, bScore = L.oA===oA ? sB : sA;
+      const margin = aScore - bScore, favMargin = L.favIsA ? margin : -margin;
+      const favId = L.favIsA ? L.oA : L.oB, dogId = L.favIsA ? L.oB : L.oA;
+      const suFav = favMargin>0, cover = favMargin > L.spreadLine, total = aScore+bScore, over = total > L.totalLine;
+      n++; favTot++; if(suFav) favSU++; if(cover) favATS++; if(over) ovr++; else undr++;
+      errM += Math.abs(margin - L.diff); errT += Math.abs(total - L.total);
+      t(favId)[suFav?'suW':'suL']++; t(dogId)[suFav?'suL':'suW']++;
+      t(favId)[cover?'atsW':'atsL']++; t(dogId)[cover?'atsL':'atsW']++;
+      t(L.oA)[over?'o':'u']++; t(L.oB)[over?'o':'u']++;
+      if(!suFav){ const pDog = L.favIsA ? 1-L.pA : L.pA; if(!upset || pDog<upset.p) upset = {p:pDog, dog:dogId, fav:favId, w}; }
+      rows.push({w, favId, dogId, spread:L.spreadLine, favMargin, total, totalLine:L.totalLine, suFav, cover, over});
+    });
+  });
+  const pct = (a,b)=> b ? Math.round(a/b*100)+'%' : '&mdash;';
+  const tiles = `<div class="grid cols-4" style="margin-bottom:12px">
+    <div class="card" style="padding:9px 12px"><div class="rr-h">Favorites Straight Up</div><div class="odds-big">${favSU}&ndash;${favTot-favSU}</div><div class="note">${pct(favSU,favTot)}</div></div>
+    <div class="card" style="padding:9px 12px"><div class="rr-h">Favorites vs. Spread</div><div class="odds-big">${favATS}&ndash;${favTot-favATS}</div><div class="note">${pct(favATS,favTot)}</div></div>
+    <div class="card" style="padding:9px 12px"><div class="rr-h">Overs / Unders</div><div class="odds-big">${ovr}&ndash;${undr}</div><div class="note">${pct(ovr,ovr+undr)} overs</div></div>
+    <div class="card" style="padding:9px 12px"><div class="rr-h">Avg Miss</div><div class="odds-big">${(errM/n).toFixed(1)}</div><div class="note">pts on margin &middot; ${(errT/n).toFixed(1)} on total</div></div>
+  </div>`;
+  const ids = Object.keys(perTeam).sort((a,b)=>(perTeam[b].atsW-perTeam[b].atsL)-(perTeam[a].atsW-perTeam[a].atsL));
+  const teamTbl = `<div class="card" style="padding:10px 14px"><div class="rr-h">By Team</div><div class="table-wrap"><table class="table-compact odds-tbl"><thead><tr><th>Team</th><th class="num-cell">Straight Up</th><th class="num-cell">ATS</th><th class="num-cell">O/U</th></tr></thead><tbody>
+    ${ids.map(id=>{ const x = perTeam[id]; return `<tr><td>${oddsTeamCell(id)}</td><td class="num-cell">${x.suW}&ndash;${x.suL}</td><td class="num-cell">${x.atsW}&ndash;${x.atsL}</td><td class="num-cell">${x.o}&ndash;${x.u}</td></tr>`; }).join('')}
+    </tbody></table></div></div>`;
+  const gameTbl = `<div class="card" style="padding:10px 14px"><div class="rr-h">Every Graded Game</div><div class="table-wrap"><table class="table-compact odds-tbl"><thead><tr><th>Wk</th><th>Favorite</th><th class="num-cell">Line</th><th class="num-cell">Result</th><th class="num-cell">Total</th></tr></thead><tbody>
+    ${rows.slice().sort((a,b)=>b.w-a.w).map(r=>`<tr><td>${r.w}</td><td>${oddsTeamCell(r.favId)} <span class="note">over ${currentTeamName(r.dogId)}</span></td>
+      <td class="num-cell">-${r.spread.toFixed(1)}</td>
+      <td class="num-cell" style="font-weight:700">${r.favMargin>0?'W':'L'} by ${Math.abs(r.favMargin).toFixed(1)} &middot; ${r.cover?'covered':'missed'}</td>
+      <td class="num-cell">${r.total.toFixed(1)} <span class="note">(${r.totalLine.toFixed(1)}) ${r.over?'O':'U'}</span></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+  const up = upset ? `<p class="note" style="margin:0 0 10px">Biggest upset so far: ${oddsTeamCell(upset.dog)} beat ${currentTeamName(upset.fav)} in week ${upset.w}, a ${Math.round(upset.p*100)}% shot.</p>` : '';
+  return tiles + up + `<div class="grid cols-2" style="align-items:start">${teamTbl}${gameTbl}</div>
+    <p class="note" style="margin-top:8px">Graded against the lines as they stood before each week. A line is frozen if a snapshot is saved in data.js; otherwise it is rebuilt from the scores that existed before that week, with rosters as they are today.</p>`;
+}
+
+// Commissioner tool: the snippet that freezes this week's lines in data.js.
+function oddsLockSnippet(year, week){
+  const lines = oddsWeekLines(year, week);
+  const r = x => +x.toFixed(3);
+  const body = lines.map(L=>`{a:"${L.oA}",b:"${L.oB}",mA:${r(L.mA)},mB:${r(L.mB)},sdA:${r(L.sdA)},sdB:${r(L.sdB)}}`).join(",\n    ");
+  return `ODDS_LOCKED[${year}] = ODDS_LOCKED[${year}] || {};\nODDS_LOCKED[${year}][${week}] = [\n    ${body}\n];`;
+}
+
+function oddsBodyHtml(){
+  const nxt = nextUnplayedWeek(), year = nxt.year;
+  const sim = _oddsCache[year + ":" + (nxt.lastPlayed||0)];
+  const loading = `<p class="note">Running simulations&hellip;</p>`;
+  const wkLbl = nxt.week ? `Week ${nxt.week}` : 'No upcoming week';
+  const snippet = nxt.week ? oddsLockSnippet(year, nxt.week) : '';
+  return `
+    ${renderJumpNav([
+      {id:'jump-odds-lines', label:'Lines'},
+      {id:'jump-odds-futures', label:'Futures'},
+      {id:'jump-odds-props', label:'Props'},
+      {id:'jump-odds-players', label:'Player Props'},
+      {id:'jump-odds-tracker', label:'Tracker'}
+    ])}
+    <div id="jump-odds-lines" class="section-title">${iconSvg('standings')}Lines <span class="sub">${wkLbl}</span></div>
+    ${nxt.week ? oddsLinesHtml(year, nxt.week) : '<p class="note">The schedule has no unplayed week left.</p>'}
+
+    <div id="jump-odds-futures" class="section-title" style="margin-top:30px">${iconSvg('timeline')}Futures <span class="sub">season-long</span></div>
+    <div id="oddsFutures">${sim ? oddsFuturesHtml(sim) : loading}</div>
+
+    <div id="jump-odds-props" class="section-title" style="margin-top:30px">${iconSvg('power')}Props <span class="sub">${wkLbl}</span></div>
+    <div id="oddsProps">${sim ? oddsPropsHtml(sim) : loading}</div>
+
+    <div id="jump-odds-players" class="section-title" style="margin-top:30px">${iconSvg('roster')}Player Props <span class="sub">${wkLbl}</span></div>
+    <div id="oddsPlayers">${sim ? oddsPlayerPropsHtml(sim) : loading}</div>
+
+    <div id="jump-odds-tracker" class="section-title" style="margin-top:30px">${iconSvg('percentile')}Line Tracker <span class="sub">week ${ODDS_TRACK_FROM[year]||'?'} onward</span></div>
+    ${oddsTrackerHtml(year)}
+
+    ${nxt.week ? `<details style="margin-top:22px"><summary class="note" style="cursor:pointer;font-weight:700">Commissioner: freeze ${wkLbl} lines</summary>
+      <p class="note" style="margin:8px 0">Paste this at the bottom of data.js before the week's games start. The tracker then grades that week against these exact lines instead of rebuilding them.</p>
+      <textarea readonly rows="${snippet.split('\n').length+1}" style="width:100%;font:11.5px/1.4 monospace" onclick="this.select()">${snippet}</textarea></details>` : ''}`;
+}
+
+function pageOdds(){
+  return `
+    <p class="note" style="margin-bottom:12px">For entertainment. Lines come from ESPN's projections; no bets are taken and no money is involved.</p>
+    <div id="oddsBody">${oddsBodyHtml()}</div>`;
+}
+
+// Fill the simulation-backed sections after first paint.
+function fillOddsSims(){
+  const nxt = nextUnplayedWeek();
+  if(!nxt.week) return;
+  setTimeout(()=>{
+    if(currentPage!=="Odds") return;
+    const sim = oddsGetSims(nxt.year);
+    const set = (id, html)=>{ const el = document.getElementById(id); if(el) el.innerHTML = html; };
+    set("oddsProps", oddsPropsHtml(sim));
+    set("oddsPlayers", oddsPlayerPropsHtml(sim));
+    set("oddsFutures", oddsFuturesHtml(sim));
+    wrapBareTables(document.getElementById("app"));
+  }, 30);
 }
 
 /* ============ PAGE: DASHBOARD ============ */
@@ -9425,6 +10222,61 @@ function computeLeagueKPIs(){
     return games.filter(g=>Math.abs(g.sA-g.sB)>=30).length/games.length;
   };
 
+  const avgMargin = games=> games.length ? games.reduce((a,g)=>a+Math.abs(g.sA-g.sB),0)/games.length : null;
+  const closeRate = games=> games.length ? games.filter(g=>Math.abs(g.sA-g.sB)<5).length/games.length : null;
+  const maxScore = games=> games.length ? Math.max(...games.flatMap(g=>[g.sA,g.sB])) : null;
+  const lineupEff = yrs=>{
+    const rows = benchPointsLeftByOwner(yrs.filter(y=>PLAYER_SCORES[y]));
+    const act = rows.reduce((a,r)=>a+r.actual,0), opt = rows.reduce((a,r)=>a+r.optimal,0);
+    return opt ? act/opt : null;
+  };
+
+  const KPI_BOOM = 140, KPI_BUST = 90;
+  const scoresOf = games=>games.flatMap(g=>[g.sA,g.sB]);
+  const medianScore = games=>{
+    const s = scoresOf(games).sort((a,b)=>a-b); if(!s.length) return null;
+    const m = Math.floor(s.length/2); return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+  };
+  const boomRate = games=>{ const s = scoresOf(games); return s.length ? s.filter(x=>x>=KPI_BOOM).length/s.length : null; };
+  const bustRate = games=>{ const s = scoresOf(games); return s.length ? s.filter(x=>x<KPI_BUST).length/s.length : null; };
+  const pct0 = v => v==null ? "&mdash;" : Math.round(v*100)+"%";
+  // Waiver churn, derived from weekly rosters: players on a team's roster this week who were
+  // not on it the week before, averaged per team per week. Trades count too (no transaction
+  // log is stored for waivers), so read it as roster turnover.
+  const churn = yrs=>{
+    let adds = 0, n = 0;
+    yrs.forEach(y=>{
+      const wk = PLAYER_SCORES[y]; if(!wk) return;
+      const weeks = Object.keys(wk).map(Number).sort((a,b)=>a-b);
+      for(let i=1;i<weeks.length;i++){
+        const prev = {}, cur = wk[weeks[i]], before = wk[weeks[i-1]];
+        Object.keys(before).forEach(t=>{ const o = ownerForTeam(y,t); if(o) prev[o] = new Set(before[t].map(p=>p.name)); });
+        Object.keys(cur).forEach(t=>{ const o = ownerForTeam(y,t); if(!o || o==='rm2' || !prev[o]) return;
+          adds += cur[t].filter(p=>!prev[o].has(p.name)).length; n++; });
+      }
+    });
+    return n ? adds/n : null;
+  };
+  // Primetime (TNF/SNF/MNF) scoring: average team score in games listed in PRIMETIME_SCHEDULE
+  // vs. all other regular-season games.
+  const prime = (()=>{
+    const slots = (y,w)=>{ const e = PRIMETIME_SCHEDULE[y] && PRIMETIME_SCHEDULE[y][w]; return e ? [e.tnf,e.snf,e.mnf].filter(x=>Array.isArray(x) && x.length===2) : []; };
+    const split = games=>{
+      const pt = [], other = [];
+      games.forEach(g=>{
+        const ps = slots(g.year, g.week);
+        if(!(PRIMETIME_SCHEDULE[g.year] && PRIMETIME_SCHEDULE[g.year][g.week])) return;   // no primetime data for that week
+        const isPt = ps.some(([a,b])=>{ const oa = ownerForTeam(g.year,a), ob = ownerForTeam(g.year,b);
+          return (oa===g.oA && ob===g.oB) || (oa===g.oB && ob===g.oA); });
+        (isPt?pt:other).push(g.sA, g.sB);
+      });
+      const avg = a=>a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+      return {pt:avg(pt), other:avg(other)};
+    };
+    const s = split(seasonGames), a = split(allRegGames);
+    return {season:s.pt, all:a.pt, note: s.other==null ? "TNF/SNF/MNF average" : `vs ${s.other.toFixed(1)} in other slots`};
+  })();
+
   const seasonStandings = computeCurrentStandings(year).filter(r=>r.games>0);
   const seasonBalance = seasonStandings.length
     ? Math.max(...seasonStandings.map(r=>r.pct)) - Math.min(...seasonStandings.map(r=>r.pct))
@@ -9443,7 +10295,15 @@ function computeLeagueKPIs(){
     {label:"Avg PPG", icon:'chart', season:num1(avgPPG(seasonGames)), allTime:num1(avgPPG(allRegGames)), note:"per team per game"},
     {label:"Volatility", icon:'sos', season:num1(stdDev(seasonGames)), allTime:num1(stdDev(allRegGames)), note:"std. dev. of scores"},
     {label:"Parity Gap", icon:'grid', season:pct1(seasonBalance), allTime:pct1(allTimeBalance), note:"win% spread, top to bottom"},
-    {label:"Blowout Rate", icon:'odds', season:pct1(blowoutRate(seasonGames)), allTime:pct1(blowoutRate(allRegGames)), note:"games decided by 30+"}
+    {label:"Blowout Rate", icon:'odds', season:pct1(blowoutRate(seasonGames)), allTime:pct1(blowoutRate(allRegGames)), note:"games decided by 30+"},
+    {label:"Avg Margin", icon:'grid', season:num1(avgMargin(seasonGames)), allTime:num1(avgMargin(allRegGames)), note:"avg winning margin"},
+    {label:"Nail-Biters", icon:'odds', season:pct1(closeRate(seasonGames)), allTime:pct1(closeRate(allRegGames)), note:"games decided by under 5"},
+    {label:"Lineup Efficiency", icon:'chart', season:pct1(lineupEff([year])), allTime:pct1(lineupEff(Object.keys(PLAYER_SCORES).map(Number))), note:"actual vs. best possible"},
+    {label:"High Score", icon:'chart', season:num1(maxScore(seasonGames)), allTime:num1(maxScore(allRegGames)), note:"best single-team week"},
+    {label:"Median Score", icon:'chart', season:num1(medianScore(seasonGames)), allTime:num1(medianScore(allRegGames)), note:"the typical team week"},
+    {label:"Boom / Bust", icon:'odds', season:`${pct0(boomRate(seasonGames))} / ${pct0(bustRate(seasonGames))}`, allTime:`${pct0(boomRate(allRegGames))} / ${pct0(bustRate(allRegGames))}`, note:`${KPI_BOOM}+ / under ${KPI_BUST}`},
+    {label:"Waiver Churn", icon:'trade', season:num1(churn([year])), allTime:num1(churn(Object.keys(PLAYER_SCORES).map(Number))), note:"new players per team per wk"},
+    {label:"Primetime PPG", icon:'schedule', season:num1(prime.season), allTime:num1(prime.all), note:prime.note}
   ];
 }
 
@@ -9459,7 +10319,7 @@ function renderLeagueKPIsHtml(kpis){
     </div>`;
   return `<div class="card span-2" style="padding:9px 14px">
     <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin-bottom:8px">${iconSvg('chart',12)}League Pulse <span style="margin-left:auto;font-weight:600;text-transform:none;letter-spacing:0">large = this season</span></div>
-    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">${kpis.map(cell).join("")}</div>
+    <div class="kpi-grid">${kpis.map(cell).join("")}</div>
   </div>`;
 }
 
@@ -9965,6 +10825,309 @@ function computePlayoffImplicationGames(year){
 // (skipping any whose result is empty for this league's data), so the
 // Dashboard can draw a fresh random few on every render ("rotates each
 // time" -- there's no weekly lock-in, it's just whatever renders).
+// ---- Matchup / margin / league-week / last-week fun facts -------------------
+// Added to the Dashboard rotation: head-to-head history for this week's slate,
+// close-game and margin records, projection-based slate facts, milestones and
+// streaks, and a recap of last week. Each returns {value,label} like the rest
+// of the pool; per-category lists are capped so one category can't flood the
+// rotation. League history here means the seasons on file (2024 onward).
+function _ffOrd(n){ const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function _ffName(o){ return `<b>${currentTeamName(o)}</b>`; }
+function _ffPos(n){ return /s$/i.test(n) ? n+"'" : n+"'s"; }
+// Prior meetings between two owners, oldest first, scores oriented to (oA, oB).
+function _ffMeetings(oA, oB){
+  return allGames()
+    .filter(g=>g.oA && g.oB && typeof g.sA==='number' && typeof g.sB==='number' &&
+      ((g.oA===oA&&g.oB===oB)||(g.oA===oB&&g.oB===oA)))
+    .sort((a,b)=>a.year-b.year||a.week-b.week)
+    .map(g=>{
+      const fwd = g.oA===oA, sa = fwd?g.sA:g.sB, sb = fwd?g.sB:g.sA;
+      return {year:g.year, week:g.week, playoff:g.playoff, sa, sb, margin:Math.abs(sa-sb), winner: sa>sb?oA:(sb>sa?oB:null)};
+    });
+}
+// Chronological per-owner game log (2024 Wk18 skipped -- starters sit that week).
+function _ffOwnerLog(){
+  const log = {};
+  Object.keys(MATCHUPS).map(Number).sort((a,b)=>a-b).forEach(year=>{
+    MATCHUPS[year].slice().sort((a,b)=>a.w-b.w).forEach(wk=>{
+      if(year===2024 && wk.w===18) return;
+      wk.g.forEach(([tA,sA,tB,sB])=>{
+        const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+        if(typeof sA!=='number' || typeof sB!=='number') return;
+        if(oA && oA!=='rm2') (log[oA]=log[oA]||[]).push({pts:sA, won:sA>sB});
+        if(oB && oB!=='rm2') (log[oB]=log[oB]||[]).push({pts:sB, won:sB>sA});
+      });
+    });
+  });
+  return log;
+}
+function _ffActiveRun(arr, test){ let n=0; for(let i=arr.length-1;i>=0;i--){ if(test(arr[i])) n++; else break; } return n; }
+
+function computeWeekFunFacts(year){
+  const out = [];
+  const push = (value, label) => { if(value!=null && label) out.push({value, label}); };
+  const safe = fn => { try{ return fn(); }catch(e){ return null; } };
+  const games = allGames().filter(g=>typeof g.sA==='number' && typeof g.sB==='number');
+  const nxt = nextUnplayedWeek();
+  const slate = (nxt.week && nxt.year===year ? nxt.games : []).map(([tA,tB])=>({a:ownerForTeam(year,tA), b:ownerForTeam(year,tB)}))
+    .filter(s=>s.a && s.b && s.a!=='rm2' && s.b!=='rm2');
+  slate.forEach(s=>{ s.m = _ffMeetings(s.a, s.b); });
+  const lastW = nxt.lastPlayed;
+  const nm = t=>{ const o = ownerForTeam(year,t); return o ? currentTeamName(o) : t; };
+  const standings = computeCurrentStandings(year).filter(r=>r.games>0);
+
+  // ---------- this week's matchups ----------
+  safe(()=>{ // head-to-head record
+    slate.filter(s=>s.m.length>=2).map(s=>{
+      let aw=0, bw=0; s.m.forEach(g=>{ if(g.winner===s.a) aw++; else if(g.winner===s.b) bw++; });
+      const lead = aw>=bw ? s.a : s.b, trail = lead===s.a ? s.b : s.a, lw=Math.max(aw,bw), tw=Math.min(aw,bw);
+      const last3 = s.m.slice(-3);
+      const comeback = last3.length===3 && last3.every(g=>g.winner===trail) && lw>tw;
+      return {s, lead, trail, lw, tw, comeback, skew: lw-tw};
+    }).sort((x,y)=>(y.comeback-x.comeback)||y.skew-x.skew).slice(0,2).forEach(x=>{
+      if(x.lw===x.tw) push(`${x.lw}&ndash;${x.tw}`, `${_ffName(x.s.a)} and ${_ffName(x.s.b)} are dead even all-time at <b>${x.lw}&ndash;${x.tw}</b> heading into Week ${nxt.week}.`);
+      else push(`${x.lw}&ndash;${x.tw}`, `${_ffName(x.lead)} leads ${_ffName(x.trail)} <b>${x.lw}&ndash;${x.tw}</b> all-time${x.comeback?`, but ${currentTeamName(x.trail)} has won the last three`:''}.`);
+    });
+  });
+  safe(()=>{ // closest previous game between the two
+    slate.filter(s=>s.m.length).map(s=>({s, g:s.m.slice().sort((p,q)=>p.margin-q.margin)[0]}))
+      .sort((p,q)=>p.g.margin-q.g.margin).slice(0,2).forEach(x=>{
+        const w = x.g.winner ? currentTeamName(x.g.winner) : null;
+        push(x.g.margin.toFixed(2), `${_ffName(x.s.a)} vs. ${_ffName(x.s.b)}: their closest game was ${x.g.playoff?x.g.playoff+' of ':'Week '+x.g.week+', '}${x.g.year}, ${w?`<b>${w}</b> winning by`:'a tie, decided by'} <b>${x.g.margin.toFixed(2)}</b>.`);
+      });
+  });
+  safe(()=>{ // biggest previous blowout between the two
+    const lgMax = games.reduce((m,g)=>Math.max(m,Math.abs(g.sA-g.sB)),0);
+    slate.filter(s=>s.m.length).map(s=>({s, g:s.m.slice().sort((p,q)=>q.margin-p.margin)[0]}))
+      .sort((p,q)=>q.g.margin-p.g.margin).slice(0,2).forEach(x=>{
+        const w = x.g.winner, l = w===x.s.a ? x.s.b : x.s.a;
+        const record = Math.abs(x.g.margin-lgMax)<1e-9;
+        push(x.g.margin.toFixed(1), `${_ffName(w)} beat ${_ffName(l)} by <b>${x.g.margin.toFixed(1)}</b> in ${x.g.year} (Wk ${x.g.week}) &mdash; their biggest game ever${record?', and the largest margin in league history':''}.`);
+      });
+  });
+  safe(()=>{ // streak on the line
+    slate.map(s=>{
+      if(!s.m.length) return null;
+      const lastW0 = s.m[s.m.length-1].winner; if(!lastW0) return null;
+      let n=0; for(let i=s.m.length-1;i>=0;i--){ if(s.m[i].winner===lastW0) n++; else break; }
+      return {s, winner:lastW0, loser: lastW0===s.a?s.b:s.a, n};
+    }).filter(x=>x && x.n>=3).sort((p,q)=>q.n-p.n).slice(0,2).forEach(x=>{
+      push(`${x.n} straight`, `${_ffName(x.loser)} has lost <b>${x.n} straight</b> to ${_ffName(x.winner)}. A win this week ends it.`);
+    });
+  });
+  safe(()=>{ // playoff history
+    slate.map(s=>({s, p:s.m.filter(g=>g.playoff), last:s.m[s.m.length-1]})).filter(x=>x.p.length && !(x.last && x.last.playoff)).slice(0,2).forEach(x=>{
+      const g = x.p[x.p.length-1], w = g.winner;
+      push('Playoff history', `${_ffName(x.s.a)} and ${_ffName(x.s.b)} met in the ${g.year} playoffs (${g.playoff}). ${w?`<b>${currentTeamName(w)}</b> won by ${g.margin.toFixed(1)}.`:'It ended in a tie.'}`);
+    });
+  });
+  safe(()=>{ // revenge: last meeting was a playoff elimination
+    slate.map(s=>({s, g:s.m[s.m.length-1]})).filter(x=>x.g && x.g.playoff && x.g.winner).slice(0,2).forEach(x=>{
+      const w = x.g.winner, l = w===x.s.a ? x.s.b : x.s.a;
+      push('Playoff revenge', `Last time ${_ffName(w)} and ${_ffName(l)} played, in the ${x.g.year} playoffs (${x.g.playoff}), ${currentTeamName(w)} eliminated ${currentTeamName(l)}. ${currentTeamName(l)} gets another shot in Week ${nxt.week}.`);
+    });
+  });
+  safe(()=>{ // season scoring comparison, widest gap on the slate
+    const byOwner = {}; standings.forEach(r=>{ byOwner[r.owner] = r; });
+    const rows = slate.filter(s=>byOwner[s.a] && byOwner[s.b]).map(s=>{
+      const pa = byOwner[s.a].pf/byOwner[s.a].games, pb = byOwner[s.b].pf/byOwner[s.b].games;
+      return {hi: pa>=pb?s.a:s.b, lo: pa>=pb?s.b:s.a, ph: Math.max(pa,pb), pl: Math.min(pa,pb)};
+    }).sort((p,q)=>(q.ph-q.pl)-(p.ph-p.pl));
+    if(rows.length){ const x = rows[0];
+      push((x.ph-x.pl).toFixed(1), `${_ffName(x.hi)} averages <b>${x.ph.toFixed(1)}</b> points a game; ${_ffName(x.lo)} averages <b>${x.pl.toFixed(1)}</b>. That ${(x.ph-x.pl).toFixed(1)}-point gap is the widest on this week's slate.`); }
+  });
+  safe(()=>{ // luck check
+    const byPf = standings.slice().sort((p,q)=>q.pf-p.pf); const pfRank = {}; byPf.forEach((r,i)=>{ pfRank[r.owner]=i+1; });
+    const rec = {}; standings.forEach(r=>{ rec[r.owner] = r; });
+    const rows = slate.filter(s=>rec[s.a] && rec[s.b]).map(s=>{
+      const gap = o=>Math.abs(rec[o].rank-pfRank[o]);
+      const lucky = gap(s.a)>=gap(s.b) ? s.a : s.b, other = lucky===s.a ? s.b : s.a;
+      return {lucky, other, score: gap(s.a)+gap(s.b)};
+    }).sort((p,q)=>q.score-p.score);
+    if(rows.length && rows[0].score>=4){ const x = rows[0], A = rec[x.lucky], B = rec[x.other];
+      push('Luck check', `${_ffName(x.lucky)} is <b>${A.w}&ndash;${A.l}</b> with the <b>${_ffOrd(pfRank[x.lucky])}</b>-best points total. Their Week ${nxt.week} opponent, ${_ffName(x.other)}, is <b>${B.w}&ndash;${B.l}</b> with the <b>${_ffOrd(pfRank[x.other])}</b>-best.`); }
+  });
+
+  // ---------- close games and margins ----------
+  const seasonGames = games.filter(g=>g.year===year);
+  const margin = g=>Math.abs(g.sA-g.sB);
+  const fmtG = g=>{ const aw = g.sA>=g.sB; return `${currentTeamName(aw?g.oA:g.oB)} over ${currentTeamName(aw?g.oB:g.oA)}, ${Math.max(g.sA,g.sB).toFixed(2)} to ${Math.min(g.sA,g.sB).toFixed(2)}`; };
+  let closestSeason = null;
+  safe(()=>{
+    closestSeason = seasonGames.slice().sort((a,b)=>margin(a)-margin(b))[0];
+    if(closestSeason) push(margin(closestSeason).toFixed(2), `Closest game of ${year} so far: Week ${closestSeason.week}, <b>${fmtG(closestSeason)}</b>.`);
+  });
+  safe(()=>{
+    const c = games.slice().sort((a,b)=>margin(a)-margin(b))[0];
+    if(c && c!==closestSeason) push(margin(c).toFixed(2), `Closest finish in league history: <b>${fmtG(c)}</b> (${c.year} ${c.playoff||'Wk '+c.week}), a margin of ${margin(c).toFixed(2)}.`);
+  });
+  safe(()=>{
+    const reg = g=>!g.playoff;
+    const cur = seasonGames.filter(reg), prior = games.filter(g=>g.year!==year && reg(g));
+    if(cur.length>=6 && prior.length){
+      const cc = cur.filter(g=>margin(g)<5).length, pc = prior.filter(g=>margin(g)<5).length;
+      const seasons = new Set(prior.map(g=>g.year)).size, perSeason = pc/seasons;
+      const pace = cc/cur.length*(prior.length/seasons);
+      push(`${cc}`, `<b>${cc} of ${cur.length}</b> games in ${year} ${cc===1?'has':'have'} been decided by under 5 points. A typical past regular season finishes with <b>${perSeason.toFixed(1)}</b>; ${year} is on pace for <b>${pace.toFixed(1)}</b>.`);
+    }
+  });
+  safe(()=>{ // highest-scoring loss
+    const losers = a=>a.filter(g=>g.sA!==g.sB).map(g=>({g, ls: g.sA>g.sB?g.sB:g.sA})).sort((p,q)=>q.ls-p.ls)[0];
+    const all = losers(games);
+    if(all){ const g = all.g, aw = g.sA>g.sB, L = aw?g.oB:g.oA, W = aw?g.oA:g.oB;
+      push(all.ls.toFixed(2), `Highest-scoring loss in league history: ${_ffName(L)} scored <b>${all.ls.toFixed(2)}</b> and still lost to ${currentTeamName(W)}'s ${Math.max(g.sA,g.sB).toFixed(2)} (${g.year} Wk ${g.week}).`); }
+    const cur = losers(seasonGames);
+    if(cur && (!all || cur.g!==all.g)){ const g = cur.g, aw = g.sA>g.sB, L = aw?g.oB:g.oA, W = aw?g.oA:g.oB;
+      push(cur.ls.toFixed(2), `Highest-scoring loss of ${year}: ${_ffName(L)} put up <b>${cur.ls.toFixed(2)}</b> in Week ${g.week} and lost to ${currentTeamName(W)}'s ${Math.max(g.sA,g.sB).toFixed(2)}.`); }
+  });
+  safe(()=>{ // lowest-scoring win this season
+    const w = seasonGames.filter(g=>g.sA!==g.sB && !(g.year===2024&&g.week===18)).map(g=>({g, ws: Math.max(g.sA,g.sB)})).sort((p,q)=>p.ws-q.ws)[0];
+    const lw = computeLowestScoringWin();
+    if(w && !(lw && lw.year===year && lw.week===w.g.week && Math.abs(lw.winnerScore-w.ws)<1e-9)){
+      const g = w.g, aw = g.sA>g.sB; push(w.ws.toFixed(2), `Lowest winning score of ${year}: ${_ffName(aw?g.oA:g.oB)} beat ${currentTeamName(aw?g.oB:g.oA)} with just <b>${w.ws.toFixed(2)}</b> in Week ${g.week}.`); }
+  });
+  safe(()=>{ // a bench player who outscored the margin (last week)
+    const wk = PLAYER_SCORES[year] && PLAYER_SCORES[year][String(lastW)];
+    const wkObj = (MATCHUPS[year]||[]).find(w=>w.w===lastW);
+    if(!wk || !wkObj) return;
+    const cands = [];
+    wkObj.g.forEach(([tA,sA,tB,sB])=>{
+      if(sA===sB) return;
+      const loser = sA<sB ? tA : tB, win = sA<sB ? tB : tA, m = Math.abs(sA-sB);
+      const bench = (wk[loser]||[]).filter(p=>p.bench && p.pts>m).sort((a,b)=>b.pts-a.pts)[0];
+      if(bench) cands.push({loser, win, m, bench});
+    });
+    cands.sort((a,b)=>(b.bench.pts-b.m)-(a.bench.pts-a.m)).slice(0,1).forEach(x=>{
+      push('Swing', `<b>${nm(x.loser)}</b> lost to ${nm(x.win)} by <b>${x.m.toFixed(2)}</b> in Week ${lastW} with <b>${x.bench.name}</b> (${x.bench.pos}) on the bench for <b>${x.bench.pts.toFixed(1)}</b>.`);
+    });
+  });
+
+  // ---------- the league this week ----------
+  safe(()=>{
+    if(!nxt.week || nxt.year!==year) return;
+    const lines = oddsWeekLines(year, nxt.week); if(!lines.length) return;
+    const tm = []; lines.forEach(l=>{ tm.push({o:l.oA, v:l.mA, opp:l.oB}); tm.push({o:l.oB, v:l.mB, opp:l.oA}); });
+    tm.sort((a,b)=>b.v-a.v);
+    const hi = tm[0], lo = tm[tm.length-1];
+    push(hi.v.toFixed(1), `Highest projected score on the Week ${nxt.week} slate: ${_ffName(hi.o)} at <b>${hi.v.toFixed(1)}</b>. Lowest: ${_ffName(lo.o)} at <b>${lo.v.toFixed(1)}</b>.`);
+    const bySpread = lines.slice().sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+    const big = bySpread[0], close = bySpread[bySpread.length-1];
+    const fav = l=>l.favIsA?l.oA:l.oB, dog = l=>l.favIsA?l.oB:l.oA;
+    push(Math.abs(big.diff).toFixed(1), `Biggest projected mismatch in Week ${nxt.week}: ${_ffName(fav(big))} is favored over ${_ffName(dog(big))} by <b>${Math.abs(big.diff).toFixed(1)}</b>. Closest: ${_ffName(fav(close))} over ${_ffName(dog(close))} by just <b>${Math.abs(close.diff).toFixed(1)}</b>.`);
+  });
+  safe(()=>{ // bye-week impact on last week's lineups
+    if(!nxt.week || nxt.year!==year) return;
+    const wk = PLAYER_SCORES[year] && PLAYER_SCORES[year][String(lastW)]; if(!wk) return;
+    const byTeam = {}, qbMissing = [];
+    Object.keys(wk).forEach(team=>{
+      const o = ownerForTeam(year, team); if(!o || o==='rm2') return;
+      wk[team].filter(p=>!p.bench).forEach(p=>{
+        if(isOnByeWeek(year, nxt.week, p.name)){
+          (byTeam[o] = byTeam[o]||[]).push(p);
+          if(p.pos==='QB') qbMissing.push(o);
+        }
+      });
+    });
+    const total = Object.values(byTeam).reduce((a,l)=>a+l.length,0);
+    if(qbMissing.length) push(`${qbMissing.length} QB`, `<b>${qbMissing.length} team${qbMissing.length===1?' is':'s are'}</b> missing a starting QB to the Week ${nxt.week} bye: ${qbMissing.map(currentTeamName).join(', ')}.`);
+    const worst = Object.entries(byTeam).sort((a,b)=>b[1].length-a[1].length)[0];
+    if(worst && worst[1].length>=2) push(`${worst[1].length}`, `${_ffName(worst[0])} has <b>${worst[1].length} of last week's starters</b> on bye in Week ${nxt.week} (${worst[1].map(p=>p.name).join(', ')}) &mdash; the most in the league. ${total} starters league-wide are off.`);
+  });
+  safe(()=>{ // same week in earlier seasons
+    if(!nxt.week) return;
+    const same = games.filter(g=>g.year<year && g.week===nxt.week && !g.playoff);
+    if(!same.length) return;
+    let best = null; same.forEach(g=>{ [[g.oA,g.sA,g.tA],[g.oB,g.sB,g.tB]].forEach(([o,s])=>{ if(o && (!best || s>best.s)) best = {o, s, year:g.year}; }); });
+    const leagueMax = games.reduce((m,g)=>Math.max(m,g.sA,g.sB),0);
+    const ago = year-best.year;
+    push(best.s.toFixed(1), `${ago===1?'One year':ago+' years'} ago this week (${best.year} Wk ${nxt.week}), ${_ffName(best.o)} scored <b>${best.s.toFixed(2)}</b>, the highest score in any Week ${nxt.week}${Math.abs(best.s-leagueMax)<1e-9?' and still the league record':''}.`);
+  });
+  safe(()=>{ // career points milestones
+    const tot = {}; games.forEach(g=>{ if(g.oA && g.oA!=='rm2') tot[g.oA]=(tot[g.oA]||0)+g.sA; if(g.oB && g.oB!=='rm2') tot[g.oB]=(tot[g.oB]||0)+g.sB; });
+    Object.entries(tot).map(([o,v])=>{ const next = (Math.floor(v/1000)+1)*1000; return {o, v, next, need: next-v}; })
+      .filter(x=>x.need<=300).sort((a,b)=>a.need-b.need).slice(0,2).forEach(x=>{
+        push(x.need.toFixed(1), `${_ffName(x.o)} needs <b>${x.need.toFixed(1)}</b> points to pass <b>${x.next.toLocaleString('en-US')}</b> career points (${x.v.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1})} so far).`);
+      });
+  });
+  safe(()=>{ // active streaks
+    const log = _ffOwnerLog();
+    const best = {};
+    [[100,'100'],[110,'110'],[120,'120']].forEach(([thr])=>{
+      Object.entries(log).forEach(([o,arr])=>{
+        const n = _ffActiveRun(arr, g=>g.pts>thr);
+        if(n>=3 && (!best[thr] || n>best[thr].n)) best[thr] = {o, n, thr};
+      });
+    });
+    const seen = new Set();
+    Object.values(best).sort((a,b)=>b.thr-a.thr).filter(x=>{ if(seen.has(x.o)) return false; seen.add(x.o); return true; }).slice(0,2).forEach(x=>{
+      push(`${x.n} straight`, `${_ffName(x.o)} has scored over <b>${x.thr}</b> in <b>${x.n} straight</b> weeks.`);
+    });
+    const ws = Object.entries(log).map(([o,arr])=>({o, n:_ffActiveRun(arr, g=>g.won)})).filter(x=>x.n>=3).sort((a,b)=>b.n-a.n)[0];
+    if(ws) push(`W${ws.n}`, `${_ffName(ws.o)} carries the longest active winning streak in the league: <b>${ws.n} straight</b>.`);
+    const ls = Object.entries(log).map(([o,arr])=>({o, n:_ffActiveRun(arr, g=>!g.won)})).filter(x=>x.n>=3).sort((a,b)=>b.n-a.n)[0];
+    if(ls) push(`L${ls.n}`, `${_ffName(ls.o)} has dropped <b>${ls.n} straight</b>, the longest active losing streak.`);
+  });
+
+  // ---------- last week ----------
+  const wkP = PLAYER_SCORES[year] && PLAYER_SCORES[year][String(lastW)];
+  const wkM = (MATCHUPS[year]||[]).find(w=>w.w===lastW);
+  safe(()=>{ // best and worst player
+    if(!wkP) return;
+    const starters = []; Object.entries(wkP).forEach(([team,list])=>list.forEach(p=>{ if(!p.bench) starters.push({...p, team}); }));
+    const best = starters.slice().sort((a,b)=>b.pts-a.pts)[0];
+    const worst = starters.filter(p=>['QB','RB','WR','TE'].includes(p.pos) && !isOnByeWeek(year, lastW, p.name)).sort((a,b)=>a.pts-b.pts)[0];
+    if(best) push(best.pts.toFixed(1), `Top player of Week ${lastW}: <b>${best.name}</b> (${best.pos}) with <b>${best.pts.toFixed(1)}</b> for ${nm(best.team)}.`);
+    if(worst) push(worst.pts.toFixed(1), `Worst starter of Week ${lastW}: <b>${worst.name}</b> (${worst.pos}) gave ${nm(worst.team)} just <b>${worst.pts.toFixed(1)}</b>.`);
+  });
+  safe(()=>{ // best/worst team, most/fewest points in a win or loss
+    if(!wkM) return;
+    const rows = []; wkM.g.forEach(([tA,sA,tB,sB])=>{ rows.push({t:tA,s:sA,o:tB,os:sB}); rows.push({t:tB,s:sB,o:tA,os:sA}); });
+    const best = rows.slice().sort((a,b)=>b.s-a.s)[0], worst = rows.slice().sort((a,b)=>a.s-b.s)[0];
+    push(best.s.toFixed(1), `Top team score of Week ${lastW}: <b>${nm(best.t)}</b> with <b>${best.s.toFixed(2)}</b>. Lowest: <b>${nm(worst.t)}</b> with <b>${worst.s.toFixed(2)}</b>.`);
+    const losses = rows.filter(r=>r.s<r.os).sort((a,b)=>b.s-a.s)[0], wins = rows.filter(r=>r.s>r.os).sort((a,b)=>a.s-b.s)[0];
+    if(losses && wins) push(losses.s.toFixed(1), `Week ${lastW}: <b>${nm(losses.t)}</b> scored the most points in a loss (<b>${losses.s.toFixed(2)}</b>, beaten by ${losses.os.toFixed(2)} from ${nm(losses.o)}), while <b>${nm(wins.t)}</b> won with the fewest (<b>${wins.s.toFixed(2)}</b>).`);
+  });
+  safe(()=>{ // bench regret and manager of the week
+    if(!wkP || !wkM) return;
+    const opt = {}; Object.entries(wkP).forEach(([team,list])=>{
+      const byPos = {}; list.forEach(p=>{ (byPos[p.pos]=byPos[p.pos]||[]).push(p); });
+      let actual=0, optimal=0;
+      Object.values(byPos).forEach(pl=>{ const n = pl.filter(p=>!p.bench).length; if(!n) return;
+        actual += pl.filter(p=>!p.bench).reduce((a,p)=>a+p.pts,0);
+        optimal += pl.slice().sort((a,b)=>b.pts-a.pts).slice(0,n).reduce((a,p)=>a+p.pts,0); });
+      opt[team] = {actual, optimal, left: optimal-actual};
+    });
+    const regrets = [];
+    wkM.g.forEach(([tA,sA,tB,sB])=>{ [[tA,sA,tB,sB],[tB,sB,tA,sA]].forEach(([t,s,o,os])=>{
+      if(opt[t] && s<os) regrets.push({t, o, left:opt[t].left, flips: opt[t].optimal>os, optimal:opt[t].optimal, os}); }); });
+    const flip = regrets.filter(r=>r.flips).sort((a,b)=>b.left-a.left)[0];
+    if(flip) push(flip.left.toFixed(1), `<b>${nm(flip.t)}</b> left <b>${flip.left.toFixed(1)}</b> points on the bench in Week ${lastW}. Their best possible lineup (${flip.optimal.toFixed(1)}) would have beaten the ${flip.os.toFixed(2)} from ${nm(flip.o)}.`);
+    else { const top = Object.entries(opt).sort((a,b)=>b[1].left-a[1].left)[0]; if(top) push(top[1].left.toFixed(1), `<b>${nm(top[0])}</b> left the most on the bench in Week ${lastW}: <b>${top[1].left.toFixed(1)}</b> points.`); }
+    const mgr = Object.entries(opt).sort((a,b)=>a[1].left-b[1].left)[0];
+    if(mgr) push('Manager', `Manager of Week ${lastW}: <b>${nm(mgr[0])}</b>, whose lineup finished within <b>${mgr[1].left.toFixed(1)}</b> points of the best possible one${mgr[1].left<0.05?' (a perfect lineup)':''}.`);
+  });
+  safe(()=>{ // biggest upset by scoring average
+    if(!wkM || lastW<2) return;
+    const prior = {}; (MATCHUPS[year]||[]).filter(w=>!w.playoff && w.w<lastW).forEach(w=>w.g.forEach(([tA,sA,tB,sB])=>{
+      const a = ownerForTeam(year,tA), b = ownerForTeam(year,tB);
+      if(a){ prior[a]=prior[a]||{p:0,n:0}; prior[a].p+=sA; prior[a].n++; } if(b){ prior[b]=prior[b]||{p:0,n:0}; prior[b].p+=sB; prior[b].n++; } }));
+    const avg = t=>{ const o = ownerForTeam(year,t); return o && prior[o] ? prior[o].p/prior[o].n : null; };
+    const ups = []; wkM.g.forEach(([tA,sA,tB,sB])=>{ if(sA===sB) return; const w = sA>sB?tA:tB, l = sA>sB?tB:tA, ws = Math.max(sA,sB), ls = Math.min(sA,sB), aw = avg(w), al = avg(l);
+      if(aw!=null && al!=null && al>aw) ups.push({w,l,ws,ls,aw,al,gap:al-aw}); });
+    const u = ups.sort((a,b)=>b.gap-a.gap)[0];
+    if(u) push(u.gap.toFixed(1), `Biggest upset of Week ${lastW}: <b>${nm(u.w)}</b> (averaging ${u.aw.toFixed(1)}) beat <b>${nm(u.l)}</b> (averaging ${u.al.toFixed(1)}), ${u.ws.toFixed(2)} to ${u.ls.toFixed(2)}. That's a ${u.gap.toFixed(1)}-point gap in scoring average.`);
+  });
+  safe(()=>{ // projection vs. actual, when ESPN's team projections are on file for last week
+    const espn = oddsEspn(year, lastW); if(!espn || !espn.teams || !wkM) return;
+    const rows = []; wkM.g.forEach(([tA,sA,tB,sB])=>{ [[tA,sA],[tB,sB]].forEach(([t,s])=>{ if(espn.teams[t]!=null) rows.push({t, s, proj:espn.teams[t], d:s-espn.teams[t]}); }); });
+    if(rows.length<4) return;
+    rows.sort((a,b)=>b.d-a.d);
+    const hi = rows[0], lo = rows[rows.length-1];
+    push(hi.d.toFixed(1), `Against ESPN's Week ${lastW} projections, <b>${nm(hi.t)}</b> beat the number by the most (<b>${hi.s.toFixed(1)}</b> vs. ${hi.proj.toFixed(1)} projected, +${hi.d.toFixed(1)}). <b>${nm(lo.t)}</b> missed by the most (${lo.s.toFixed(1)} vs. ${lo.proj.toFixed(1)}, ${lo.d.toFixed(1)}).`);
+  });
+  return out;
+}
+
 function computeFunFactPool(year){
   const pool = [];
   const push = (value, label) => { if(value!=null && label) pool.push({value, label}); };
@@ -10058,6 +11221,8 @@ function computeFunFactPool(year){
     const x = computePlayoffImplicationGames(year)[0];
     if(x) push(`Wk ${x.week}`, `<b>${x.teamA}</b> (#${x.rankA}) vs. <b>${x.teamB}</b> (#${x.rankB}) in Week ${x.week} carries the most combined playoff stakes left on the schedule.`);
   });
+
+  safe(()=>{ computeWeekFunFacts(year).forEach(f=>pool.push(f)); });
 
   return pool;
 }
@@ -10168,7 +11333,6 @@ function buildSeasonSnapshotParts(year){
   const best = s.luck.length ? s.luck[0] : null, worst = s.luck.length ? s.luck[s.luck.length-1] : null;
   const leaders = `
     ${leader('Top Scorer','chart', s.byPf.owner, (s.byPf.pf/s.byPf.games).toFixed(1), 'points per game')}
-    ${leader('Best Record','rise', s.byRec.owner, `${s.byRec.w}-${s.byRec.l}`, `${s.byRec.pf.toFixed(1)} PF`)}
     ${leader('Hottest Team','odds', s.hot.owner, s.hot.recentAvg.toFixed(1), `last 3 games &middot; season ${(()=>{const r=s.standings.find(x=>x.owner===s.hot.owner);return r?(r.pf/r.games).toFixed(1):'&mdash;'})()}`)}
     ${best ? leader('Luckiest Team','star', best.id, (best.lr.luck>0?'+':'')+best.lr.luck.toFixed(1), `wins over expected`) : ''}`;
 
@@ -10376,8 +11540,8 @@ function pageDashboard(){
       const sn = buildSeasonSnapshotParts(year), pn = buildDashboardPanelParts(year);
       if(!sn || !pn) return '';
       return `
-      <div class="grid cols-4">${renderLeagueKPIsHtml(computeLeagueKPIs())}${sn.ring}${sn.split}</div>
-      <div class="grid cols-4" style="margin-top:10px">${sn.leaders}</div>
+      <div class="grid cols-4">${renderLeagueKPIsHtml(computeLeagueKPIs())}${sn.spark}${sn.split}</div>
+      <div class="grid cols-3" style="margin-top:10px">${sn.leaders}</div>
       <div class="grid cols-3" style="margin-top:10px">${pn.status}${pn.donut}${pn.margins}</div>
       <div class="grid cols-2" id="jump-dash-panels" style="margin-top:10px">${pn.leaders}${pn.luck}</div>
       ${pn.strip}`;
@@ -14218,6 +15382,8 @@ function attachPageHandlers(){
     setTimeout(()=>fillChampionshipOdds(+standingsBody.dataset.year), 30);
   }
 
+  if(currentPage==="Odds") fillOddsSims();
+
   const scenarioWrap = document.getElementById('scenarioWrap');
   if(scenarioWrap && standingsBody && /Working out/.test(scenarioWrap.textContent)){
     setTimeout(()=>{ scenarioWrap.innerHTML = renderPlayoffScenariosHtml(+standingsBody.dataset.year); }, 60);
@@ -14468,6 +15634,10 @@ const FEATURE_INDEX = [
   {label:"Trade Leaderboard", page:"Transactions", subTab:"Trades", keywords:["best trade","worst trade","trade margin","trade winner"]},
   {label:"Trade Calculator", page:"Trade Calculator", keywords:["trade calculator","build a trade","trade value","fair trade","suggest a package"]},
   {label:"Franchise", page:"Franchise", keywords:["manager grade","team grade","draft grade","team report","career record","photo","blurb","bio","map","location","where teams are","franchise","rank over time","draft history","trade history"]},
+  {label:"Odds: Spreads, Moneylines & Totals", page:"Odds", keywords:["odds","spread","moneyline","over under","total","betting","line","favorite","underdog"]},
+  {label:"Props", page:"Odds", keywords:["prop","highest scoring team","lowest scoring team","closest game","blowout","highest scoring player"]},
+  {label:"Futures", page:"Odds", keywords:["futures","title odds","win the league","last place odds","win total","playoff odds"]},
+  {label:"Line Tracker", page:"Odds", keywords:["tracker","against the spread","ats","line accuracy"]},
   {label:"Current Season Standings", page:"Current Season", keywords:["live standings","record","this year","sos","strength of schedule"]},
   {label:"Team Rosters", page:"Current Season", keywords:["roster","who's on the team","starters","bench","lineup"]},
   {label:"Season Schedule", page:"Current Season", keywords:["schedule","upcoming","who do i play next","remaining games","matchups"]},
