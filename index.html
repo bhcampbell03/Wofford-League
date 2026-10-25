@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="gridiron">
 <head>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wofford League</title>
@@ -2091,8 +2092,8 @@ function renderSeasonGradesSection(prefix){
   st.pageSizeSelectValue = st.pageSize; // keep the <select> in sync on first paint
   return `
     <div class="grid cols-2" style="margin-bottom:16px">
-      ${card(ICON_STAR, "Best Team-Season Ever", best)}
-      ${card(ICON_ARROW_DOWN, "Worst Team-Season Ever", worst)}
+      ${card('', "Best Team-Season Ever", best)}
+      ${card('', "Worst Team-Season Ever", worst)}
     </div>
     <div class="fg-season-grade-wrap" id="${prefix}SeasonGradeWrap" data-prefix="${prefix}">${renderSeasonGradeTableHtml(prefix)}</div>
     <p class="note" style="margin-top:8px">One row per team, per season &mdash; the exact same formula as career Team Grade (Franchise page), just run on one season's inputs instead of a career's: win%, final standing, a top-3/bottom-3 finish, a title, making the playoffs, making the semifinal round, and points scored, weighted the same way. Click a column header to sort by it. A franchise's best and worst years can each show up here on their own, instead of blending into one career number.</p>
@@ -5191,15 +5192,15 @@ function teamScoringRange(year){
 
 if(typeof Chart !== "undefined"){
   Chart.defaults.font.family = "'Source Serif 4', serif";
-  Chart.defaults.color = "#746B58";
-  Chart.defaults.borderColor = "#E0CD86";
-  Chart.defaults.plugins.legend.labels.color = "#221F1A";
+  Chart.defaults.color = (getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#746B58');
+  Chart.defaults.borderColor = (getComputedStyle(document.documentElement).getPropertyValue('--line').trim()||'#E0CD86');
+  Chart.defaults.plugins.legend.labels.color = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'));
   Chart.defaults.plugins.legend.labels.font = {family:"'Montserrat',sans-serif", weight:700, size:11};
-  Chart.defaults.plugins.tooltip.backgroundColor = "#1C1C1D";
-  Chart.defaults.plugins.tooltip.titleColor = "#DBA514";
+  Chart.defaults.plugins.tooltip.backgroundColor = (getComputedStyle(document.documentElement).getPropertyValue('--tipbg').trim()||'#1C1C1D');
+  Chart.defaults.plugins.tooltip.titleColor = (getComputedStyle(document.documentElement).getPropertyValue('--gold').trim()||'#DBA514');
   Chart.defaults.plugins.tooltip.titleFont = {family:"'Montserrat',sans-serif", weight:700};
   Chart.defaults.plugins.tooltip.bodyColor = "#F7F3E8";
-  Chart.defaults.plugins.tooltip.borderColor = "#8F6B0D";
+  Chart.defaults.plugins.tooltip.borderColor = (getComputedStyle(document.documentElement).getPropertyValue('--gold-deep').trim()||'#8F6B0D');
   Chart.defaults.plugins.tooltip.borderWidth = 1;
   Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.plugins.tooltip.cornerRadius = 6;
@@ -5252,7 +5253,7 @@ function makeTeamLabelPlugin(rows, datasetIndex){
       const meta = chart.getDatasetMeta(datasetIndex);
       ctx.save();
       ctx.font = '700 9px Montserrat, sans-serif';
-      ctx.fillStyle = '#221F1A';
+      ctx.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A');
       const placed = [];
       function overlaps(a,b){ return !(a.x+a.w<b.x || b.x+b.w<a.x || a.y+a.h<b.y || b.y+b.h<a.y); }
       rows.forEach((r,i)=>{
@@ -5305,11 +5306,11 @@ function makeQuadrantPlugin(avgX, avgY, cornerLabels){
       const W = 118, H = 34;
       function place(x,y,align,lines){
         const bx = align==='left' ? x : x-W;
-        ctx.fillStyle = '#F7F3E8'; ctx.strokeStyle = '#221F1A'; ctx.lineWidth = 1;
+        ctx.fillStyle = '#F7F3E8'; ctx.strokeStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'); ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.roundRect ? ctx.roundRect(bx,y,W,H,4) : ctx.rect(bx,y,W,H);
         ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#221F1A'; ctx.textAlign = 'center';
+        ctx.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'); ctx.textAlign = 'center';
         ctx.fillText(lines[0], bx+W/2, y+6);
         ctx.fillText(lines[1], bx+W/2, y+20);
       }
@@ -5948,7 +5949,7 @@ function renderScoringChart(type, year, years){
       type:'bar',
       data:{ labels: rows.map(r=>r.label), datasets:[{label:'Luck', data:rows.map(r=>r.val), backgroundColor: rows.map(r=>r.val>=0?'#3D7A4E':'#B23B3B')}] },
       options:{ indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false},
-          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>v>0?'+'+v:v, font:{size:10,weight:'700'}, color:'#221F1A' } },
+          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>v>0?'+'+v:v, font:{size:10,weight:'700'}, color:(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A') } },
         scales:{x:{title:{display:true,text:'Actual wins minus expected wins'}, min:-axisBound, max:axisBound, ticks:{stepSize:axisBound<=5?1:(axisBound<=10?2:5)}}} }
     });
   });
@@ -5991,7 +5992,7 @@ function renderPrimetimeChart(years){
       options:{ indexAxis:'y', maintainAspectRatio:false,
         plugins:{ legend:{display:false},
           tooltip:{callbacks:{label:c=>`${c.raw>=0?'+':''}${c.raw.toFixed(1)} PPG in primetime vs. other weeks`}},
-          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>(v>=0?'+':'')+v.toFixed(1), font:{size:10,weight:'700'}, color:'#221F1A' }
+          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>(v>=0?'+':'')+v.toFixed(1), font:{size:10,weight:'700'}, color:(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A') }
         },
         scales:{ x:{title:{display:true,text:'Primetime PPG minus non-primetime PPG'}, min:-axisBound, max:axisBound} }
       }
@@ -16086,7 +16087,8 @@ function animateNumbers(app){
 }
 function updateJumpNavOffset(){
   const hdr = document.querySelector('header.top'), th = document.querySelector('.th-sticky');
-  const top = (hdr?hdr.offsetHeight:93) + (th?th.offsetHeight:0);
+  const hp = hdr ? getComputedStyle(hdr).position : 'sticky';
+  const top = (hdr && hp==='sticky' ? hdr.offsetHeight : (hdr ? 0 : 93)) + (th?th.offsetHeight:0);
   document.documentElement.style.setProperty('--jn-top', top+'px');
 }
 function updateJumpNavSpy(){
@@ -16169,6 +16171,214 @@ function condenseNotes(root){
   let t = null;
   new MutationObserver(()=>{ clearTimeout(t); t = setTimeout(()=>{ try{ applyGlossaryTips(app); }catch(e){} }, 150); }).observe(app, {childList:true, subtree:true});
 })();
+</script>
+<style id="gridiron-theme">
+/* ===== gridiron: light, muted ===== */
+:root[data-theme="gridiron"]{
+  --bg:#F5F0E0; --panel:#FBF8EE; --panel2:#EEE7D1; --line:#E0D6B8; --text:#1F1D16; --muted:#6B6650;
+  --gold:#D9A520; --gold-deep:#8F6B0D; --black:#8F6B0D; --red:#B5503F; --red-muted:#C9958B; --green:#5C7F63;
+  --font-display:'Montserrat','Inter',sans-serif; --font-body:'Source Serif 4',Georgia,serif;
+  --card-radius:8px; --card-radius-lg:8px; --card-shadow:0 1px 2px rgba(40,40,30,.06); --card-shadow-hover:0 4px 12px rgba(40,40,30,.10);
+  --card-border-top:1px solid var(--line); --tipbg:#1F1D16;
+}
+:root[data-theme="gridiron"] body{background:var(--bg);color:var(--text);}
+:root[data-theme="gridiron"] header.top{background:var(--panel);border-bottom:1px solid var(--line);}
+:root[data-theme="gridiron"] .brand{color:var(--text);}
+:root[data-theme="gridiron"] .search-wrap input{background:var(--panel2);border:1px solid var(--line);color:var(--text);}
+:root[data-theme="gridiron"] .search-wrap input::placeholder{color:var(--muted);}
+:root[data-theme="gridiron"] .admin-bubble{background:var(--panel2);border-color:var(--line);color:var(--muted);}
+:root[data-theme="gridiron"] .admin-bubble:hover{background:var(--tint);}
+:root[data-theme="gridiron"] .admin-bubble.authed{background:var(--gold);color:#fff;}
+:root[data-theme="gridiron"] nav.tabs{background:var(--panel);border-top:1px solid var(--line);}
+:root[data-theme="gridiron"] nav.tabs button{background:transparent;color:var(--muted);border-right:none;border-bottom:2px solid transparent;font-family:var(--font-body);font-weight:600;letter-spacing:.03em;}
+:root[data-theme="gridiron"] nav.tabs button:hover{background:var(--panel2);color:var(--text);}
+:root[data-theme="gridiron"] nav.tabs button.active{background:transparent;color:var(--gold-deep);border-bottom-color:var(--gold);}
+:root[data-theme="gridiron"] h1,:root[data-theme="gridiron"] h2,:root[data-theme="gridiron"] .section-title{font-weight:600;letter-spacing:0;}
+:root[data-theme="gridiron"] .section-title{border-bottom:1px solid var(--line);box-shadow:none;font-size:20px;}
+:root[data-theme="gridiron"] .section-title svg{color:var(--gold-deep);}
+:root[data-theme="gridiron"] .card{box-shadow:var(--card-shadow);}
+:root[data-theme="gridiron"] .table-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius);}
+:root[data-theme="gridiron"] table th{background:var(--panel2);color:var(--muted);}
+:root[data-theme="gridiron"] tbody tr:nth-child(even){background:color-mix(in srgb,var(--panel2) 45%,transparent);}
+:root[data-theme="gridiron"] tbody tr:hover{background:var(--tint) !important;}
+:root[data-theme="gridiron"] .hero{background:var(--panel2);border-bottom:1px solid var(--line);}
+:root[data-theme="gridiron"] .hero h1,:root[data-theme="gridiron"] .hr-team,:root[data-theme="gridiron"] .hr-record{color:var(--text);}
+:root[data-theme="gridiron"] .hr-owner,:root[data-theme="gridiron"] .hr-pct{color:var(--muted);}
+:root[data-theme="gridiron"] .hero-edition,:root[data-theme="gridiron"] .hr-label{color:var(--gold-deep);}
+:root[data-theme="gridiron"] .hero-frame{border-color:var(--line);}
+:root[data-theme="gridiron"] .hero-frame::before,:root[data-theme="gridiron"] .hero-frame::after,:root[data-theme="gridiron"] .hero-frame .corner-bl,:root[data-theme="gridiron"] .hero-frame .corner-br{border-color:var(--gold);}
+:root[data-theme="gridiron"] .hero-rotate{border-left-color:var(--line);}
+:root[data-theme="gridiron"] .hr-dot{background:var(--line);} :root[data-theme="gridiron"] .hr-dot.active{background:var(--gold);}
+:root[data-theme="gridiron"] .banner{background:var(--gold-deep);}
+:root[data-theme="gridiron"] .banner .byear{color:#F3E7C8;}
+:root[data-theme="gridiron"] .jump-nav a.active{color:var(--gold-deep);border-bottom-color:var(--gold);}
+:root[data-theme="gridiron"] .dc-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius-lg);box-shadow:var(--card-shadow);}
+:root[data-theme="gridiron"] .dc-head{background:var(--tint);color:var(--gold-deep);border-bottom:1px solid var(--line);}
+:root[data-theme="gridiron"] .dc-trophy .award-icon{color:var(--sec);}
+:root[data-theme="gridiron"] .dc-latest{background:var(--tint);} :root[data-theme="gridiron"] .dc-latest .dc-year{background:var(--gold-deep);color:#fff;}
+:root[data-theme="gridiron"] .dc-crown{color:var(--sec);}
+:root[data-theme="gridiron"] .dc-foot{background:var(--panel2);color:var(--gold-deep);border-top:1px solid var(--line);}
+:root[data-theme="gridiron"] .odds-disclaimer{background:#F7EFD9;border-color:var(--sec);color:var(--text);}
+:root[data-theme="gridiron"] .chart-pill.active{background:var(--gold-deep);color:#fff;border-color:var(--gold-deep);}
+:root[data-theme="gridiron"] .mobile-tabbar{background:var(--panel);border-top:1px solid var(--line);}
+:root[data-theme="gridiron"] .mms-panel{background:var(--panel);}
+:root[data-theme="gridiron"] .mms-panel button.active{background:var(--gold-deep);color:#fff;}
+/* ticker */
+:root[data-theme="gridiron"] .ticker-wrap{background:var(--tint);border:1px solid var(--line);}
+:root[data-theme="gridiron"] .ticker-track,:root[data-theme="gridiron"] .ticker-track *{color:var(--text);border-color:var(--line);}
+:root[data-theme="gridiron"] .ticker-label{color:var(--gold-deep) !important;}
+/* shared grouped-nav parts */
+:root[data-theme="gridiron"] .gn-lab,:root[data-theme="gridiron"] .gn-pages button{font-family:var(--font-body);cursor:pointer;}
+:root[data-theme="gridiron"] .stack-part{margin-top:44px;padding-top:26px;border-top:2px solid var(--gold);position:relative;}
+:root[data-theme="gridiron"] .stack-tag{position:absolute;top:-13px;left:0;background:var(--bg);padding:0 12px 0 0;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);}
+
+/* Gridiron Light: brand + grouped nav share one slim row, page links sit in a thin sub-row.
+   Green = navigation and controls, gold = headings, trophies and banners, black = text, header cap and ticker. */
+:root[data-theme="gridiron"] header.top{border-bottom:1px solid var(--line);border-top:3px solid #1F1D16;}
+:root[data-theme="gridiron"] .brand{color:#1F1D16;}
+:root[data-theme="gridiron"] .hero{background:#EFE7CB;border-bottom:1px solid var(--line);}
+:root[data-theme="gridiron"] .hero-frame{border-color:#E3CF8C;}
+:root[data-theme="gridiron"] .hero-frame::before,:root[data-theme="gridiron"] .hero-frame::after,:root[data-theme="gridiron"] .hero-frame .corner-bl,:root[data-theme="gridiron"] .hero-frame .corner-br{border-color:#DBA514;}
+:root[data-theme="gridiron"] .hero-edition,:root[data-theme="gridiron"] .hr-label{color:#9A700A;}
+:root[data-theme="gridiron"] .hero-rotate{border-left-color:#E3CF8C;} :root[data-theme="gridiron"] .hr-dot.active{background:#DBA514;}
+:root[data-theme="gridiron"] .podium-bar.p1{background:#DBA514;}
+/* Banners: cream cloth hung from a black rod, gold header band and gold swallowtail */
+:root[data-theme="gridiron"] .banner-row{gap:34px;padding-top:14px;}
+:root[data-theme="gridiron"] .banner{background:transparent;clip-path:none;overflow:visible;aspect-ratio:1/1.6;filter:drop-shadow(0 0 .6px #BFAE7A) drop-shadow(0 3px 4px rgba(60,50,10,.22));}
+:root[data-theme="gridiron"] .banner::before{content:"";position:absolute;z-index:3;top:-10px;left:-9px;right:-9px;height:9px;background:#1F1D16;border-radius:5px;}
+:root[data-theme="gridiron"] .banner::after{content:"";position:absolute;z-index:0;inset:0;clip-path:polygon(0 0,100% 0,100% 100%,50% 89%,0 100%);background:linear-gradient(#DBA514,#DBA514) top/100% 9% no-repeat,linear-gradient(#DBA514,#DBA514) bottom/100% 11% no-repeat,#FBF8EE;}
+:root[data-theme="gridiron"] .banner>*{z-index:1;}
+:root[data-theme="gridiron"] .banner-pin,:root[data-theme="gridiron"] .banner-edge{display:none;}
+:root[data-theme="gridiron"] .banner .byear{top:16%;color:#1F1D16;font-size:26px;}
+:root[data-theme="gridiron"] .banner-laurels{top:34%;}
+:root[data-theme="gridiron"] .banner-laurels svg,:root[data-theme="gridiron"] .banner-laurels svg *{color:#8F6B0D;fill:#F2D77A;stroke:#8F6B0D;stroke-width:1.1;}
+:root[data-theme="gridiron"] .banner .bteam{top:60%;left:12px;right:12px;color:#1F1D16;font-weight:800;font-size:11.5px;}
+:root[data-theme="gridiron"] .ticker-wrap{background:#27251D;border-color:#27251D;}
+:root[data-theme="gridiron"] .ticker-track,:root[data-theme="gridiron"] .ticker-track *{color:#F3EEDC;border-color:#4A4636;}
+:root[data-theme="gridiron"] .ticker-label{color:#E8B923 !important;}
+:root[data-theme="gridiron"] table th{background:#F1EBD6;color:#4A4636;}
+:root[data-theme="gridiron"] tbody tr:nth-child(even){background:#F8F3E3;}
+:root[data-theme="gridiron"] tbody tr:hover{background:#F3E9C6 !important;}
+:root[data-theme="gridiron"] .topbar{padding:7px 20px;gap:18px;}
+:root[data-theme="gridiron"] .brand{font-size:17px;letter-spacing:.01em;}
+:root[data-theme="gridiron"] .brand .crest{width:26px;height:26px;}
+:root[data-theme="gridiron"] .gn-primary{display:flex;gap:2px;align-items:center;margin-left:8px;}
+:root[data-theme="gridiron"] .gn-primary button{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:10px 14px;cursor:pointer;}
+:root[data-theme="gridiron"] .gn-primary button:hover{color:var(--text);background:var(--panel2);}
+:root[data-theme="gridiron"] .gn-primary button.active{color:var(--gold-deep);border-bottom-color:var(--gold);}
+:root[data-theme="gridiron"] .search-wrap{flex:0 1 190px;}
+@media (min-width:641px){
+  :root[data-theme="gridiron"] nav.tabs{display:block;max-width:none;padding:0;background:var(--tint);border-top:none;border-bottom:1px solid var(--line);}
+  :root[data-theme="gridiron"] nav.tabs.empty{display:none;}
+}
+@media (max-width:640px){ :root[data-theme="gridiron"] .gn-primary{display:none;} }
+:root[data-theme="gridiron"] .gn-sub-in{display:flex;justify-content:center;gap:4px;max-width:1120px;margin:0 auto;padding:4px 20px;}
+:root[data-theme="gridiron"] .gn-sub-in button{padding:4px 15px;border-radius:14px;font-size:11px;background:transparent;border:1px solid transparent;color:var(--muted);font-family:var(--font-display);font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;}
+:root[data-theme="gridiron"] .gn-sub-in button:hover{background:var(--panel);}
+:root[data-theme="gridiron"] .gn-sub-in button.active{background:var(--panel);color:var(--gold-deep);border-color:var(--gold);}
+:root[data-theme="gridiron"] .section-title{font-family:var(--font-display);font-weight:800;border-bottom:2px solid #DBA514;}
+:root[data-theme="gridiron"] .section-title svg{color:#8F6B0D;}
+:root[data-theme="gridiron"] .shame-card{background:#B5503F;color:#FBF3E4;border-top:3px solid #7E2F23;}
+:root[data-theme="gridiron"] .shame-year{color:#F3D7A6;} :root[data-theme="gridiron"] .shame-rec{color:#F0CDBF;}
+:root[data-theme="gridiron"] .gn-primary button.active{color:#8F6B0D;}
+:root[data-theme="gridiron"] .chart-pill.active,:root[data-theme="gridiron"] .toggle-btn.active{background:#D9A520;color:#1F1D16;}
+:root[data-theme="gridiron"] .gn-sub-in button.active{border-color:#D9A520;}
+:root[data-theme="gridiron"] nav.tabs{background:#F6EDCF !important;}
+:root[data-theme="gridiron"] .dc-card{border-top:3px solid #DBA514;}
+:root[data-theme="gridiron"] .dc-head{background:#FAF1CE;color:#7A5A06;}
+:root[data-theme="gridiron"] .dc-latest .dc-year{background:#8F6B0D;}
+
+</style>
+<script>
+(function(){
+  var theme=document.documentElement.getAttribute('data-theme');
+  if(['sage','linen','dusty','plum','stone','gridiron'].indexOf(theme)<0) return;
+  function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+  function icon(p){ return '<svg class="nav-icon" viewBox="0 0 24 24">'+((typeof NAV_ICONS!=='undefined'&&NAV_ICONS[p])||'')+'</svg>'; }
+  function label(p){ return NAV_LABELS[p]||p; }
+  var GROUPS=[{l:'Home',p:['Home']},{l:'Season',p:['Current Season','Dashboard','Odds']},{l:'Teams',p:['Franchise','Transactions','Trade Calculator']},{l:'Analysis',p:['Analytics','History','Rivalries']}];
+  var DESC={'Home':'Trophies, banners and podiums','Current Season':'Standings, power rankings, rosters, schedule','Dashboard':'League KPIs, featured game, charts','Odds':'Lines, props and futures (display only)','Franchise':'One-team deep dives','Transactions':'Draft history and trades','Trade Calculator':'Value any trade','Analytics':'Charts, stats lab, finder, draft value','History':'Timeline, records and awards','Rivalries':'Head-to-head records and network'};
+  function gIdx(p){ for(var i=0;i<GROUPS.length;i++) if(GROUPS[i].p.indexOf(p)>=0) return i; return -1; }
+  function go(p){ currentPage=p; renderNav(); renderPage(); window.scrollTo(0,0); }
+  function wire(root){ root.querySelectorAll('button[data-page]').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); go(b.dataset.page); }); }); }
+
+  /* ---------- grouped navs: sage (sub-row), linen (side menu), stone (dropdowns) ---------- */
+  function navSage(){
+    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage), g=GROUPS[gi]||null;
+    tabs.innerHTML='<div class="gn-primary">'+GROUPS.map(function(x,i){ return '<button class="gn-lab'+(i===gi?' active':'')+'" data-page="'+x.p[0]+'">'+x.l+'</button>'; }).join('')+'</div>'+
+      '<div class="gn-sub'+((!g||g.p.length<2)?' empty':'')+'"><div class="gn-sub-in">'+(g&&g.p.length>1?g.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+label(p)+'</button>'; }).join(''):'')+'</div></div>';
+    wire(tabs); renderMobileTabbar();
+  }
+  function navGridiron(){
+    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage), g=GROUPS[gi]||null, tb=document.querySelector('.topbar');
+    var pr=document.getElementById('gnPrimary');
+    if(!pr){ pr=document.createElement('div'); pr.id='gnPrimary'; pr.className='gn-primary'; var br=tb.querySelector('.brand'); br.insertAdjacentElement('afterend',pr); }
+    pr.innerHTML=GROUPS.map(function(x,i){ return '<button data-page="'+x.p[0]+'" class="'+(i===gi?'active':'')+'">'+x.l+'</button>'; }).join('');
+    var multi=g&&g.p.length>1;
+    tabs.className='tabs'+(multi?'':' empty');
+    tabs.innerHTML='<div class="gn-sub-in">'+(multi?g.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+label(p)+'</button>'; }).join(''):'')+'</div>';
+    wire(pr); wire(tabs); renderMobileTabbar();
+  }
+  function navLinen(){
+    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage);
+    tabs.innerHTML=GROUPS.map(function(x){ return '<div class="gn-grp"><div class="gn-lab">'+(x.p.length>1?x.l:'Overview')+'</div><div class="gn-pages">'+x.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+icon(p)+label(p)+'</button>'; }).join('')+'</div></div>'; }).join('');
+    wire(tabs); renderMobileTabbar();
+  }
+  function navStone(){
+    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage);
+    tabs.innerHTML=GROUPS.map(function(x,i){
+      var single=x.p.length<2;
+      return '<div class="gn-grp'+(i===gi?' cur':'')+(single?' single':'')+'"><button class="gn-lab" '+(single?'data-page="'+x.p[0]+'"':'data-grp="1"')+'>'+x.l+'</button>'+(single?'':'<div class="gn-menu">'+x.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+icon(p)+'<span><b>'+label(p)+'</b><small>'+DESC[p]+'</small></span></button>'; }).join('')+'</div>')+'</div>';
+    }).join('');
+    wire(tabs);
+    tabs.querySelectorAll('.gn-lab[data-grp]').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); var gp=b.parentNode, was=gp.classList.contains('open'); tabs.querySelectorAll('.gn-grp.open').forEach(function(o){o.classList.remove('open');}); if(!was) gp.classList.add('open'); }); });
+    renderMobileTabbar();
+  }
+  if(!window.__stoneClose){ window.__stoneClose=1; document.addEventListener('click',function(){ document.querySelectorAll('.gn-grp.open').forEach(function(o){o.classList.remove('open');}); }); }
+
+  /* ---------- dusty: merged views, pages stacked into one scroll ---------- */
+  var STACKS={'Home':['Dashboard'],'Current Season':['Odds'],'Transactions':['Trade Calculator'],'Analytics':['Rivalries']};
+  var TAG={'Dashboard':'Dashboard','Odds':'Odds & Lines','Trade Calculator':'Trade Calculator','Rivalries':'Rivalries'};
+  var SECOND={}; Object.keys(STACKS).forEach(function(l){ STACKS[l].forEach(function(p){ SECOND[p]=l; }); });
+  function setupDusty(){
+    var O={'Home':pageHome,'Dashboard':pageDashboard,'Current Season':pageLiveSeason,'Odds':pageOdds,'Analytics':pageAnalytics,'Rivalries':pageRecords,'Transactions':pageTransactions,'Trade Calculator':pageTradeCalculator};
+    function stacked(lead){ return function(){ var h=O[lead](); STACKS[lead].forEach(function(p){ h+='<section class="stack-part" id="stack-'+slug(p)+'" data-tag="'+TAG[p]+'"><div class="stack-tag">'+TAG[p]+'</div>'+O[p]()+'</section>'; }); return h; }; }
+    pageHome=stacked('Home'); pageLiveSeason=stacked('Current Season'); pageTransactions=stacked('Transactions'); pageAnalytics=stacked('Analytics');
+    PAGES.splice(0,PAGES.length,'Home','Current Season','Franchise','Transactions','Analytics','History');
+    NAV_LABELS['Home']='Overview'; NAV_LABELS['Current Season']='Season'; NAV_LABELS['Transactions']='Deals'; NAV_LABELS['Analytics']='Insights'; NAV_LABELS['History']='Archive';
+    MOBILE_PRIMARY_PAGES.splice(0,MOBILE_PRIMARY_PAGES.length,'Home','Current Season','Franchise','Analytics');
+    var _rp=renderPage, pending=null;
+    renderPage=function(){
+      if(SECOND[currentPage]){ pending='stack-'+slug(currentPage); currentPage=SECOND[currentPage]; }
+      _rp();
+      var app=document.getElementById('app'), nav=app.querySelector('.jump-nav'), parts=app.querySelectorAll('.stack-part');
+      app.querySelectorAll('.stack-part .jump-nav').forEach(function(n){ n.remove(); });
+      parts.forEach(function(sp){ if(nav) nav.insertAdjacentHTML('beforeend','<a href="#'+sp.id+'">'+sp.getAttribute('data-tag')+' ▸</a>'); });
+      try{ if(app.querySelector('#stack-odds')&&typeof fillOddsSims==='function'){ var cp=currentPage; currentPage='Odds'; fillOddsSims(); setTimeout(function(){ currentPage=cp; },120); } }catch(e){}
+      try{ if(app.querySelector('#stack-rivalries')&&typeof setupRivalryNetworkClicks==='function') setupRivalryNetworkClicks(); }catch(e){}
+      if(pending){ var t=document.getElementById(pending); pending=null; if(t) setTimeout(function(){ t.scrollIntoView({block:'start'}); },60); }
+    };
+  }
+
+  /* ---------- plum: matchday-first ordering and landing page ---------- */
+  function setupPlum(){
+    PAGES.splice(0,PAGES.length,'Current Season','Odds','Dashboard','Franchise','Transactions','Trade Calculator','Analytics','Rivalries','History','Home');
+    NAV_LABELS['Current Season']='Season'; NAV_LABELS['Odds']='Lines'; NAV_LABELS['Dashboard']='Scoreboard'; NAV_LABELS['Franchise']='Teams'; NAV_LABELS['Transactions']='Trades'; NAV_LABELS['Analytics']='Insights'; NAV_LABELS['Home']='Trophy Room';
+    MOBILE_PRIMARY_PAGES.splice(0,MOBILE_PRIMARY_PAGES.length,'Current Season','Odds','Franchise','Analytics');
+  }
+
+  if(theme==='sage') renderNav=navSage;
+  if(theme==='gridiron') renderNav=navGridiron;
+  if(theme==='linen') renderNav=navLinen;
+  if(theme==='stone') renderNav=navStone;
+  if(theme==='dusty') setupDusty();
+  if(theme==='plum') setupPlum();
+  var ih=window.__initHash||''; 
+  if(theme==='plum' && (ih===''||ih==='#/home'||ih==='#')) currentPage='Current Season';
+  if(theme==='dusty' && SECOND[currentPage]) currentPage=SECOND[currentPage];
+  renderNav(); renderPage();
+})();
+
 </script>
 </body>
 </html>
