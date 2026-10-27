@@ -3539,6 +3539,7 @@ function pageHistory(){
       const champ = roster.find(t=>t.titles>0) || roster[0];
       const hasWeekly = !!MATCHUPS[year];
       const hasConf = roster[0].conf!=null;
+      const gbs = gbSplit(roster, gbSpotsFor(year), PLAYOFF_QUALIFIERS[year]);
       const sos = hasWeekly ? computeSOS(year) : null;
       const sosById = {};
       if(sos) sos.forEach((r,i)=>{ sosById[r.id] = {rank:i+1, index:r.index}; });
@@ -3577,7 +3578,7 @@ function pageHistory(){
           </div>
           ${highlightsHtml}
           <table class="sortable">
-            <thead><tr><th>#</th><th>Team</th>${hasConf?'<th>Div</th>':''}<th class="num-cell">W</th><th class="num-cell">L</th><th class="num-cell">Win%</th>${roster[0].pf!=null?'<th class="num-cell">PF</th><th class="num-cell">PA</th>':''}${sos?'<th class="num-cell">SOS Rank</th><th class="num-cell">SOS</th>':''}</tr></thead>
+            <thead><tr><th>#</th><th>Team</th>${hasConf?'<th>Div</th>':''}<th class="num-cell">W</th><th class="num-cell">L</th><th class="num-cell">Win%</th>${gbHeadHtml(gbs)}${roster[0].pf!=null?'<th class="num-cell">PF</th><th class="num-cell">PA</th>':''}${sos?'<th class="num-cell">SOS Rank</th><th class="num-cell">SOS</th>':''}</tr></thead>
             <tbody>
               ${roster.map(t=>`<tr>
                 <td><span class="rank-badge ${t.rank===1?'gold':''}">${t.rank}</span></td>
@@ -3586,6 +3587,7 @@ function pageHistory(){
                 <td class="num-cell">${t.w}</td>
                 <td class="num-cell">${t.l}</td>
                 <td class="num-cell">${pctFmt(t.pct)}</td>
+                ${gbCellsHtml(gbs, t.owner)}
                 ${t.pf!=null?`<td class="num-cell">${t.pf.toFixed(1)}</td><td class="num-cell">${t.pa.toFixed(1)}</td>`:''}
                 ${sos?`<td class="num-cell">${sosById[t.owner]?sosById[t.owner].rank:'&mdash;'}</td><td class="num-cell">${sosById[t.owner]?sosById[t.owner].index.toFixed(1):'&mdash;'}</td>`:''}
               </tr>`).join("")}
@@ -8484,6 +8486,69 @@ function renderBenchManagementHtml(year){
 // Live win/loss/PF/PA standings for a season that may not have a finished
 // SEASONS[year] entry yet -- built straight from MATCHUPS instead, so it
 // works for a season in progress.
+// Games behind: ((leader W - W) + (L - leader L)) / 2. The leader is the best
+// win% in the list passed in (division, league, or whole season).
+function gbLeader(list){
+  const pct = r => (r.w+r.l) ? r.w/(r.w+r.l) : 0;
+  return list.reduce((b,r)=> (pct(r)>pct(b) || (pct(r)===pct(b) && r.w>b.w)) ? r : b, list[0]);
+}
+function gbText(r, lead){
+  if(!lead) return '&mdash;';
+  const g = ((lead.w-r.w)+(r.l-lead.l))/2;
+  return g<=0 ? '&mdash;' : (Number.isInteger(g) ? String(g) : g.toFixed(1));
+}
+const GB_TIP = 'Games behind the leader: half the sum of the wins gap and the losses gap.';
+const GB_DIV_TIP = 'Games back of the division leader (half the wins gap plus the losses gap). A dash means this team leads its division.';
+const GB_WC_TIP = 'Games back of the last wild card spot. +x = games ahead of the first team out. A dash means a division leader (already in).';
+// Games back two ways for a set of standings rows ({owner,w,l,pf}): behind the
+// division leader, and behind the last wild card spot. Division leaders are
+// automatic playoff teams, so they have no wild card number. `spots` is the
+// playoff field size (null = unknown, wild card column hidden); `field`
+// optionally pins the real qualifiers for a finished season.
+function gbSplit(rows, spots, field){
+  const pctOf = r => (r.w+r.l) ? r.w/(r.w+r.l) : 0;
+  const better = (a,b) => (pctOf(b)-pctOf(a)) || ((b.pf||0)-(a.pf||0));
+  const gap = (r, ref) => ((ref.w-r.w)+(r.l-ref.l))/2;
+  const fmt = g => Number.isInteger(g) ? String(g) : g.toFixed(1);
+  const out = {div:{}, wc:{}, hasWc: !!spots};
+  const leaders = {};
+  let nDiv = 0;
+  Object.keys(CURRENT_DIVISIONS).forEach(name=>{
+    const mem = rows.filter(r=>CURRENT_DIVISIONS[name].includes(r.owner)).sort(better);
+    if(!mem.length) return;
+    nDiv++; leaders[mem[0].owner] = true;
+    mem.forEach((r,i)=>{ out.div[r.owner] = i===0 ? '&mdash;' : fmt(Math.max(0, gap(r, mem[0]))); });
+  });
+  rows.forEach(r=>{ if(!(r.owner in out.div)) out.div[r.owner] = '&mdash;'; });
+  if(!spots) { rows.forEach(r=>{ out.wc[r.owner] = '&mdash;'; }); return out; }
+  const pool = rows.filter(r=>!leaders[r.owner]).sort(better);
+  let inPool, outPool;
+  if(field){ inPool = pool.filter(r=>field.includes(r.owner)); outPool = pool.filter(r=>!field.includes(r.owner)); }
+  else { const w = Math.max(0, spots - nDiv); inPool = pool.slice(0, w); outPool = pool.slice(w); }
+  const holder = inPool[inPool.length-1], firstOut = outPool[0];
+  rows.forEach(r=>{
+    if(leaders[r.owner] || !holder){ out.wc[r.owner] = '&mdash;'; return; }
+    if(inPool.includes(r)){
+      const c = firstOut ? ((r.w-firstOut.w)+(firstOut.l-r.l))/2 : null;
+      out.wc[r.owner] = c==null ? '&mdash;' : (c>0 ? '+'+fmt(c) : '0');
+    } else {
+      out.wc[r.owner] = fmt(Math.max(0, gap(r, holder)));
+    }
+  });
+  return out;
+}
+function gbHeadHtml(g){
+  return `<th class="num-cell" data-tip="${GB_DIV_TIP}">GB Div</th>` + (g.hasWc ? `<th class="num-cell" data-tip="${GB_WC_TIP}">GB WC</th>` : '');
+}
+function gbCellsHtml(g, owner){
+  return `<td class="num-cell">${g.div[owner]!=null?g.div[owner]:'&mdash;'}</td>` + (g.hasWc ? `<td class="num-cell">${g.wc[owner]!=null?g.wc[owner]:'&mdash;'}</td>` : '');
+}
+// Playoff field size for a year's table: the real field for finished seasons
+// that have one on file, the current bylaw size for the season in progress.
+function gbSpotsFor(year){
+  if(PLAYOFF_QUALIFIERS[year]) return PLAYOFF_QUALIFIERS[year].length;
+  return year===currentSeasonInProgressYear() ? CURRENT_SEASON_PLAYOFF_SPOTS : null;
+}
 function computeCurrentStandings(year){
   const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff);
@@ -10154,17 +10219,19 @@ function renderDashboardStandingsTable(year){
   const pic = playoffPictureFor(standings);
   const byOwner = {}; standings.forEach(r=>{ byOwner[r.owner]=r; });
   const ordered = pic.order.map(id=>byOwner[id]);
+  const gbs = gbSplit(standings, spots);
   return `
     <div class="table-wrap">
       <table class="table-compact">
-        <thead><tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th><th class="num-cell">PF</th><th class="num-cell">PA</th></tr></thead>
+        <thead><tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th>${gbHeadHtml(gbs)}<th class="num-cell">PF</th><th class="num-cell">PA</th></tr></thead>
         <tbody>
           ${ordered.map((r,i)=>`
-            ${i===spots ? `<tr><td colspan="5" style="padding:2px 0"><div style="border-top:2px dashed var(--gold-deep)" title="Playoff line"></div></td></tr>` : ''}
+            ${i===spots ? `<tr><td colspan="7" style="padding:2px 0"><div style="border-top:2px dashed var(--gold-deep)" title="Playoff line"></div></td></tr>` : ''}
             <tr>
               <td class="num-cell">${i+1}</td>
               <td class="team-name">${currentTeamName(r.owner)}${divLeaderMarkHtml(pic.leaders[r.owner])}</td>
               <td class="num-cell">${r.w}-${r.l}</td>
+              ${gbCellsHtml(gbs, r.owner)}
               <td class="num-cell">${r.pf.toFixed(1)}</td>
               <td class="num-cell">${r.pa.toFixed(1)}</td>
             </tr>`).join("")}
@@ -11969,6 +12036,7 @@ function buildWeekRecapHtml(year, week){
   const closest = [...games].sort((a,b)=>a.margin-b.margin)[0];
   const biggest = [...games].sort((a,b)=>b.margin-a.margin)[0];
   const standings = computeStandingsThroughWeek(year, week);
+  const gbsW = gbSplit(standings, year===currentSeasonInProgressYear() ? CURRENT_SEASON_PLAYOFF_SPOTS : null);
   return `
     <div class="print-recap">
       <h2>${year} &middot; Week ${week} Recap</h2>
@@ -11987,9 +12055,9 @@ function buildWeekRecapHtml(year, week){
       </p>
       <div class="section-title minor" style="margin-top:14px">Standings Through Week ${week}</div>
       <table>
-        <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PF</th><th>PA</th></tr></thead>
+        <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th>${gbHeadHtml(gbsW)}<th>PF</th><th>PA</th></tr></thead>
         <tbody>
-          ${standings.map(r=>`<tr><td>${r.rank}</td><td>${currentTeamName(r.owner)}</td><td>${r.w}</td><td>${r.l}</td><td>${r.pf.toFixed(1)}</td><td>${r.pa.toFixed(1)}</td></tr>`).join("")}
+          ${standings.map(r=>`<tr><td>${r.rank}</td><td>${currentTeamName(r.owner)}</td><td>${r.w}</td><td>${r.l}</td>${gbCellsHtml(gbsW, r.owner)}<td>${r.pf.toFixed(1)}</td><td>${r.pa.toFixed(1)}</td></tr>`).join("")}
         </tbody>
       </table>
     </div>
@@ -12000,6 +12068,7 @@ function buildSeasonRecapHtml(year){
   const roster = finished ? [...SEASONS[year]].sort((a,b)=>a.rank-b.rank) : computeCurrentStandings(year).map(r=>({owner:r.owner, team:currentTeamName(r.owner), w:r.w, l:r.l, pf:r.pf, pa:r.pa, rank:r.rank}));
   if(!roster.length) return `<div class="print-recap"><p class="note">No data for ${year} yet.</p></div>`;
   const champ = roster[0];
+  const gbsR = gbSplit(roster, gbSpotsFor(year), PLAYOFF_QUALIFIERS[year]);
   const recapText = finished ? generateRecap(year) : `Season in progress. Currently leading the regular season: ${champ.team||currentTeamName(champ.owner)} at ${champ.w}-${champ.l}.`;
   return `
     <div class="print-recap">
@@ -12007,9 +12076,9 @@ function buildSeasonRecapHtml(year){
       <div class="prsub">Wofford League &middot; ${finished ? 'Champion' : 'Current Leader'}: ${champ.team||currentTeamName(champ.owner)}</div>
       <p style="font-size:13px;line-height:1.7">${recapText}</p>
       <table>
-        <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th>${roster[0].pf!=null?'<th>PF</th><th>PA</th>':''}</tr></thead>
+        <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th>${gbHeadHtml(gbsR)}${roster[0].pf!=null?'<th>PF</th><th>PA</th>':''}</tr></thead>
         <tbody>
-          ${roster.map(t=>`<tr><td>${t.rank}</td><td>${t.team||currentTeamName(t.owner)}</td><td>${t.w}</td><td>${t.l}</td>${t.pf!=null?`<td>${t.pf.toFixed(1)}</td><td>${t.pa.toFixed(1)}</td>`:''}</tr>`).join("")}
+          ${roster.map(t=>`<tr><td>${t.rank}</td><td>${t.team||currentTeamName(t.owner)}</td><td>${t.w}</td><td>${t.l}</td>${gbCellsHtml(gbsR, t.owner)}${t.pf!=null?`<td>${t.pf.toFixed(1)}</td><td>${t.pa.toFixed(1)}</td>`:''}</tr>`).join("")}
         </tbody>
       </table>
     </div>
@@ -12275,10 +12344,11 @@ function pageLiveSeason(){
       const standingsById = {}; standings.forEach(r=>{ standingsById[r.owner]=r; });
       // Playoff picture: division leaders always make the field and get the top seeds.
       const pic = playoffPictureFor(standings);
+      const gbs = gbSplit(standings, CURRENT_SEASON_PLAYOFF_SPOTS);
       const prevPosById = {};
       if(prevStandings.length) playoffPictureFor(prevStandings).order.forEach((id,i)=>{ prevPosById[id] = i+1; });
-      const headRow = `<tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th><th class="num-cell" data-tip="Points for.">PF</th><th class="num-cell" data-tip="Points against.">PA</th><th class="num-cell" data-tip="Strength of schedule: average opponent scoring pace so far this season, indexed to 100 = league average.">SOS</th><th class="num-cell" data-tip="All-play record: record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">AP W-L</th><th class="num-cell" data-tip="Playoff odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Playoff%</th><th class="num-cell" data-tip="Title odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Title%</th><th class="num-cell" data-tip="Combined wins (if currently in a playoff spot) or combined wins + the current bubble team losing, needed to lock in / stay alive for a spot in the ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field, based on today's cutoff line. The field counts the two division leaders as automatic qualifiers.">Magic #</th></tr>`;
-      function rowHtml(r, idSuffix='', pos=null, prevPos=null){
+      const headRow = `<tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th>${gbHeadHtml(gbs)}<th class="num-cell" data-tip="Points for.">PF</th><th class="num-cell" data-tip="Points against.">PA</th><th class="num-cell" data-tip="Strength of schedule: average opponent scoring pace so far this season, indexed to 100 = league average.">SOS</th><th class="num-cell" data-tip="All-play record: record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">AP W-L</th><th class="num-cell" data-tip="Playoff odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Playoff%</th><th class="num-cell" data-tip="Title odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Title%</th><th class="num-cell" data-tip="Combined wins (if currently in a playoff spot) or combined wins + the current bubble team losing, needed to lock in / stay alive for a spot in the ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field, based on today's cutoff line. The field counts the two division leaders as automatic qualifiers.">Magic #</th></tr>`;
+      function rowHtml(r, idSuffix='', pos=null, prevPos=null, lead=null){
         const ap = allPlayById[r.owner];
         const shownRank = pos!=null ? pos : r.rank;
         const prevRank = pos!=null ? prevPos : prevStandingRankById[r.owner];
@@ -12304,6 +12374,7 @@ function pageLiveSeason(){
           <td class="num-cell">${shownRank}${rankArrow}</td>
           <td class="team-name">${currentTeamName(r.owner)}${divLeaderMarkHtml(pic.leaders[r.owner])}</td>
           <td class="num-cell">${r.w}-${r.l}</td>
+          ${gbCellsHtml(gbs, r.owner)}
           <td class="num-cell">${r.pf.toFixed(1)}</td>
           <td class="num-cell">${r.pa.toFixed(1)}</td>
           <td class="num-cell">${sosById[r.owner] ? sosById[r.owner].index.toFixed(0) : '&mdash;'}</td>
@@ -12323,7 +12394,7 @@ function pageLiveSeason(){
         <div class="table-wrap standings-wrap">
           <table class="table-compact division-table league-sort" id="leagueTable">
             <thead>${headRow}</thead>
-            <tbody>${leagueRows.map((r,i)=>(i===CURRENT_SEASON_PLAYOFF_SPOTS ? `<tr class="playoff-line-row"><td colspan="10" style="padding:2px 0"><div style="border-top:2px dashed var(--gold-deep)" title="Playoff line: top ${CURRENT_SEASON_PLAYOFF_SPOTS} make the playoffs"></div></td></tr>` : '') + rowHtml(r,'L',i+1,prevPosById[r.owner]!=null?prevPosById[r.owner]:null)).join("")}</tbody>
+            <tbody>${leagueRows.map((r,i)=>(i===CURRENT_SEASON_PLAYOFF_SPOTS ? `<tr class="playoff-line-row"><td colspan="12" style="padding:2px 0"><div style="border-top:2px dashed var(--gold-deep)" title="Playoff line: top ${CURRENT_SEASON_PLAYOFF_SPOTS} make the playoffs"></div></td></tr>` : '') + rowHtml(r,'L',i+1,prevPosById[r.owner]!=null?prevPosById[r.owner]:null,gbLeader(leagueRows))).join("")}</tbody>
           </table>
         </div>
         <p class="note" style="margin-top:8px"><span id="leagueSortNote"></span>The ${CURRENT_SEASON_PLAYOFF_SPOTS}-team playoff field is above the dashed line: the two division leaders (${DIV_LEADER_MARK}) are always in and seeded first, then the best remaining records (win%, then points for). Teams below the line are ranked by record.</p>
@@ -12336,7 +12407,7 @@ function pageLiveSeason(){
             <div class="table-wrap standings-wrap">
             <table class="sortable table-compact division-table">
               <thead>${headRow}</thead>
-              <tbody>${rows.map(r=>rowHtml(r)).join("")}</tbody>
+              <tbody>${rows.map(r=>rowHtml(r,'',null,null,gbLeader(rows))).join("")}</tbody>
             </table>
             </div>
           </div>`;
