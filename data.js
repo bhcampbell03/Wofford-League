@@ -78,7 +78,8 @@ const PRIMETIME_SCHEDULE = {
     3: { tnf:["BED BATH AND BIJAN","Azz n TDs"], snf:["Team Keim","Team Tully"], mnf:["Team Moore","Drunk Sentinel"] },
     4: { tnf:["Team Tully","Wide Receiver U"], snf:["Azz n TDs","Team Moore"], mnf:["Bottom Dwellers","Two-Phone Baby Him"] },
     5: { tnf:["OJ Simpson Fanclub","Bottom Dwellers"], snf:["Team Campbell","Drunk Sentinel"], mnf:["Team Keim","Azz n TDs"] },
-    6: { tnf:["Drunk Sentinel","Team Moore"], snf:["#TeamBen","Team Keim"], mnf:["Team Tully","BED BATH AND BIJAN"] }
+    6: { tnf:["Drunk Sentinel","Team Moore"], snf:["#TeamBen","Team Keim"], mnf:["Team Tully","BED BATH AND BIJAN"] },
+    7: { tnf:["Two-Phone Baby Him","Team Tully"], snf:["BED BATH AND BIJAN","Team Moore"], mnf:["Azz n TDs","#TeamBen"] }
   },
   2025: {
     // "Team Keim HATER" in several of these weeks' screenshots is Wide
