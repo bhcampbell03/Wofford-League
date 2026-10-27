@@ -3655,7 +3655,7 @@ function pageHistory(){
       <p>League Parity is the standard deviation of final-standings win% across all 12 teams that year, regular season only &mdash; a smaller number means a more competitively balanced league that year. Standard deviation is used instead of a simple best-minus-worst spread so one outlier team (a blowout-good or blowout-bad season) doesn't single-handedly set the number.</p>
       <p>The League History Timeline's Record entry is the current all-time highest single-game score, placed at the year it was set &mdash; not a full history of every time that record changed hands. See the Records &amp; Awards page for the complete Record Book.</p>
       <p>*Playoff W-L is real bracket games only, 2024&ndash;2025 (no bracket data exists for 2022&ndash;2023). Avg. PF/PA also only covers 2024&ndash;2025 (final-season totals; 2026 is still in progress). Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Wks 1st, and xW/xL cover every year with weekly matchup data on record, including the current season in progress. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
-      <p>SOS Rank and SOS are Strength of Schedule &mdash; indexed to that season's league average (100), based on average opponent points-per-game. Available for 2024&ndash;2025 only, since 2022&ndash;2023 have no weekly matchup data on record.</p>
+      <p>SOS Rank and SOS are Strength of Schedule &mdash; how well every other team would have done on that team's schedule, indexed to that season's league average (100). Available for 2024&ndash;2025 only, since 2022&ndash;2023 have no weekly matchup data on record.</p>
       <p>Playoff Info (Bracket / Playoff Picture / Final Week Race) is available on any season card with real playoff qualifiers on record (2024&ndash;2025). Playoff Picture and Final Week Race reflect that season's actual result.</p>
       <p>Final Week Race compares each team's cumulative rank right before the season's last regular-season week to the real playoff cutoff line. It's a straightforward positional read, not a full win-probability or tiebreaker simulation.</p>
       <p>Luckiest Win / Unluckiest Loss compare a team's score to others in the same result group that week (lowest-scoring winner, highest-scoring loser) &mdash; not a full win-probability model.</p>
@@ -5115,41 +5115,45 @@ function computeStandingsByWeek(year){
   return {weekLabels, series, ids};
 }
 
-// Average points-per-game of each team's regular-season opponents, as a schedule-difficulty proxy.
+// Strength of schedule = how well EVERY OTHER team would have done on this team's
+// schedule. Each other team replays this team's opponents week by week using the
+// real scores of that week (when this team's opponent was the other team itself,
+// that team plays this team instead). The share of those games the others win is
+// the schedule's "others' win rate": lower = harder schedule. Indexed so 100 = the
+// league-average schedule, with +1.5 points for every 1% the others' win rate drops,
+// so tough and soft schedules separate clearly (roughly 75-125 in a 12-team year).
+// This captures both who a team played and when it played them.
 function computeSOS(year){
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff);
-  const ppg = {};
-  if(SEASONS[year]){
-    SEASONS[year].forEach(t=>{ if(t.pf!=null) ppg[t.owner]=t.pf/(t.w+t.l); });
-  } else {
-    // No SEASONS entry yet (a season still in progress) -- use each team's own
-    // average score so far this year instead of a season-final PF/game figure.
-    const sum={}, count={};
-    weeks.forEach(week=>{
-      week.g.forEach(([tA,sA,tB,sB])=>{
-        const oA=ownerForTeam(year,tA), oB=ownerForTeam(year,tB);
-        if(oA){ sum[oA]=(sum[oA]||0)+sA; count[oA]=(count[oA]||0)+1; }
-        if(oB){ sum[oB]=(sum[oB]||0)+sB; count[oB]=(count[oB]||0)+1; }
+  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const wk = weeks.map(week=>{
+    const m = {};
+    week.g.forEach(([tA,sA,tB,sB])=>{
+      const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+      if(oA) m[oA] = {s:sA, opp:oB, os:sB};
+      if(oB) m[oB] = {s:sB, opp:oA, os:sA};
+    });
+    return m;
+  });
+  const raw = [];
+  owners.forEach(X=>{
+    let wins = 0, games = 0;
+    owners.forEach(T=>{
+      if(T===X) return;
+      wk.forEach(m=>{
+        if(!m[X] || !m[T]) return;
+        const oppScore = m[X].opp===T ? m[X].s : m[X].os;
+        const mine = m[T].s;
+        games++;
+        if(mine>oppScore) wins++; else if(mine===oppScore) wins += 0.5;
       });
     });
-    Object.keys(sum).forEach(id=>{ ppg[id] = sum[id]/count[id]; });
-  }
-  const oppSum={}, oppCount={};
-  weeks.forEach(week=>{
-    week.g.forEach(([tA,sA,tB,sB])=>{
-      const oA=ownerForTeam(year,tA), oB=ownerForTeam(year,tB);
-      if(oA && oB!=null && ppg[oB]!=null){ oppSum[oA]=(oppSum[oA]||0)+ppg[oB]; oppCount[oA]=(oppCount[oA]||0)+1; }
-      if(oB && oA!=null && ppg[oA]!=null){ oppSum[oB]=(oppSum[oB]||0)+ppg[oA]; oppCount[oB]=(oppCount[oB]||0)+1; }
-    });
+    if(games) raw.push({id:X, othersWinPct: wins/games});
   });
-  const raw = Object.keys(oppSum)
-    .filter(id=>id!=="rm2")
-    .map(id=>({id, avgOppPPG: oppSum[id]/oppCount[id]}));
-  // Index the whole set to a league-average-schedule of 100, so 110 means a schedule
-  // 10% tougher than average and 90 means 10% easier.
-  const leagueAvg = raw.reduce((a,r)=>a+r.avgOppPPG,0)/raw.length;
+  if(!raw.length) return [];
+  const leagueMean = raw.reduce((a,r)=>a+r.othersWinPct,0)/raw.length;
   return raw
-    .map(r=>({id:r.id, avgOppPPG:r.avgOppPPG, index: (r.avgOppPPG/leagueAvg)*100}))
+    .map(r=>({id:r.id, othersWinPct:r.othersWinPct, index: 100 + (leagueMean - r.othersWinPct)*150}))
     .sort((a,b)=>b.index-a.index);
 }
 function buildLuckBars(years){
@@ -11696,10 +11700,15 @@ function computeDashboardPanels(year){
   const close = games.filter(g=>g.margin<10).length, mid = games.filter(g=>g.margin>=10&&g.margin<30).length, blow = games.filter(g=>g.margin>=30).length;
   const scores = games.flatMap(g=>[{week:g.week, team:g.tA, owner:g.oA, pts:g.sA, opp:g.tB, won:g.sA>g.sB},
                                     {week:g.week, team:g.tB, owner:g.oB, pts:g.sB, opp:g.tA, won:g.sB>g.sA}]);
+  const recentWeeks = new Set(regWeeks.slice(-4).map(w=>w.w));
+  const ppgRecent = standings.map(r=>{
+    const mine = scores.filter(x=>x.owner===r.owner && recentWeeks.has(x.week));
+    return {id:r.owner, v: mine.length ? mine.reduce((a,x)=>a+x.pts,0)/mine.length : r.pf/r.games};
+  }).sort((a,b)=>b.v-a.v);
   const top = scores.slice().sort((a,b)=>b.pts-a.pts).slice(0,5);
   const closest = games.slice().sort((a,b)=>a.margin-b.margin).slice(0,5);
   const over120 = ppg.filter(x=>x.v>=120).length;
-  return {year, played:regWeeks.length, totalWeeks, pos, ppg, luck, close, mid, blow, n:games.length, top, closest, over120, teams:ppg.length};
+  return {year, played:regWeeks.length, totalWeeks, pos, ppg, ppgRecent, recentN:recentWeeks.size, luck, close, mid, blow, n:games.length, top, closest, over120, teams:ppg.length};
 }
 
 function buildDashboardPanelParts(year){
@@ -11734,9 +11743,9 @@ function buildDashboardPanelParts(year){
     </div></div>`;
 
   // 4) ranked horizontal bars: scoring leaders
-  const maxP = Math.max(...d.ppg.map(x=>x.v));
-  const minP = Math.min(...d.ppg.map(x=>x.v))*0.8;
-  const bars = d.ppg.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:2px 0">
+  const maxP = Math.max(...d.ppgRecent.map(x=>x.v));
+  const minP = Math.min(...d.ppgRecent.map(x=>x.v))*0.8;
+  const bars = d.ppgRecent.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:2px 0">
       <span style="width:104px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${currentTeamName(x.id)}</span>
       <div style="flex:1;height:9px;background:var(--panel2);border-radius:4px;overflow:hidden"><div class="anim-bar" style="width:${((x.v-minP)/(maxP-minP)*100).toFixed(1)}%;height:100%;background:${ownerColor(x.id)}"></div></div>
       <b style="width:38px;text-align:right">${x.v.toFixed(1)}</b></div>`).join('');
@@ -11777,7 +11786,7 @@ function buildDashboardPanelParts(year){
     status: panel('Overall Status','dashboard','var(--gold)',status,'','Where the 2026 regular season stands'),
     donut: panel('Points by Position','chart','var(--green)',donut,'','Share of all starter points, by position'),
     margins: panel('Game Margins','odds','var(--red)',margins,'','Games grouped by final margin of victory'),
-    leaders: panel('Scoring Leaders (PPG)','rise','var(--gold)',bars,'',`Season points per game. Bars start at ${Math.round(minP)} so the gaps are visible`),
+    leaders: panel(`Scoring Leaders (PPG, last ${d.recentN})`,'rise','var(--gold)',bars,'',`Points per game over each team's last ${d.recentN} game${d.recentN===1?'':'s'}. Bars start at ${Math.round(minP)} so the gaps are visible`),
     luck: panel('Luck Meter (wins vs expected)','star','var(--green)',lbars,'','Actual wins minus wins expected from weekly scoring. Green = lucky, red = unlucky'),
     strip
   };
@@ -12347,7 +12356,7 @@ function pageLiveSeason(){
       const gbs = gbSplit(standings, CURRENT_SEASON_PLAYOFF_SPOTS);
       const prevPosById = {};
       if(prevStandings.length) playoffPictureFor(prevStandings).order.forEach((id,i)=>{ prevPosById[id] = i+1; });
-      const headRow = `<tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th>${gbHeadHtml(gbs)}<th class="num-cell" data-tip="Points for.">PF</th><th class="num-cell" data-tip="Points against.">PA</th><th class="num-cell" data-tip="Strength of schedule: average opponent scoring pace so far this season, indexed to 100 = league average.">SOS</th><th class="num-cell" data-tip="All-play record: record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">AP W-L</th><th class="num-cell" data-tip="Playoff odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Playoff%</th><th class="num-cell" data-tip="Title odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Title%</th><th class="num-cell" data-tip="Combined wins (if currently in a playoff spot) or combined wins + the current bubble team losing, needed to lock in / stay alive for a spot in the ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field, based on today's cutoff line. The field counts the two division leaders as automatic qualifiers.">Magic #</th></tr>`;
+      const headRow = `<tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th>${gbHeadHtml(gbs)}<th class="num-cell" data-tip="Points for.">PF</th><th class="num-cell" data-tip="Points against.">PA</th><th class="num-cell" data-tip="Strength of schedule: how well every other team would have done on this team's schedule so far. 100 = league-average schedule; above 100 is tougher, below is easier.">SOS</th><th class="num-cell" data-tip="All-play record: record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">AP W-L</th><th class="num-cell" data-tip="Playoff odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Playoff%</th><th class="num-cell" data-tip="Title odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Title%</th><th class="num-cell" data-tip="Combined wins (if currently in a playoff spot) or combined wins + the current bubble team losing, needed to lock in / stay alive for a spot in the ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field, based on today's cutoff line. The field counts the two division leaders as automatic qualifiers.">Magic #</th></tr>`;
       function rowHtml(r, idSuffix='', pos=null, prevPos=null, lead=null){
         const ap = allPlayById[r.owner];
         const shownRank = pos!=null ? pos : r.rank;
@@ -12560,7 +12569,7 @@ function pageLiveSeason(){
     <div id="printSeasonRecap">${buildSeasonRecapHtml(year)}</div>
 
     <div class="footnotes">
-      <p>SOS is average opponent scoring pace so far this season, indexed to a league-average schedule of 100 (110 = 10% tougher than average, 90 = 10% easier).</p>
+      <p>SOS measures how well every other team would have done on this team's schedule so far, replaying its opponents week by week with the real scores. 100 is a league-average schedule; above 100 is tougher, below 100 is easier (each 1% drop in the other teams' win rate adds 1.5 points).</p>
       <p>All-Play Record compares each team's weekly score against every OTHER team's score that week, not just their actual opponent &mdash; a truer read on who's really playing well than the schedule-dependent real record, especially early in a season.</p>
       <p>Power Rankings are a composite Power Score -- 40% actual win%, 25% last-3 average points for, 20% Pythagorean win% (the win% implied by points for and against, exponent 2.4), and 15% all-play win% (record against all 11 teams every week). Each input is standardized across the league and rescaled so 100 is average. The up/down arrow compares to the ranking as of the prior week.</p>
       <p>Championship Odds run 5,000 simulated seasons using this season's data only: each remaining game is scored using each team's own projected points-per-game (blended from this season's actual PPG and their current roster's Site Model-implied scoring, weighted toward the roster the fewer games they've played) and that team's own week-to-week scoring volatility, shrunk toward the league-wide figure for small samples -- so a historically streaky roster is simulated with wider variance than a steady one. Standings are ranked by simulated wins (ties by points for). Each division's leader auto-qualifies and gets a top-two seed per League Bylaws Article V.1, with the remaining ${CURRENT_SEASON_PLAYOFF_SPOTS-2} spots going to the next-best records league-wide; that ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field plays out a simulated single-elimination bracket. Hover a team's Playoff Odds cell for their projected final record and how often they land the overall 1-seed. Divisions for the season in progress are entered by hand and the format is an assumption until the real bracket is set &mdash; treat these as rough odds, not certainties, especially in the season's first few weeks when there's little current-season data to project from.</p>
@@ -12681,7 +12690,7 @@ function buildScoutingReportHtml(year, idA, idB){
 // Column headings get a tooltip when they don't already have one, and the first mention of a
 // term inside a note or paragraph gets a dotted underline with the same definition.
 const GLOSS_TIPS = {
-  "SOS": "Strength of schedule: average opponent scoring pace, indexed so 100 = a league-average schedule. Above 100 is tougher, below 100 is easier.",
+  "SOS": "Strength of schedule: how well every other team would have done on this team's schedule. 100 = a league-average schedule. Above 100 is tougher, below 100 is easier.",
   "AP W-L": "All-play record: the record a team would have if it played all 11 other teams every week, not just its real opponent.",
   "ALL-PLAY": "All-play record: the record a team would have if it played all 11 other teams every week, not just its real opponent.",
   "XW": "Expected wins: a week counts as an expected win when the team scores at or above that week's league average, whoever it played.",
@@ -12744,7 +12753,7 @@ const GLOSSARY = [
   {term:"Win% format", def:'Shown as ".643" style, no leading zero &mdash; a common shorthand for a decimal win percentage.'},
   {term:"Luck / xW / xL", def:"xW (expected wins) counts a week as a win if the team scored at or above that week's league average, regardless of who they actually played. Luck is actual wins minus xW &mdash; positive means winning more than the scoring pace suggests."},
   {term:"All-Play record", def:"A finer-grained version of xW/xL: each week, the record a team would have if they'd played all 11 other teams instead of just their actual opponent, summed across the season."},
-  {term:"SOS (Strength of Schedule)", def:"Indexed to that season's league-average schedule at 100, based on the average points-per-game of a team's opponents. 110 means a schedule 10% tougher than average; 90 means 10% easier."},
+  {term:"SOS (Strength of Schedule)", def:"How well every other team would have done on this team's schedule (each one replays its opponents week by week using the real scores). Indexed so 100 is that season's league-average schedule; above 100 is tougher and below 100 is easier. Each 1% drop in the other teams' win rate adds 1.5 points."},
   {term:"Playoff Qualifiers", def:"The teams that actually made the real playoff bracket that year (6 teams in 2024, 7 in 2025) &mdash; separate from the consolation/placement ladder played by everyone else."},
   {term:"Playoff Odds / Title Odds (Current Season Standings)", def:`Come from a 5,000-simulation Monte Carlo projection of the rest of the season, blending each team's own PPG with their current roster's Site Model-implied scoring and each team's own week-to-week volatility, and a ${CURRENT_SEASON_PLAYOFF_SPOTS}-team playoff bracket: both division winners auto-qualify and get the top two seeds, and the rest of the field is filled by record league-wide.`},
   {term:"Power Score (Current Season Power Rankings)", def:"A composite index blending actual win% (40%), last-3 average points (25%), Pythagorean win% (20%) and all-play win% (15%) into one base-100 number."},
@@ -13574,7 +13583,7 @@ function benchPointsLeftByOwner(years=Object.keys(PLAYER_SCORES).map(Number)){
 // League-wide SOS table on Analytics: combines each owner's per-season SOS
 // index (computeSOS, indexed to 100 = that year's league-average schedule)
 // across every season with weekly data (2024-2025). Deliberately reuses
-// computeSOS() rather than a separate opponent-rank calculation, so the site
+// computeSOS() rather than a separate calculation, so the site
 // only has one definition of "strength of schedule" -- this same number is
 // what shows on the History page's Season by Season cards and in each
 // owner's Career Report.
@@ -14679,7 +14688,7 @@ function pageTeamHub(selectedId){
               }).join("")}
             </tbody>
           </table>
-          <p class="note" style="margin-top:6px">SOS is average opponent scoring pace that season, indexed to a league-average schedule of 100 &mdash; 110 means a schedule 10% tougher than average, 90 means 10% easier. Regular season only; 2024&ndash;2025 only (no weekly data before then).</p>
+          <p class="note" style="margin-top:6px">SOS is how well every other team would have done on that schedule (each replays the team's opponents week by week with the real scores), indexed to a league-average schedule of 100 &mdash; above 100 is tougher, below 100 is easier. Regular season only; 2024&ndash;2025 only (no weekly data before then).</p>
         </div>
 
         ${h2hRows.length?`
