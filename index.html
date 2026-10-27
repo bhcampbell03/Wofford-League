@@ -3464,8 +3464,12 @@ function pageHistory(){
   const standingIds = allOwnerIdsSorted().filter(id=>id!=="rm2" && cs[id].years>0);
   const benchById = {};
   benchPointsLeftByOwner().forEach(r=>{ benchById[r.owner] = r; });
+  const liveYr = currentSeasonInProgressYear();
+  const livePfPa = {};
+  if(liveYr) computeCurrentStandings(liveYr).forEach(r=>{ if(r.games>0) livePfPa[r.owner] = {pf:r.pf, pa:r.pa}; });
   const standingRows = standingIds.map(id=>{
-    const s = cs[id];
+    const s = {...cs[id]};
+    if(livePfPa[id]){ s.pf += livePfPa[id].pf; s.pa += livePfPa[id].pa; s.pfYears = (s.pfYears||0) + 1; }
     const avgRank = s.ranks.reduce((a,b)=>a+b,0)/s.ranks.length;
     const pct = s.w/(s.w+s.l);
     const grade = teamGrade(id);
@@ -3487,7 +3491,7 @@ function pageHistory(){
       <thead><tr>
         <th>Team</th><th class="num-cell">Grade</th><th class="num-cell">W</th><th class="num-cell">L</th>
         <th class="num-cell">Win%</th><th class="num-cell">Titles</th><th class="num-cell">Avg. finish</th>
-        <th class="num-cell">Playoff W-L*</th><th class="num-cell">Avg. PF</th><th class="num-cell">Avg. PA</th>
+        <th class="num-cell">Playoff W-L*</th><th class="num-cell" data-tip="All-time points for: every season with scoring on record (2024 on), including the current season to date.">PF</th><th class="num-cell" data-tip="All-time points against: every season with scoring on record (2024 on), including the current season to date.">PA</th>
         <th class="num-cell ext-col">Blowout W</th><th class="num-cell ext-col">Blowout L</th>
         <th class="num-cell ext-col">Wks 1st</th><th class="num-cell ext-col">xW</th><th class="num-cell ext-col">xL</th>
         <th class="num-cell ext-col">Bench Left**</th>
@@ -3505,8 +3509,8 @@ function pageHistory(){
           <td class="num-cell">${r.titles || 0}</td>
           <td class="num-cell">${r.avgRank.toFixed(1)}</td>
           <td class="num-cell">${ext.playoffW}-${ext.playoffL}</td>
-          <td class="num-cell">${r.pfYears? (r.pf/r.pfYears).toFixed(1) : '&mdash;'}</td>
-          <td class="num-cell">${r.pfYears? (r.pa/r.pfYears).toFixed(1) : '&mdash;'}</td>
+          <td class="num-cell">${r.pfYears? r.pf.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}) : '&mdash;'}</td>
+          <td class="num-cell">${r.pfYears? r.pa.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1}) : '&mdash;'}</td>
           <td class="num-cell ext-col">${ext.blowoutW}</td>
           <td class="num-cell ext-col">${ext.blowoutL}</td>
           <td class="num-cell ext-col">${ext.weeksFirst}</td>
@@ -3654,7 +3658,7 @@ function pageHistory(){
     <div class="footnotes">
       <p>League Parity is the standard deviation of final-standings win% across all 12 teams that year, regular season only &mdash; a smaller number means a more competitively balanced league that year. Standard deviation is used instead of a simple best-minus-worst spread so one outlier team (a blowout-good or blowout-bad season) doesn't single-handedly set the number.</p>
       <p>The League History Timeline's Record entry is the current all-time highest single-game score, placed at the year it was set &mdash; not a full history of every time that record changed hands. See the Records &amp; Awards page for the complete Record Book.</p>
-      <p>*Playoff W-L is real bracket games only, 2024&ndash;2025 (no bracket data exists for 2022&ndash;2023). Avg. PF/PA also only covers 2024&ndash;2025 (final-season totals; 2026 is still in progress). Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Wks 1st, and xW/xL cover every year with weekly matchup data on record, including the current season in progress. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
+      <p>*Playoff W-L is real bracket games only, 2024&ndash;2025 (no bracket data exists for 2022&ndash;2023). PF and PA are all-time totals and only cover 2024 onward (the seasons with scoring on record), including the current season to date. Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Wks 1st, and xW/xL cover every year with weekly matchup data on record, including the current season in progress. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
       <p>SOS Rank and SOS are Strength of Schedule &mdash; how well every other team would have done on that team's schedule, indexed to that season's league average (100). Available for 2024&ndash;2025 only, since 2022&ndash;2023 have no weekly matchup data on record.</p>
       <p>Playoff Info (Bracket / Playoff Picture / Final Week Race) is available on any season card with real playoff qualifiers on record (2024&ndash;2025). Playoff Picture and Final Week Race reflect that season's actual result.</p>
       <p>Final Week Race compares each team's cumulative rank right before the season's last regular-season week to the real playoff cutoff line. It's a straightforward positional read, not a full win-probability or tiebreaker simulation.</p>
@@ -11534,6 +11538,16 @@ function computeSeasonSnapshot(year){
   const power = computePowerRankingsV2(year);
   const totalWeeks = (FULL_SCHEDULE[year]||[]).filter(w=>!w.playoff).length || regWeeks.length;
   const byPf = standings.slice().sort((a,b)=>(b.pf/b.games)-(a.pf/a.games))[0];
+  const recentSet = new Set(regWeeks.slice(-4).map(w=>w.w));
+  const rSum = {}, rCnt = {};
+  regWeeks.forEach(w=>{ if(!recentSet.has(w.w)) return; w.g.forEach(([tA,sA,tB,sB])=>{
+    const a = ownerForTeam(year,tA), b = ownerForTeam(year,tB);
+    if(a){ rSum[a]=(rSum[a]||0)+sA; rCnt[a]=(rCnt[a]||0)+1; }
+    if(b){ rSum[b]=(rSum[b]||0)+sB; rCnt[b]=(rCnt[b]||0)+1; }
+  }); });
+  const recentN = recentSet.size;
+  const byPfRecent = standings.map(r=>({owner:r.owner, avg: rCnt[r.owner] ? rSum[r.owner]/rCnt[r.owner] : r.pf/r.games}))
+    .sort((a,b)=>b.avg-a.avg)[0];
   const byRec = standings.slice().sort((a,b)=>b.pct-a.pct || b.pf-a.pf)[0];
   const hot = power.slice().sort((a,b)=>b.recentAvg-a.recentAvg)[0];
   const luck = standings.map(r=>({id:r.owner, lr:luckRating(r.owner, year)})).filter(x=>x.lr && x.lr.luck!=null)
@@ -11567,7 +11581,7 @@ function computeSeasonSnapshot(year){
   allScores.forEach(v=>{ const i = Math.min(buckets.length-1, Math.floor((v-lo)/step)); buckets[i].n++; });
   const sorted = allScores.slice().sort((a,b)=>a-b);
   const median = sorted[Math.floor(sorted.length/2)];
-  return {year, standings, played:regWeeks.length, totalWeeks, byPf, byRec, hot, luck, weekAvg, seasonAvg,
+  return {year, standings, played:regWeeks.length, totalWeeks, byPf, byPfRecent, recentN, byRec, hot, luck, weekAvg, seasonAvg,
           divNames, cross, crossGames, divPts, divN, buckets, step, median, n:allScores.length};
 }
 
@@ -11586,7 +11600,7 @@ function buildSeasonSnapshotParts(year){
     </div>`;
   const best = s.luck.length ? s.luck[0] : null, worst = s.luck.length ? s.luck[s.luck.length-1] : null;
   const leaders = `
-    ${leader('Top Scorer','chart', s.byPf.owner, (s.byPf.pf/s.byPf.games).toFixed(1), 'points per game')}
+    ${leader('Top Scorer','chart', s.byPfRecent.owner, s.byPfRecent.avg.toFixed(1), `points per game, last ${s.recentN}`)}
     ${leader('Hottest Team','odds', s.hot.owner, s.hot.recentAvg.toFixed(1), `last 3 games &middot; season ${(()=>{const r=s.standings.find(x=>x.owner===s.hot.owner);return r?(r.pf/r.games).toFixed(1):'&mdash;'})()}`)}
     ${best ? leader('Luckiest Team','star', best.id, (best.lr.luck>0?'+':'')+best.lr.luck.toFixed(1), `wins over expected`) : ''}`;
 
@@ -11707,7 +11721,7 @@ function computeDashboardPanels(year){
   }).sort((a,b)=>b.v-a.v);
   const top = scores.slice().sort((a,b)=>b.pts-a.pts).slice(0,5);
   const closest = games.slice().sort((a,b)=>a.margin-b.margin).slice(0,5);
-  const over120 = ppg.filter(x=>x.v>=120).length;
+  const over120 = ppgRecent.filter(x=>x.v>=120).length;
   return {year, played:regWeeks.length, totalWeeks, pos, ppg, ppgRecent, recentN:recentWeeks.size, luck, close, mid, blow, n:games.length, top, closest, over120, teams:ppg.length};
 }
 
@@ -11724,7 +11738,7 @@ function buildDashboardPanelParts(year){
   // 1) overall status stat rows
   const status = rowStat('Season progress', Math.round(d.played/d.totalWeeks*100)+'%', `complete (week ${d.played} of ${d.totalWeeks})`, 'var(--gold-deep)')
     + rowStat('Close games', Math.round(d.close/d.n*100)+'%', 'of games decided by under 10 points', 'var(--green)')
-    + rowStat('120+ club', `${d.over120}<span style="font-size:13px;color:var(--muted)"> of ${d.teams}</span>`, 'teams averaging 120+ points a game', 'var(--red)');
+    + rowStat('120+ club', `${d.over120}<span style="font-size:13px;color:var(--muted)"> of ${d.teams}</span>`, `teams averaging 120+ over their last ${d.recentN} games`, 'var(--red)');
 
   // 2) donut: points by position
   const posTot = Object.values(d.pos).reduce((a,b)=>a+b,0)||1, R=44, C=2*Math.PI*R;
