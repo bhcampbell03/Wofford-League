@@ -2827,7 +2827,9 @@ const LAUREL_SVG = `<svg width="150" height="58" viewBox="0 0 150 58" fill="none
 
 /* ============ RENDER: NAV ============ */
 
-const PAGES = ["Home","Dashboard","Current Season","Odds","Analytics","History","Rivalries","Transactions","Trade Calculator","Franchise"];
+// Set SHOW_ODDS to true to bring the Odds tab (and its menu, directory and search entries) back.
+const SHOW_ODDS = false;
+const PAGES = ["Home","Dashboard","Current Season","Odds","Analytics","History","Rivalries","Transactions","Trade Calculator","Franchise"].filter(p=>SHOW_ODDS || p!=="Odds");
 // Shorter label for the nav bar only -- the page id (routing, search index,
 // PLAYOFF_QUALIFIERS lookups, etc.) stays "Records & Awards" everywhere else.
 const NAV_LABELS = {"Trade Calculator": "Calculator"};
@@ -3083,7 +3085,7 @@ function renderPage(){
 /* ============ PAGE: TABLE OF CONTENTS ============ */
 
 function renderSiteMapContent(){
-  const sections = [
+  const sectionsAll = [
     {page:"Dashboard", blurb:"At-a-glance view: league KPIs, this week's most interesting game, records within reach, a rotating set of fun facts, and a mix of charts (scoring by position, weekly range, luck, margins).", items:[
       {id:'jump-dash-kpis', label:'League KPIs'},
       {id:'jump-dash-featured', label:'Most Interesting Game'},
@@ -3129,6 +3131,7 @@ function renderSiteMapContent(){
     {page:"Trade Calculator", blurb:"Build a deal between two teams and see who comes out ahead.", items:[]},
     {page:"Franchise", blurb:"Each franchise's full career page &mdash; grades, rank-over-time, draft history, trade history, and profile. Pick an owner from the dropdown once you're there.", items:[]}
   ];
+  const sections = sectionsAll.filter(sec=>SHOW_ODDS || sec.page!=="Odds");
 
   return `
     <p class="note" style="margin-bottom:20px">Every page on the site, one click away.</p>
@@ -11537,7 +11540,7 @@ function computeSeasonSnapshot(year){
   const standings = computeCurrentStandings(year).filter(r=>r.games>0);
   const power = computePowerRankingsV2(year);
   const totalWeeks = (FULL_SCHEDULE[year]||[]).filter(w=>!w.playoff).length || regWeeks.length;
-  const byPf = standings.slice().sort((a,b)=>(b.pf/b.games)-(a.pf/a.games))[0];
+  const byPf = standings.slice().sort((a,b)=>b.pf-a.pf)[0];
   const recentSet = new Set(regWeeks.slice(-4).map(w=>w.w));
   const rSum = {}, rCnt = {};
   regWeeks.forEach(w=>{ if(!recentSet.has(w.w)) return; w.g.forEach(([tA,sA,tB,sB])=>{
@@ -11590,7 +11593,7 @@ function buildSeasonSnapshotParts(year){
   if(!s) return null;
   const lbl = (txt, icon)=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin-bottom:6px">${iconSvg(icon,12)}${txt}</div>`;
   const leader = (txt, icon, id, big, sub)=>`
-    <div class="card" style="padding:9px 12px;border-left:4px solid ${ownerColor(id)}">
+    <div class="card" style="padding:9px 12px">
       ${lbl(txt, icon)}
       <div style="font-family:var(--font-display);font-weight:800;font-size:15px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${currentTeamName(id)}</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-top:3px">
@@ -11600,7 +11603,7 @@ function buildSeasonSnapshotParts(year){
     </div>`;
   const best = s.luck.length ? s.luck[0] : null, worst = s.luck.length ? s.luck[s.luck.length-1] : null;
   const leaders = `
-    ${leader('Top Scorer','chart', s.byPfRecent.owner, s.byPfRecent.avg.toFixed(1), `points per game, last ${s.recentN}`)}
+    ${leader('PF Leader','chart', s.byPf.owner, s.byPf.pf.toFixed(1), `total points for, ${s.year}`)}
     ${leader('Hottest Team','odds', s.hot.owner, s.hot.recentAvg.toFixed(1), `last 3 games &middot; season ${(()=>{const r=s.standings.find(x=>x.owner===s.hot.owner);return r?(r.pf/r.games).toFixed(1):'&mdash;'})()}`)}
     ${best ? leader('Luckiest Team','star', best.id, (best.lr.luck>0?'+':'')+best.lr.luck.toFixed(1), `wins over expected`) : ''}`;
 
@@ -11691,7 +11694,7 @@ function buildSeasonSnapshotParts(year){
 // Stat rows, a donut, a range-column chart, ranked bars, a diverging bar chart,
 // a three-bucket bar list and two small data tables. All inline SVG/HTML so they
 // render without the charting library. Regular season only.
-const DASH_POS_COLORS = {QB:'#b8892b', RB:'#2e7d4f', WR:'#3b6ea8', TE:'#7a5ca8', K:'#a83b3b', 'D/ST':'#6b6b6b'};
+const DASH_POS_COLORS = {QB:'#b8892b', RB:'#2e7d4f', WR:'#3b6ea8', TE:'#7a5ca8', FLEX:'#d97a2b', K:'#a83b3b', 'D/ST':'#6b6b6b'};
 
 function computeDashboardPanels(year){
   const regWeeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff).sort((a,b)=>a.w-b.w);
@@ -11701,12 +11704,16 @@ function computeDashboardPanels(year){
   const games = regWeeks.flatMap(w=>w.g.map(([tA,sA,tB,sB])=>({week:w.w, tA, sA, tB, sB,
     oA:ownerForTeam(year,tA), oB:ownerForTeam(year,tB), margin:Math.abs(sA-sB)})));
   // points by position (starters only)
-  const pos = {QB:0,RB:0,WR:0,TE:0,K:0,'D/ST':0};
+  const pos = {QB:0,RB:0,WR:0,TE:0,FLEX:0,K:0,'D/ST':0};
   const weekSet = new Set(regWeeks.map(w=>String(w.w)));
   const ps = PLAYER_SCORES[year] || {};
   Object.keys(ps).forEach(wk=>{
     if(!weekSet.has(wk)) return;
-    Object.values(ps[wk]).forEach(list=>list.forEach(p=>{ if(!p.bench && p.pos in pos) pos[p.pos]+=p.pts; }));
+    Object.values(ps[wk]).forEach(list=>list.forEach(p=>{
+      // FLEX starters (lineup slot 23) are counted on their own, not under their natural position
+      const key = p.slotId===23 ? 'FLEX' : p.pos;
+      if(!p.bench && key in pos) pos[key]+=p.pts;
+    }));
   });
   const ppg = standings.map(r=>({id:r.owner, v:r.pf/r.games})).sort((a,b)=>b.v-a.v);
   const luck = standings.map(r=>{ const lr = luckRating(r.owner, year); return {id:r.owner, v:lr&&lr.luck!=null?lr.luck:0}; })
@@ -11722,13 +11729,15 @@ function computeDashboardPanels(year){
   const top = scores.slice().sort((a,b)=>b.pts-a.pts).slice(0,5);
   const closest = games.slice().sort((a,b)=>a.margin-b.margin).slice(0,5);
   const over120 = ppgRecent.filter(x=>x.v>=120).length;
-  return {year, played:regWeeks.length, totalWeeks, pos, ppg, ppgRecent, recentN:recentWeeks.size, luck, close, mid, blow, n:games.length, top, closest, over120, teams:ppg.length};
+  const topPF = standings.slice().sort((a,b)=>b.pf-a.pf).slice(0,3).map(r=>({id:r.owner, v:r.pf}));
+  const topPA = standings.slice().sort((a,b)=>b.pa-a.pa).slice(0,3).map(r=>({id:r.owner, v:r.pa}));
+  return {year, played:regWeeks.length, totalWeeks, pos, ppg, ppgRecent, recentN:recentWeeks.size, luck, close, mid, blow, n:games.length, top, closest, over120, topPF, topPA, teams:ppg.length};
 }
 
 function buildDashboardPanelParts(year){
   const d = computeDashboardPanels(year);
   if(!d) return null;
-  const panel = (title, icon, edge, body, extra, sub)=>`<div class="card dash-panel" style="border-left:3px solid ${edge};padding:10px 14px;${extra||''}">
+  const panel = (title, icon, edge, body, extra, sub)=>`<div class="card dash-panel" style="padding:10px 14px;${extra||''}">
     <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);margin-bottom:${sub?2:8}px">${iconSvg(icon,12)}${title}</div>${sub?`<p class="note" style="font-size:10.5px;margin:0 0 8px">${sub}</p>`:''}${body}</div>`;
   const rowStat = (label, big, word, color)=>`<div style="display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)">
       <span style="flex:1;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">${label}</span>
@@ -11737,7 +11746,6 @@ function buildDashboardPanelParts(year){
 
   // 1) overall status stat rows
   const status = rowStat('Season progress', Math.round(d.played/d.totalWeeks*100)+'%', `complete (week ${d.played} of ${d.totalWeeks})`, 'var(--gold-deep)')
-    + rowStat('Close games', Math.round(d.close/d.n*100)+'%', 'of games decided by under 10 points', 'var(--green)')
     + rowStat('120+ club', `${d.over120}<span style="font-size:13px;color:var(--muted)"> of ${d.teams}</span>`, `teams averaging 120+ over their last ${d.recentN} games`, 'var(--red)');
 
   // 2) donut: points by position
@@ -11757,12 +11765,16 @@ function buildDashboardPanelParts(year){
     </div></div>`;
 
   // 4) ranked horizontal bars: scoring leaders
-  const maxP = Math.max(...d.ppgRecent.map(x=>x.v));
-  const minP = Math.min(...d.ppgRecent.map(x=>x.v))*0.8;
+  const rawMax = Math.max(...d.ppgRecent.map(x=>x.v)), rawMin = Math.min(...d.ppgRecent.map(x=>x.v));
+  const minP = Math.floor(rawMin/5)*5 - 5, maxP = Math.ceil(rawMax/5)*5;
+  const ticks = []; for(let t=minP; t<=maxP; t+=5) ticks.push(t);
+  const frac = v => (v-minP)/(maxP-minP);
   const bars = d.ppgRecent.map(x=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin:2px 0">
       <span style="width:104px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${currentTeamName(x.id)}</span>
-      <div style="flex:1;height:9px;background:var(--panel2);border-radius:4px;overflow:hidden"><div class="anim-bar" style="width:${((x.v-minP)/(maxP-minP)*100).toFixed(1)}%;height:100%;background:${ownerColor(x.id)}"></div></div>
-      <b style="width:38px;text-align:right">${x.v.toFixed(1)}</b></div>`).join('');
+      <div style="flex:1;height:9px;background:var(--panel2);border-radius:4px;overflow:hidden"><div class="anim-bar" style="width:${(frac(x.v)*100).toFixed(1)}%;height:100%;background:${ownerColor(x.id)}"></div></div>
+      <b style="width:38px;text-align:right">${x.v.toFixed(1)}</b></div>`).join('')
+    + `<div style="position:relative;height:14px;margin:3px 44px 0 110px;border-top:1px solid var(--line)">${ticks.map(t=>`<span style="position:absolute;top:2px;left:${(frac(t)*100).toFixed(2)}%;transform:translateX(-50%);font-size:9px;line-height:1;color:var(--muted)">${t}</span>`).join('')}</div>`;
+  const barGrid = `<div style="position:relative">${ticks.map(t=>`<span style="position:absolute;top:0;bottom:17px;left:calc(110px + (100% - 154px)*${frac(t).toFixed(4)});border-left:1px dotted var(--line);opacity:.8;pointer-events:none"></span>`).join('')}${bars}</div>`;
 
   // 5) diverging bars: luck
   const maxL = Math.max(1, ...d.luck.map(x=>Math.abs(x.v)));
@@ -11780,9 +11792,17 @@ function buildDashboardPanelParts(year){
   const bucket = (label, n, color)=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;margin:7px 0">
       <span style="width:74px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;font-size:10px;font-weight:700">${label}</span>
       <div style="flex:1;height:16px;background:var(--panel2);border-radius:3px;overflow:hidden"><div style="width:${n/mx*100}%;height:100%;background:${color}"></div></div>
-      <b style="width:22px;text-align:right">${n}</b></div>`;
-  const margins = bucket('Under 10', d.close, 'var(--green)') + bucket('10 to 30', d.mid, 'var(--gold)') + bucket('30 and up', d.blow, 'var(--red)')
+      <b style="width:62px;text-align:right">${n} <span style="font-weight:400;color:var(--muted)">(${Math.round(n/Math.max(d.n,1)*100)}%)</span></b></div>`;
+  const margins = `<div style="font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:10px 0 0">Game margins</div>`
+    + bucket('Under 10', d.close, 'var(--green)') + bucket('10 to 30', d.mid, 'var(--gold)') + bucket('30 and up', d.blow, 'var(--red)')
     + `<p class="note" style="font-size:10.5px;margin-top:6px">${d.n} games played</p>`;
+  // top 3 in points for / points against
+  const topList = (title, rows)=>`<div style="flex:1;min-width:130px"><div style="font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">${title}</div>`
+    + rows.map((x,i)=>`<div style="display:flex;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--line);font-size:12px">
+        <span style="width:14px;font-family:var(--font-display);font-weight:800;color:var(--gold-deep)">${i+1}</span>
+        <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700">${currentTeamName(x.id)}</span>
+        <b style="font-variant-numeric:tabular-nums">${x.v.toFixed(1)}</b></div>`).join('') + `</div>`;
+  const pfpa = `<div style="display:flex;gap:16px;flex-wrap:wrap">${topList('Most points for', d.topPF)}${topList('Most points against', d.topPA)}</div>`;
 
   // data strip
   const th = 'style="text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:3px 6px"';
@@ -11797,10 +11817,10 @@ function buildDashboardPanelParts(year){
         <div class="table-wrap"><table class="table-compact"><thead><tr><th class="num-cell">Wk</th><th>Winner</th><th class="num-cell">Margin</th><th>Opponent</th></tr></thead><tbody>${closeRows}</tbody></table></div></div>
     </div></div>`;
   return {
-    status: panel('Overall Status','dashboard','var(--gold)',status,'','Where the 2026 regular season stands'),
+    status: panel('Season Status & Margins','dashboard','var(--gold)',status + margins,'','Where the 2026 regular season stands and how games are being decided'),
     donut: panel('Points by Position','chart','var(--green)',donut,'','Share of all starter points, by position'),
-    margins: panel('Game Margins','odds','var(--red)',margins,'','Games grouped by final margin of victory'),
-    leaders: panel(`Scoring Leaders (PPG, last ${d.recentN})`,'rise','var(--gold)',bars,'',`Points per game over each team's last ${d.recentN} game${d.recentN===1?'':'s'}. Bars start at ${Math.round(minP)} so the gaps are visible`),
+    pfpa: panel('Top 3 in PF and PA','rise','var(--gold)',pfpa,'','Season totals: points scored and points allowed'),
+    leaders: panel(`Scoring Leaders (PPG, last ${d.recentN})`,'rise','var(--gold)',barGrid,'',`Points per game over each team's last ${d.recentN} game${d.recentN===1?'':'s'}. Axis marks every 5 points, starting at ${minP}, so the gaps are visible`),
     luck: panel('Luck Meter (wins vs expected)','star','var(--green)',lbars,'','Actual wins minus wins expected from weekly scoring. Green = lucky, red = unlucky'),
     strip
   };
@@ -11819,7 +11839,7 @@ function pageDashboard(){
       return `
       <div class="pulse-stack">${renderLeagueKPIsHtml(computeLeagueKPIs())}${sn.spark}${sn.split}</div>
       <div class="grid cols-3" style="margin-top:10px">${sn.leaders}</div>
-      <div class="grid cols-3" style="margin-top:10px">${pn.status}${pn.donut}${pn.margins}</div>
+      <div class="grid cols-3" style="margin-top:10px">${pn.status}${pn.donut}${pn.pfpa}</div>
       <div class="grid cols-2" id="jump-dash-panels" style="margin-top:10px">${pn.leaders}${pn.luck}</div>
       ${pn.strip}`;
     })()}</div>
@@ -15953,6 +15973,7 @@ const FEATURE_INDEX = [
   {label:"Suggestions", page:"Guide", keywords:["suggestion","feedback","form","idea"]},
   {label:"Add Weekly Scores", page:"Admin", keywords:["admin","login","enter scores","input scores"]}
 ];
+if(!SHOW_ODDS){ for(let i=FEATURE_INDEX.length-1;i>=0;i--) if(FEATURE_INDEX[i].page==="Odds") FEATURE_INDEX.splice(i,1); }
 
 function setupSearch(){
   const input = document.getElementById("teamSearch");
@@ -16391,6 +16412,7 @@ function condenseNotes(root){
   function icon(p){ return '<svg class="nav-icon" viewBox="0 0 24 24">'+((typeof NAV_ICONS!=='undefined'&&NAV_ICONS[p])||'')+'</svg>'; }
   function label(p){ return NAV_LABELS[p]||p; }
   var GROUPS=[{l:'Home',p:['Home']},{l:'Season',p:['Current Season','Dashboard','Odds']},{l:'Teams',p:['Franchise','Transactions','Trade Calculator']},{l:'Analysis',p:['Analytics','History','Rivalries']}];
+  GROUPS.forEach(function(g){ g.p=g.p.filter(function(p){ return PAGES.indexOf(p)>=0; }); });
   var DESC={'Home':'Trophies, banners and podiums','Current Season':'Standings, power rankings, rosters, schedule','Dashboard':'League KPIs, featured game, charts','Odds':'Lines, props and futures (display only)','Franchise':'One-team deep dives','Transactions':'Draft history and trades','Trade Calculator':'Value any trade','Analytics':'Charts, stats lab, finder, draft value','History':'Timeline, records and awards','Rivalries':'Head-to-head records and network'};
   function gIdx(p){ for(var i=0;i<GROUPS.length;i++) if(GROUPS[i].p.indexOf(p)>=0) return i; return -1; }
   function go(p){ currentPage=p; renderNav(); renderPage(); window.scrollTo(0,0); }
