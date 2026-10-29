@@ -1416,6 +1416,12 @@ const ALIAS = {
   2025:{"#TeamBen":"of","Team Ben":"of"}
 };
 
+// Ryan Methot's franchise (rm2) is excluded from all analytics (shown on History only).
+function ownersForYears(years){
+  const ids = allOwnerIdsSorted();
+  return ids.filter(id=>id!=="rm2");
+}
+
 function ownerForTeam(year, teamName){
   const alias = ALIAS[year] && ALIAS[year][teamName];
   if(alias) return alias;
@@ -1479,7 +1485,7 @@ function primetimeSlotForTeam(year, week, teamName){
 // weeks they landed a primetime slot vs. every other tracked week. Only
 // weeks present in PRIMETIME_SCHEDULE[year] count toward either bucket.
 function computePrimetimeSplits(year){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const stats = {};
   owners.forEach(id=>{ stats[id] = { pt:{w:0,l:0,pf:0,g:0}, reg:{w:0,l:0,pf:0,g:0}, slots:{TNF:0,SNF:0,MNF:0} }; });
   const trackedWeeks = Object.keys(PRIMETIME_SCHEDULE[year]||{}).map(Number);
@@ -4349,7 +4355,7 @@ function seasonWeeklyPFPA(id, year){
 }
 function weeklyLeagueValues(year, statKey){
   const byWeek = {};
-  allOwnerIdsSorted().filter(id=>id!=="rm2").forEach(id=>{
+  ownersForYears([year]).forEach(id=>{
     seasonWeeklyPFPA(id,year).forEach(r=>{
       const val = statKey==='pf' ? r.pf : statKey==='pa' ? r.pa : r.pf-r.pa;
       (byWeek[r.week] = byWeek[r.week]||[]).push({id, val});
@@ -4412,7 +4418,7 @@ function renderScoringLuckTable(years){
     const m = {}; computeAllPlayRecord(year).forEach(r=>{ m[r.owner]=r; });
     apByIdByYear[year] = m;
   });
-  const rows = allOwnerIdsSorted().filter(id=>id!=="rm2").map(id=>{
+  const rows = ownersForYears(years).map(id=>{
     let w=0,l=0,pf=0,pa=0,xW=0,xL=0,apW=0,apL=0,apT=0,any=false;
     years.forEach(year=>{
       const t = seasonTotalsFromGames(id, year);
@@ -4461,7 +4467,7 @@ function renderScoringLuckTable(years){
 // recomputes pct/avg/diff off the summed raw counts rather than averaging
 // per-year percentages, same convention as the rest of the site.
 function computePrimetimeSplitsRange(years){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears(years);
   const agg = {};
   owners.forEach(id=>{ agg[id] = { pt:{w:0,l:0,pf:0,g:0}, reg:{w:0,l:0,pf:0,g:0} }; });
   years.forEach(year=>{
@@ -4537,7 +4543,7 @@ function renderPrimetimeScoringTable(years){
 // Margin-of-victory/defeat and blowout/nail-biter counts, scoped to whichever
 // years are passed in (the Analytics page's shared season selector).
 function computeMarginSplits(years){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears(years);
   const stats = {};
   owners.forEach(id=>{ stats[id] = {winMarginSum:0,winCount:0,lossMarginSum:0,lossCount:0,blowoutW:0,blowoutL:0,nailW:0,nailL:0}; });
   allGames().filter(g=>years.includes(g.year)).forEach(g=>{
@@ -4596,7 +4602,7 @@ function renderMarginsTable(years){
 // passed in. Low excludes 2024 Week 18 (see allGamesForLow) -- same site-wide
 // convention used everywhere else low-score records are computed.
 function computeScoringExtremes(years){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears(years);
   const highByOwner = {}, lowByOwner = {};
   allGames().filter(g=>years.includes(g.year)).forEach(g=>{
     [[g.oA,g.sA],[g.oB,g.sB]].forEach(([owner,pf])=>{
@@ -4681,7 +4687,7 @@ function renderBenchLeftTable(years){
 // (already excludes playoff weeks); the bracket split reuses
 // buildChampionshipPath, same source as the Primetime split's bracket rule.
 function computePlayoffVsRegularSplits(years){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears(years);
   const stats = {};
   owners.forEach(id=>{ stats[id] = { reg:{w:0,l:0,pf:0,g:0}, wb:{w:0,l:0,pf:0,g:0}, lb:{w:0,l:0,pf:0,g:0}, appearances:0 }; });
   years.forEach(year=>{
@@ -5158,7 +5164,7 @@ function computeStandingsByWeek(year){
 // This captures both who a team played and when it played them.
 function computeSOS(year){
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff);
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const wk = weeks.map(week=>{
     const m = {};
     week.g.forEach(([tA,sA,tB,sB])=>{
@@ -5192,7 +5198,7 @@ function computeSOS(year){
 function buildLuckBars(years){
   const useYears = years || Object.keys(MATCHUPS).map(Number);
   const rows = [];
-  allOwnerIdsSorted().filter(id=>id!=="rm2").forEach(id=>{
+  ownersForYears(useYears).forEach(id=>{
     let total = 0, any = false;
     useYears.forEach(year=>{
       const r = luckRating(id,year);
@@ -7996,7 +8002,7 @@ function playoffAdvancement(year, id){
 
 function renderBracketHeatmapHtml(){
   const ids = allOwnerIdsSorted().filter(id=>id!=="rm2");
-  const years = [2024,2025];
+  const years = Object.keys(PLAYOFF_QUALIFIERS).map(Number).sort((a,b)=>a-b);
   const style = {
     champion:  {bg:'#8F6B0D', fg:'#fff', sym:'\uD83C\uDFC6'},
     runnerup:  {bg:'#B8AFA0', fg:'#fff', sym:'\uD83E\uDD48'},
@@ -8587,7 +8593,7 @@ function gbSpotsFor(year){
   return year===currentSeasonInProgressYear() ? CURRENT_SEASON_PLAYOFF_SPOTS : null;
 }
 function computeCurrentStandings(year){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff);
   const stats = {};
   owners.forEach(id=>{ stats[id] = {w:0,l:0,pf:0,pa:0}; });
@@ -8786,7 +8792,7 @@ function renderTrophyCaseHtml(id){
 // one they were paired against. A truer read on who's actually playing well
 // than the real (schedule-dependent) record, especially early in a season.
 function computeAllPlayRecord(year){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff);
   const stats = {};
   owners.forEach(id=>{ stats[id] = {w:0,l:0,t:0}; });
@@ -8829,12 +8835,12 @@ function computeAllPlayRecord(year){
 // signal/season is actually available) rather than failing outright.
 function computeBayesianSOS(year, priorGamesWeight=6){
   const prevYear = year-1;
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
 
   const priorPct = {}, priorPFPG = {};
   let priorPFSum=0, priorGamesSum=0;
   if(SEASONS[prevYear]){
-    SEASONS[prevYear].filter(t=>t.owner!=="rm2").forEach(t=>{
+    SEASONS[prevYear].filter(t=>t.owner!=="rm2" || owners.includes("rm2")).forEach(t=>{
       priorPct[t.owner] = t.pct;
       const g = t.w+t.l;
       if(g && t.pf!=null){ priorPFPG[t.owner] = t.pf/g; priorPFSum += t.pf; priorGamesSum += g; }
@@ -9034,7 +9040,7 @@ function computeEloRatingsThrough(throughYear, throughWeek){
 // whose opponents have been winning a lot AND scoring a lot comes out
 // above 100; a soft schedule comes out below it.
 function computePowerRankSOS(year, throughWeek){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff && (throughWeek==null || w.w<=throughWeek)).sort((a,b)=>a.w-b.w);
   if(!weeks.length) return {};
   const ownStats = {}; owners.forEach(id=>{ ownStats[id] = {w:0,l:0,pf:0,games:0}; });
@@ -9073,7 +9079,7 @@ function computePowerRankSOS(year, throughWeek){
 // that to weeks at or before that number, so movement vs. last week can be
 // computed by calling this twice.
 function computePowerRankings(year, throughWeek){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff && (throughWeek==null || w.w<=throughWeek)).sort((a,b)=>a.w-b.w);
   if(!weeks.length) return [];
   const stats = {};
@@ -11298,14 +11304,14 @@ function computeWeekFunFacts(year){
     push(hi.d.toFixed(1), `Against ESPN's Week ${lastW} projections, <b>${nm(hi.t)}</b> beat the number by the most (<b>${hi.s.toFixed(1)}</b> vs. ${hi.proj.toFixed(1)} projected, +${hi.d.toFixed(1)}). <b>${nm(lo.t)}</b> missed by the most (${lo.s.toFixed(1)} vs. ${lo.proj.toFixed(1)}, ${lo.d.toFixed(1)}).`);
   });
   // ---------- last week in league context (records and rankings; shown only when notable) ----------
-  // Regular season since 2024, with 2024 Week 18 left out (starters sit that week).
+  // Regular season, all seasons on record, with 2024 Week 18 left out (starters sit that week).
   safe(()=>{
     if(!lastW) return;
     const reg = games.filter(g=>!g.playoff && !(g.year===2024 && g.week===18));
     const inLast = g=>g.year===year && g.week===lastW;
     const lastGames = reg.filter(inLast);
     if(!lastGames.length) return;
-    const SINCE = 'since 2024';
+    const SINCE = 'since ' + Math.min(...Object.keys(MATCHUPS).map(Number));
     // rank of `v` among `vals` (1 = best by `dir`); ties share the better rank
     const rank = (vals, v, dir)=> 1 + vals.filter(x=> dir==='asc' ? x < v-1e-9 : x > v+1e-9).length;
     const ordWord = (n, dir)=> `${_ffOrd(n)}-${dir==='asc'?'lowest':'highest'}`;
@@ -11956,7 +11962,7 @@ function buildPercentileProfileCareer(){
 // Single-season data source for the percentile chart -- same shape as the
 // career version above so buildTeamPercentiles can treat them the same way.
 function buildPercentileProfileSeason(year){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const standings = computeCurrentStandings(year);
   const standingsById = {}; standings.forEach(r=>{ standingsById[r.owner]=r; });
   const ids = owners.filter(o=>standingsById[o] && standingsById[o].games>0);
@@ -12072,7 +12078,7 @@ function renderPercentileChart(rows){
 
 // ---- Print-friendly recaps ----
 function computeStandingsThroughWeek(year, week){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff && w.w<=week);
   const stats = {};
   owners.forEach(id=>{ stats[id]={w:0,l:0,pf:0,pa:0}; });
@@ -12244,7 +12250,7 @@ function renderThisWeekCardHtml(year, standings){
 // no matter what" / "N or fewer wins is out no matter what".
 const SCENARIO_WEEKS_LEFT = 3;
 function computePlayoffScenarios(year){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears([year]);
   const played = new Set((MATCHUPS[year]||[]).filter(w=>!w.playoff).map(w=>w.w));
   const remainingWeeks = (FULL_SCHEDULE[year]||[]).filter(w=>!w.playoff && !played.has(w.w));
   if(!remainingWeeks.length || remainingWeeks.length>SCENARIO_WEEKS_LEFT){
@@ -13601,7 +13607,7 @@ function renderLeagueLeadersSectionHtml(){
 // array (e.g. [2025]) to scope it to one season instead of the combined total.
 // Defaults to every year with weekly roster data on record.
 function benchPointsLeftByOwner(years=Object.keys(PLAYER_SCORES).map(Number)){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears(years);
   const totals = {};
   owners.forEach(o=>{ totals[o] = {actual:0, optimal:0, weeks:0}; });
   years.forEach(year=>{
@@ -13648,7 +13654,7 @@ function benchPointsLeftByOwner(years=Object.keys(PLAYER_SCORES).map(Number)){
 // what shows on the History page's Season by Season cards and in each
 // owner's Career Report.
 function strengthOfSchedule(years){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears(years);
   const indicesByOwner = {};
   owners.forEach(o=>indicesByOwner[o]=[]);
   (years || Object.keys(MATCHUPS).map(Number)).forEach(year=>{
@@ -13672,7 +13678,7 @@ function strengthOfSchedule(years){
 // than an empty table. rm2 (the retired franchise) is excluded everywhere,
 // consistent with the rest of the site.
 function computeLeaderboard(metric, scope){
-  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const owners = ownersForYears(scope==="career"?null:(Array.isArray(scope)?scope:[scope]));
   const years = scope==="career" ? null : (Array.isArray(scope) ? scope : [scope]);
 
   function seasonYears(){
@@ -13697,7 +13703,7 @@ function computeLeaderboard(metric, scope){
   if(metric==="winpct"){
     const yrs = seasonYears();
     const acc = {}; owners.forEach(id=>{ acc[id] = {w:0,l:0}; });
-    yrs.forEach(year=>{ SEASONS[year].forEach(t=>{ if(t.owner!=="rm2" && acc[t.owner]){ acc[t.owner].w+=t.w; acc[t.owner].l+=t.l; } }); });
+    yrs.forEach(year=>{ SEASONS[year].forEach(t=>{ if(acc[t.owner]){ acc[t.owner].w+=t.w; acc[t.owner].l+=t.l; } }); });
     if(includeLiveYear){
       computeCurrentStandings(liveYear).forEach(r=>{ if(acc[r.owner] && r.games>0){ acc[r.owner].w+=r.w; acc[r.owner].l+=r.l; } });
     }
@@ -13714,7 +13720,7 @@ function computeLeaderboard(metric, scope){
     const acc = {}; owners.forEach(id=>{ acc[id] = {sum:0, games:0}; });
     yrs.forEach(year=>{
       SEASONS[year].forEach(t=>{
-        if(t.owner==="rm2" || t.pf==null || !acc[t.owner]) return;
+        if(t.pf==null || !acc[t.owner]) return;
         acc[t.owner].sum += (key==="pf"?t.pf:t.pa);
         acc[t.owner].games += (t.w+t.l);
       });
@@ -14748,7 +14754,7 @@ function pageTeamHub(selectedId){
               }).join("")}
             </tbody>
           </table>
-          <p class="note" style="margin-top:6px">SOS is how well every other team would have done on that schedule (each replays the team's opponents week by week with the real scores), indexed to a league-average schedule of 100 &mdash; above 100 is tougher, below 100 is easier. Regular season only; 2024&ndash;2025 only (no weekly data before then).</p>
+          <p class="note" style="margin-top:6px">SOS is how well every other team would have done on that schedule (each replays the team's opponents week by week with the real scores), indexed to a league-average schedule of 100 &mdash; above 100 is tougher, below 100 is easier. Regular season only.</p>
         </div>
 
         ${h2hRows.length?`
