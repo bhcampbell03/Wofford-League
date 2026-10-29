@@ -5115,14 +5115,14 @@ function buildDraftPositionSkillScatter(years){
 function buildScatterPFPA(yearSel){
   const years = Array.isArray(yearSel) ? yearSel : [yearSel];
   if(years.length>1){
-    // Multi-season / career: points per game across every picked season, so
-    // franchises with different numbers of seasons stay comparable.
+    // Multi-season / career: points per game across every picked season, so franchises with
+    // different numbers of seasons (e.g. 5 vs 3) stay comparable.
     return ownersForYears(years).map(id=>{
       let pf=0, pa=0, g=0;
       years.forEach(y=>{ const t = seasonTotalsFromGames(id,y); if(t){ pf+=t.pf; pa+=t.pa; g+=t.w+t.l; } });
       if(!g) return null;
       const name = currentTeamName(id);
-      return {label:name, fullLabel:name, x:pf/g, y:pa/g, color:ownerColor(id)};
+      return {label:name, fullLabel:name, x:pf/g, y:pa/g, color:ownerColor(id), games:g};
     }).filter(Boolean);
   }
   const year = years[0];
@@ -5441,7 +5441,7 @@ function renderPFPAChart(yearSel){
       options:{ maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.raw.fullLabel?`${c.raw.fullLabel}: PF ${(+c.raw.x).toFixed(2)}, PA ${(+c.raw.y).toFixed(2)}`:''}},
           datalabels:{ display:false } },
-        scales:{ x:{title:{display:true,text:multi?'Points For per game':'Points For'}, min:xLo, max:xHi}, y:{title:{display:true,text:(multi?'Points Against per game':'Points Against')+' (reversed — lower is better, up = good)'}, min:yLo, max:yHi, reverse:true} }
+        scales:{ x:{title:{display:true,text:multi?'Points For per game (all-time)':'Points For'}, min:xLo, max:xHi}, y:{title:{display:true,text:(multi?'Points Against per game (all-time)':'Points Against')+' (reversed — lower is better, up = good)'}, min:yLo, max:yHi, reverse:true} }
       },
       plugins:[quadrantPlugin, teamLabelPlugin]
     });
@@ -15427,7 +15427,7 @@ function attachPageHandlers(){
       const type = analyticsChartType.value;
       const years = getAnalyticsYears();
       const year = years[years.length-1]; // most recent year in a range, for chart types that need exactly one
-      if(analyticsChartYearBadge) analyticsChartYearBadge.textContent = `Showing: ${yearBadgeText(years)}`;
+      if(analyticsChartYearBadge) analyticsChartYearBadge.textContent = type==="pfpa" ? `Showing: All-time (${yearBadgeText(allAnalyticsYears)})` : `Showing: ${yearBadgeText(years)}`;
       if(radarControls) radarControls.style.display = type==="radar" ? "flex" : "none";
       if(powerAnimControls) powerAnimControls.style.display = type==="power" ? "inline-block" : "none";
       const canvasEl = document.getElementById('chartAnalyticsMain');
@@ -15449,8 +15449,8 @@ function attachPageHandlers(){
       }
       else {
         if(noteEl) noteEl.textContent = type==="draftpos" ? `Each dot is one team's season: horizontal position is where they drafted, vertical position is where they finished, and color is how well they actually drafted that year (red = below the league's own baseline, green = above it). Compare the two to see whether draft position or draft skill tracks final standing more closely.${years.length>1 ? ` Showing ${years[0]}–${years[years.length-1]}.` : ` Showing ${year}.`}` : (type==="allplaywin" ? `All-Play Win% is each team's record if they'd played every other team every week, not just their actual opponent.${yearSuffix} A team above the dashed lines on both axes is legitimately good; one with a strong all-play mark but a weak actual record has run into tough matchup timing.` : (type==="power" ? `Power Rank is a composite of win% (40%), last-3 average PF (25%), Pythagorean win% (20%) and all-play win% (15%), recomputed as of each week${yearSuffix}. Hit Slomo Progression for a zoomed-in, panning replay of the whole league's movement week by week.` : (type==="pfpa" ? `Each dot is a team: points scored runs left to right, points allowed runs top to bottom (fewer allowed is higher). The dashed lines are league averages, so the corners separate high and low scorers who got lucky or unlucky schedules.${yearSuffix}` : (type==="standings" ? `Cumulative rank after each regular-season week, with rank 1 at the top${yearSuffix}. The current top three show by default. Click a team in the legend to add or hide its line.` : (type==="radar" ? `Each axis is scored 0 to 100 against the other 11 teams (100 = best in the league). Pick a second team to overlay for a head-to-head comparison. Playoff axes only use seasons with a bracket on record.` : "")))));
-        if(type==="pfpa" && years.length>1 && noteEl) noteEl.textContent += " Across multiple seasons the axes are points per game, so teams with different numbers of seasons compare fairly.";
-        if(type==="pfpa") renderPFPAChart(years);
+        if(type==="pfpa") renderPFPAChart(allAnalyticsYears);
+        if(type==="pfpa" && noteEl) noteEl.textContent = "Each dot is a team: points scored per game runs left to right, points allowed per game runs top to bottom (fewer allowed is higher). All-time (every season on record, current season to date), whatever season is picked above. Per-game so franchises with different numbers of seasons compare fairly. The dashed lines are league averages, so the corners separate high and low scorers who got lucky or unlucky schedules.";
         else if(type==="allplaywin") renderAllPlayWinPctChart(years);
         else if(type==="standings") renderStandingsChart(year);
         else if(type==="power") renderPowerRankingsChart(year);
