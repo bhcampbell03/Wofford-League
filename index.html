@@ -3724,6 +3724,7 @@ function computeRivalries(){
   const rivalries = [];
   Object.keys(pairGames).forEach(key=>{
     const [a,b] = key.split("|");
+    if(a==="rm2" || b==="rm2") return; // Methot's franchise stays out of rivalries
     const meetings = pairGames[key].slice().sort((x,y)=>x.year-y.year||x.week-y.week);
     if(meetings.length<4) return;
 
@@ -3957,7 +3958,7 @@ function pageRecords(){
     </div>
 
     <div class="footnotes">
-      <p>Head-to-head, Full Grid, Rivalries, and Notable Games cover every season with matchup data (${DATA_YEARS}). Full Grid rows show the row team's record against the column team. Ryan Methot (2022&ndash;2023 only) appears as a separate franchise from Reid Mario.</p>
+      <p>Head-to-head, Full Grid, Rivalries, and Notable Games cover every season with matchup data (${DATA_YEARS}). Full Grid rows show the row team's record against the column team. Ryan Methot (2022&ndash;2023 only) isn't listed as a team here; his games still count in each opponent's records.</p>
       <p>A pairing counts as a Rivalry once they've met at least 4 times and one side's all-time head-to-head win% is under .400 or over .600 &mdash; this flags lopsided series, not close ones, so a pairing with a near-even record never shows here even with many meetings. Milestones only compute for flagged pairs: 10th/20th meeting, a point in the series where it was tied 5-5, the longest win streak either side has put together in the matchup (3+ games), and the first meeting after the two teams last made a trade with each other. "Series tied 5-5" and "First meeting since a trade" only show when the series' own history actually produced that moment &mdash; a lopsided series won't always have passed through a 5-5 tie, and "first meeting since a trade" only checks whether a later season's meeting followed a trade year, not same-season sequencing (matchup data has no calendar dates, only week numbers).</p>
     </div>
   `;
@@ -5111,11 +5112,24 @@ function buildDraftPositionSkillScatter(years){
   return points.map(p=>({...p, color: ppgGradientColor(p.value, min, max)}));
 }
 
-function buildScatterPFPA(year){
-  if(SEASONS[year]) return SEASONS[year].map(t=>({label:t.team, fullLabel:t.team, x:t.pf, y:t.pa, color:ownerColor(t.owner)}));
+function buildScatterPFPA(yearSel){
+  const years = Array.isArray(yearSel) ? yearSel : [yearSel];
+  if(years.length>1){
+    // Multi-season / career: points per game across every picked season, so
+    // franchises with different numbers of seasons stay comparable.
+    return ownersForYears(years).map(id=>{
+      let pf=0, pa=0, g=0;
+      years.forEach(y=>{ const t = seasonTotalsFromGames(id,y); if(t){ pf+=t.pf; pa+=t.pa; g+=t.w+t.l; } });
+      if(!g) return null;
+      const name = currentTeamName(id);
+      return {label:name, fullLabel:name, x:pf/g, y:pa/g, color:ownerColor(id)};
+    }).filter(Boolean);
+  }
+  const year = years[0];
+  if(SEASONS[year]) return SEASONS[year].filter(t=>t.owner!=="rm2").map(t=>({label:t.team, fullLabel:t.team, x:t.pf, y:t.pa, color:ownerColor(t.owner)}));
   // No SEASONS entry yet (a season still in progress, e.g. 2026) -- compute
   // PF/PA directly from games played so far instead.
-  return allOwnerIdsSorted().filter(id=>id!=="rm2").map(id=>{
+  return ownersForYears([year]).map(id=>{
     const t = seasonTotalsFromGames(id, year);
     if(!t) return null;
     const name = currentTeamName(id);
@@ -5208,13 +5222,18 @@ function buildLuckBars(years){
   });
   return rows.sort((a,b)=>b.val-a.val);
 }
-function teamScoringRange(year){
-  const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff);
-  const byTeam = {};
-  weeks.forEach(week=>{
-    week.g.forEach(([tA,sA,tB,sB])=>{
-      (byTeam[tA]=byTeam[tA]||[]).push(sA);
-      (byTeam[tB]=byTeam[tB]||[]).push(sB);
+function teamScoringRange(yearSel){
+  const years = Array.isArray(yearSel) ? yearSel : [yearSel];
+  const byOwner = {};
+  years.forEach(year=>{
+    (MATCHUPS[year]||[]).filter(w=>!w.playoff).forEach(week=>{
+      week.g.forEach(([tA,sA,tB,sB])=>{
+        [[tA,sA],[tB,sB]].forEach(([t,sc])=>{
+          const o = ownerForTeam(year,t);
+          if(!o || o==="rm2") return;
+          (byOwner[o]=byOwner[o]||[]).push(sc);
+        });
+      });
     });
   });
   function percentile(sorted, p){
@@ -5223,12 +5242,12 @@ function teamScoringRange(year){
     if(lo===hi) return sorted[lo];
     return sorted[lo] + (sorted[hi]-sorted[lo])*(idx-lo);
   }
-  return Object.keys(byTeam).map(team=>{
-    const scores = byTeam[team].slice().sort((a,b)=>a-b);
+  return Object.keys(byOwner).map(owner=>{
+    const scores = byOwner[owner].slice().sort((a,b)=>a-b);
     const n = scores.length;
     const median = n%2 ? scores[(n-1)/2] : (scores[n/2-1]+scores[n/2])/2;
     return {
-      ownerId: ownerForTeam(year,team),
+      ownerId: owner,
       min: scores[0], max: scores[n-1], median,
       q1: percentile(scores,0.25), q3: percentile(scores,0.75)
     };
@@ -5385,12 +5404,14 @@ function makeQuadrantPlugin(avgX, avgY, cornerLabels){
   };
 }
 
-function renderPFPAChart(year){
+function renderPFPAChart(yearSel){
   renderStaticChart('chartAnalyticsMain', canvas=>{
-    const rows = buildScatterPFPA(year);
+    const multi = Array.isArray(yearSel) && yearSel.length>1;
+    const rows = buildScatterPFPA(yearSel);
     const xs = rows.map(r=>r.x), ys = rows.map(r=>r.y);
-    const xLo = Math.floor(Math.min(...xs)-100), xHi = Math.ceil(Math.max(...xs)+100);
-    const yLo = Math.floor(Math.min(...ys)-40), yHi = Math.ceil(Math.max(...ys)+40);
+    const padX = multi ? 4 : 100, padY = multi ? 3 : 40;
+    const xLo = Math.floor(Math.min(...xs)-padX), xHi = Math.ceil(Math.max(...xs)+padX);
+    const yLo = Math.floor(Math.min(...ys)-padY), yHi = Math.ceil(Math.max(...ys)+padY);
     const avgX = rows.reduce((a,r)=>a+r.x,0)/rows.length;
     const avgY = rows.reduce((a,r)=>a+r.y,0)/rows.length;
     rows.forEach(r=>{
@@ -5420,7 +5441,7 @@ function renderPFPAChart(year){
       options:{ maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.raw.fullLabel?`${c.raw.fullLabel}: PF ${(+c.raw.x).toFixed(2)}, PA ${(+c.raw.y).toFixed(2)}`:''}},
           datalabels:{ display:false } },
-        scales:{ x:{title:{display:true,text:'Points For'}, min:xLo, max:xHi}, y:{title:{display:true,text:'Points Against (reversed — lower is better, up = good)'}, min:yLo, max:yHi, reverse:true} }
+        scales:{ x:{title:{display:true,text:multi?'Points For per game':'Points For'}, min:xLo, max:xHi}, y:{title:{display:true,text:(multi?'Points Against per game':'Points Against')+' (reversed — lower is better, up = good)'}, min:yLo, max:yHi, reverse:true} }
       },
       plugins:[quadrantPlugin, teamLabelPlugin]
     });
@@ -5432,21 +5453,30 @@ function renderPFPAChart(year){
 // the diagonal-ish crosshair midpoint on both is legitimately good; a team
 // with a strong all-play mark but a weak actual record has been unlucky
 // with matchup timing, and the reverse means the schedule has been kind.
-function buildScatterAllPlayWinPct(year){
-  const standings = computeCurrentStandings(year);
-  const allPlay = computeAllPlayRecord(year);
-  const allPlayById = {};
-  allPlay.forEach(r=>{ allPlayById[r.owner] = r; });
-  return standings.filter(s=>s.games>0).map(s=>{
-    const ap = allPlayById[s.owner];
-    const name = currentTeamName(s.owner);
-    return {label:name, fullLabel:name, x:s.pct*100, y:(ap?ap.pct:0)*100, color:ownerColor(s.owner)};
+function buildScatterAllPlayWinPct(yearSel){
+  const years = Array.isArray(yearSel) ? yearSel : [yearSel];
+  const acc = {};
+  years.forEach(y=>{
+    const apById = {};
+    computeAllPlayRecord(y).forEach(r=>{ apById[r.owner] = r; });
+    computeCurrentStandings(y).filter(s=>s.games>0).forEach(st=>{
+      const a = acc[st.owner] = acc[st.owner] || {w:0,l:0,t:0,apW:0,apG:0};
+      a.w += st.w; a.l += st.l; a.t += (st.t||0);
+      const ap = apById[st.owner];
+      if(ap){ a.apW += ap.w + 0.5*ap.t; a.apG += ap.games; }
+    });
+  });
+  const ids = ownersForYears(years);
+  return ids.filter(id=>acc[id] && (acc[id].w+acc[id].l+acc[id].t)>0).map(id=>{
+    const a = acc[id], g = a.w+a.l+a.t;
+    const name = currentTeamName(id);
+    return {label:name, fullLabel:name, x:(a.w+0.5*a.t)/g*100, y:(a.apG ? a.apW/a.apG : 0)*100, color:ownerColor(id)};
   });
 }
 
-function renderAllPlayWinPctChart(year){
+function renderAllPlayWinPctChart(yearSel){
   renderStaticChart('chartAnalyticsMain', canvas=>{
-    const rows = buildScatterAllPlayWinPct(year);
+    const rows = buildScatterAllPlayWinPct(yearSel);
     const xLo = 0, xHi = 100, yLo = 0, yHi = 100;
     const avgX = rows.reduce((a,r)=>a+r.x,0)/rows.length;
     const avgY = rows.reduce((a,r)=>a+r.y,0)/rows.length;
@@ -5912,14 +5942,14 @@ function renderScoringChart(type, year, years){
   let rangeNote = null;
   renderStaticChart('chartAnalyticsMain', canvas=>{
     if(type==="range"){
-      const rows = teamScoringRange(year);
+      const rows = teamScoringRange(years);
       // With very few weeks played, a team's min/Q1/median/Q3/max are all
       // nearly (or exactly, at 1 game) the same score, so the box and
       // whiskers collapse to zero width and only the median tick was ever
       // visible -- not a rendering bug, just not enough data for a range
       // yet. Below that threshold we draw a single dot instead (so there's
       // still something to see) and explain why in the chart note.
-      const weeksPlayed = (MATCHUPS[year]||[]).filter(w=>!w.playoff).length;
+      const weeksPlayed = years.reduce((n,y)=>n+(MATCHUPS[y]||[]).filter(w=>!w.playoff).length,0);
       if(weeksPlayed>0 && weeksPlayed<3){
         rangeNote = `Only ${weeksPlayed} week${weeksPlayed===1?'':'s'} played in ${year} so far &mdash; with that few games, each team's low/typical/high score are nearly identical, so the box and whiskers collapse to a single dot below. Pick a completed season above for the full boom/bust picture.`;
       }
@@ -8014,7 +8044,8 @@ function playoffAdvancement(year, id){
     const winner = lastGame.sA>lastGame.sB ? lastGame.oA : lastGame.oB;
     return winner===id ? {code:'champion', label:'Champion'} : {code:'runnerup', label:'Runner-up'};
   }
-  return {code:'exit'+lastRoundIdx, label:`${rounds[lastRoundIdx].label} Exit`};
+  const fromEnd = rounds.length-1-lastRoundIdx; // 1 = the round before the title game
+  return fromEnd===1 ? {code:'exit1', label:'Semifinal Exit'} : {code:'exit0', label:`${rounds[lastRoundIdx].label} Exit`};
 }
 
 function renderBracketHeatmapHtml(){
@@ -15418,8 +15449,9 @@ function attachPageHandlers(){
       }
       else {
         if(noteEl) noteEl.textContent = type==="draftpos" ? `Each dot is one team's season: horizontal position is where they drafted, vertical position is where they finished, and color is how well they actually drafted that year (red = below the league's own baseline, green = above it). Compare the two to see whether draft position or draft skill tracks final standing more closely.${years.length>1 ? ` Showing ${years[0]}–${years[years.length-1]}.` : ` Showing ${year}.`}` : (type==="allplaywin" ? `All-Play Win% is each team's record if they'd played every other team every week, not just their actual opponent.${yearSuffix} A team above the dashed lines on both axes is legitimately good; one with a strong all-play mark but a weak actual record has run into tough matchup timing.` : (type==="power" ? `Power Rank is a composite of win% (40%), last-3 average PF (25%), Pythagorean win% (20%) and all-play win% (15%), recomputed as of each week${yearSuffix}. Hit Slomo Progression for a zoomed-in, panning replay of the whole league's movement week by week.` : (type==="pfpa" ? `Each dot is a team: points scored runs left to right, points allowed runs top to bottom (fewer allowed is higher). The dashed lines are league averages, so the corners separate high and low scorers who got lucky or unlucky schedules.${yearSuffix}` : (type==="standings" ? `Cumulative rank after each regular-season week, with rank 1 at the top${yearSuffix}. The current top three show by default. Click a team in the legend to add or hide its line.` : (type==="radar" ? `Each axis is scored 0 to 100 against the other 11 teams (100 = best in the league). Pick a second team to overlay for a head-to-head comparison. Playoff axes only use seasons with a bracket on record.` : "")))));
-        if(type==="pfpa") renderPFPAChart(year);
-        else if(type==="allplaywin") renderAllPlayWinPctChart(year);
+        if(type==="pfpa" && years.length>1 && noteEl) noteEl.textContent += " Across multiple seasons the axes are points per game, so teams with different numbers of seasons compare fairly.";
+        if(type==="pfpa") renderPFPAChart(years);
+        else if(type==="allplaywin") renderAllPlayWinPctChart(years);
         else if(type==="standings") renderStandingsChart(year);
         else if(type==="power") renderPowerRankingsChart(year);
         else if(type==="radar") renderRadarChart(radarTeam?radarTeam.value:null, radarTeam2?radarTeam2.value:null);
