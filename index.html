@@ -4326,7 +4326,7 @@ function renderStatsLabCompareChart(teamIds, year, metricKeyX, metricKeyY){
         backgroundColor: rows.map(r=>ownerColor(r.id)), pointRadius:7, pointHoverRadius:9 }] },
       options:{ maintainAspectRatio:false,
         plugins:{ legend:{display:false},
-          tooltip:{callbacks:{label:c=>`${c.raw.label}: ${mx.label} ${mx.format(c.raw.x)}, ${my.label} ${my.format(c.raw.y)}`}},
+          tooltip:{callbacks:{label:c=>{ const tv=(m,v)=>/win/i.test(m.label)?pctFmt(v/100):((m.label.indexOf('Margin')>=0||m.label.indexOf('Luck')>=0)&&v>0?'+':'')+(+v).toFixed(2); return `${c.raw.label}: ${mx.label} ${tv(mx,c.raw.x)}, ${my.label} ${tv(my,c.raw.y)}`; }}},
           datalabels:{ display:false } },
         scales:{
           x:{title:{display:true,text:mx.label}, min:xRange.min, max:xRange.max},
@@ -4401,7 +4401,7 @@ function renderStatsLabWeeklyChart(teamId, year, statKey){
       },
       options:{ maintainAspectRatio:false,
         plugins:{ legend:{display:false},
-          tooltip:{callbacks:{label:c=>{ const p=pctForWeek(weeks[c.dataIndex],teamId); return `${statLabel}: ${c.raw!=null?c.raw.toFixed(1):'—'}${p!=null?` (${p}th percentile that week)`:''}`; }}} },
+          tooltip:{callbacks:{label:c=>{ const p=pctForWeek(weeks[c.dataIndex],teamId); return `${statLabel}: ${c.raw!=null?c.raw.toFixed(2):'—'}${p!=null?` (${p}th percentile that week)`:''}`; }}} },
         scales:{ y:{title:{display:true,text:statLabel}}, x:{title:{display:true,text:'Week'}} }
       }
     });
@@ -5250,6 +5250,23 @@ if(typeof Chart !== "undefined"){
   Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.plugins.tooltip.cornerRadius = 6;
   Chart.defaults.plugins.tooltip.displayColors = false;
+  // Default tooltip line: cap decimals at 3 for win percentages, 2 for everything else.
+  const _tipLabel = function(c){
+    const lab = (c.dataset && c.dataset.label) ? c.dataset.label : '';
+    let v = c.parsed;
+    if(v && typeof v==='object') v = (c.chart.options.indexAxis==='y') ? v.x : v.y;
+    if(typeof v!=='number' || !isFinite(v)) return (lab ? lab+': ' : '') + c.formattedValue;
+    const dp = /win\s*%|w%|win pct|win percentage/i.test(lab) ? 3 : 2;
+    const txt = (+v.toFixed(dp)).toString();
+    return (lab ? lab+': ' : '') + txt;
+  };
+  Chart.register({id:'tipDecimals', beforeInit:function(chart){
+    const o = chart.config.options = chart.config.options || {};
+    o.plugins = o.plugins || {};
+    const t = o.plugins.tooltip = o.plugins.tooltip || {};
+    t.callbacks = t.callbacks || {};
+    if(!t.callbacks.label) t.callbacks.label = _tipLabel;
+  }});
   // Loading skeletons: every chart-wrap gets a shimmering placeholder (see the
   // .chart-skeleton CSS + the skel-<canvasId> divs next to each <canvas>) that's
   // removed here once that chart's own draw animation finishes.
@@ -5401,7 +5418,7 @@ function renderPFPAChart(year){
       type:'scatter',
       data:{ datasets:[{label:'Teams', data:rows.map(r=>({x:r.x,y:r.y,label:r.label,fullLabel:r.fullLabel})), backgroundColor:rows.map(r=>r.color), pointRadius:6, pointHoverRadius:8}] },
       options:{ maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.raw.fullLabel?`${c.raw.fullLabel}: PF ${c.raw.x}, PA ${c.raw.y}`:''}},
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.raw.fullLabel?`${c.raw.fullLabel}: PF ${(+c.raw.x).toFixed(2)}, PA ${(+c.raw.y).toFixed(2)}`:''}},
           datalabels:{ display:false } },
         scales:{ x:{title:{display:true,text:'Points For'}, min:xLo, max:xHi}, y:{title:{display:true,text:'Points Against (reversed — lower is better, up = good)'}, min:yLo, max:yHi, reverse:true} }
       },
@@ -5453,7 +5470,7 @@ function renderAllPlayWinPctChart(year){
       type:'scatter',
       data:{ datasets:[{label:'Teams', data:rows.map(r=>({x:r.x,y:r.y,label:r.label,fullLabel:r.fullLabel})), backgroundColor:rows.map(r=>r.color), pointRadius:6, pointHoverRadius:8}] },
       options:{ maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.raw.fullLabel?`${c.raw.fullLabel}: Actual ${c.raw.x.toFixed(1)}%, All-Play ${c.raw.y.toFixed(1)}%`:''}},
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.raw.fullLabel?`${c.raw.fullLabel}: Actual ${pctFmt(c.raw.x/100)}, All-Play ${pctFmt(c.raw.y/100)}`:''}},
           datalabels:{ display:false } },
         scales:{ x:{title:{display:true,text:'Actual Win%'}, min:xLo, max:xHi}, y:{title:{display:true,text:'All-Play Win%'}, min:yLo, max:yHi} }
       },
@@ -5474,9 +5491,9 @@ function renderRadarChart(id, id2){
       const vals = {
         regSeasonWinPct: pctFmt(r.regSeasonWinPct),
         playoffWinPct: pctFmt(r.playoffWinPct),
-        highScoring: r.highScoring.toFixed(1)+' PF/season',
-        luck: (r.luck>0?'+':'')+r.luck,
-        consistency: r.consistencyDisplay.toFixed(1)+' pt weekly swing',
+        highScoring: r.highScoring.toFixed(2)+' PF/season',
+        luck: (r.luck>0?'+':'')+(+r.luck).toFixed(2),
+        consistency: r.consistencyDisplay.toFixed(2)+' pt weekly swing',
         vsPlayoffTeams: pctFmt(r.vsPlayoffTeams)
       };
       return `${currentTeamName(teamId)} \u2014 ${labels[axIdx]}: ${vals[axes[axIdx]]}`;
@@ -5535,7 +5552,7 @@ function renderDraftPositionChart(years){
       options:{ maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>{
           const p = points[c.dataIndex];
-          return `${p.team} (${p.year}): drafted #${p.x} &rarr; finished #${p.y} · draft value ${p.value>0?'+':''}${p.value.toFixed(1)} PPG-over-baseline`;
+          return `${p.team} (${p.year}): drafted #${p.x} &rarr; finished #${p.y} · draft value ${p.value>0?'+':''}${p.value.toFixed(2)} PPG-over-baseline`;
         }}} },
         scales:{
           x:{ title:{display:true,text:'Draft Position'}, min:0.5, max:12.5,
@@ -5972,7 +5989,7 @@ function renderScoringChart(type, year, years){
           plugins:{ legend:{display:false},
             tooltip:{callbacks:{label:c=>{
               const r = rows[c.dataIndex];
-              return `Min ${r.min.toFixed(1)} \u00b7 Q1 ${r.q1.toFixed(1)} \u00b7 Median ${r.median.toFixed(1)} \u00b7 Q3 ${r.q3.toFixed(1)} \u00b7 Max ${r.max.toFixed(1)}`;
+              return `Min ${r.min.toFixed(2)} \u00b7 Q1 ${r.q1.toFixed(2)} \u00b7 Median ${r.median.toFixed(2)} \u00b7 Q3 ${r.q3.toFixed(2)} \u00b7 Max ${r.max.toFixed(2)}`;
             }}},
             datalabels:{ display:false }
           },
@@ -6036,7 +6053,7 @@ function renderPrimetimeChart(years){
       data:{ labels: rows.map(r=>r.label), datasets:[{label:'PPG Differential', data: rows.map(r=>r.val), backgroundColor: rows.map(r=>r.val>=0?'#3D7A4E':'#B23B3B')}] },
       options:{ indexAxis:'y', maintainAspectRatio:false,
         plugins:{ legend:{display:false},
-          tooltip:{callbacks:{label:c=>`${c.raw>=0?'+':''}${c.raw.toFixed(1)} PPG in primetime vs. other weeks`}},
+          tooltip:{callbacks:{label:c=>`${c.raw>=0?'+':''}${c.raw.toFixed(2)} PPG in primetime vs. other weeks`}},
           datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>(v>=0?'+':'')+v.toFixed(1), font:{size:10,weight:'700'}, color:(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A') }
         },
         scales:{ x:{title:{display:true,text:'Primetime PPG minus non-primetime PPG'}, min:-axisBound, max:axisBound} }
@@ -12513,7 +12530,7 @@ function pageLiveSeason(){
             <td class="team-name">${currentTeamName(r.owner)}</td>
             <td class="num-cell">${r.w}-${r.l}</td>
             <td class="num-cell">${r.recentAvg.toFixed(1)}</td>
-            <td class="num-cell" title="Win ${(r.winPct*100).toFixed(0)}% &middot; Last 3 ${r.recentAvg.toFixed(1)} &middot; Pythagorean ${(r.pyth*100).toFixed(0)}% &middot; All-play ${(r.allPlay*100).toFixed(0)}%">${Math.round(r.powerScore)}</td>
+            <td class="num-cell" title="Win ${pctFmt(r.winPct)} &middot; Last 3 ${r.recentAvg.toFixed(2)} &middot; Pythagorean ${pctFmt(r.pyth)} &middot; All-play ${pctFmt(r.allPlay)}">${Math.round(r.powerScore)}</td>
             <td>${renderRankSparkline(rankByWeek.series[r.owner]||[], rankByWeek.ids.length)}</td>
           </tr>`;
         }).join("")}
