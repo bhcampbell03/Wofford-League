@@ -1013,9 +1013,9 @@ const REG_SEASON_LOSER = {
   2025:"wy"  // Azz n TDs, 5-9 (tiebreak vs Miles Havard by final standing)
 };
 
-// Playoff appearances since 2024, sourced directly from the league's own tracked workbook
+// Playoff appearances since 2022, sourced directly from the league's own tracked workbook
 const PLAYOFF_APPEARANCES = {
-  of:2, wy:0, fm:0, mh:1, ew:2, rm:2, bc:1, sk:1, mm:1, jt:1, fa:2, wg:0, rm2:0
+  of:3, wy:1, fm:1, mh:1, ew:2, rm:2, bc:2, sk:2, mm:3, jt:2, fa:2, wg:0, rm2:0
 };
 
 // Real playoff-bracket qualifiers per year (excludes the non-qualifier consolation ladder).
@@ -1041,6 +1041,8 @@ const TEAM_LOCATIONS = {
 };
 
 const PLAYOFF_QUALIFIERS = {
+  2022: ["jt","bc","mm","sk"],
+  2023: ["of","fm","wy","mm"],
   2024: ["fa","mh","of","rm","bc","ew"],
   2025: ["fa","of","rm","ew","sk","mm","jt"]
 };
@@ -1434,6 +1436,30 @@ function ownerForTeam(year, teamName){
   const hit = roster.find(t=>t.team.toLowerCase()===teamName.toLowerCase());
   return hit ? hit.owner : null;
 }
+
+// Seasons recovered from the weekly scrape (2022-2023) have no hand-entered PF/PA.
+// Fill them from the regular-season matchups so career totals, PPG, and season
+// cards cover every year with scoring on record.
+(function backfillSeasonPfPa(){
+  Object.keys(SEASONS).forEach(yStr=>{
+    const y = +yStr, weeks = MATCHUPS[y];
+    if(!weeks || !weeks.length) return;
+    if(SEASONS[y].every(t=>t.pf!=null)) return;
+    const tot = {};
+    weeks.forEach(w=>{
+      if(w.playoff) return;
+      w.g.forEach(g=>{
+        const a = ownerForTeam(y,g[0]), b = ownerForTeam(y,g[2]);
+        if(!a || !b) return;
+        (tot[a]=tot[a]||{pf:0,pa:0}); (tot[b]=tot[b]||{pf:0,pa:0});
+        tot[a].pf+=g[1]; tot[a].pa+=g[3]; tot[b].pf+=g[3]; tot[b].pa+=g[1];
+      });
+    });
+    SEASONS[y].forEach(t=>{
+      if(t.pf==null && tot[t.owner]){ t.pf = Math.round(tot[t.owner].pf*100)/100; t.pa = Math.round(tot[t.owner].pa*100)/100; }
+    });
+  });
+})();
 
 
 // Which primetime slot (if any) a team sat in for a given week -- 'TNF',
@@ -3494,7 +3520,7 @@ function pageHistory(){
       <thead><tr>
         <th>Team</th><th class="num-cell">Grade</th><th class="num-cell">W</th><th class="num-cell">L</th>
         <th class="num-cell">Win%</th><th class="num-cell">Titles</th><th class="num-cell">Avg. finish</th>
-        <th class="num-cell">Playoff W-L*</th><th class="num-cell" data-tip="All-time points for: every season with scoring on record (2024 on), including the current season to date.">PF</th><th class="num-cell" data-tip="All-time points against: every season with scoring on record (2024 on), including the current season to date.">PA</th>
+        <th class="num-cell">Playoff W-L*</th><th class="num-cell" data-tip="All-time points for: every season with scoring on record (2022 on), including the current season to date.">PF</th><th class="num-cell" data-tip="All-time points against: every season with scoring on record (2022 on), including the current season to date.">PA</th>
         <th class="num-cell ext-col">Blowout W</th><th class="num-cell ext-col">Blowout L</th>
         <th class="num-cell ext-col">Wks 1st</th><th class="num-cell ext-col">xW</th><th class="num-cell ext-col">xL</th>
         <th class="num-cell ext-col">Bench Left**</th>
@@ -3661,9 +3687,9 @@ function pageHistory(){
     <div class="footnotes">
       <p>League Parity is the standard deviation of final-standings win% across all 12 teams that year, regular season only &mdash; a smaller number means a more competitively balanced league that year. Standard deviation is used instead of a simple best-minus-worst spread so one outlier team (a blowout-good or blowout-bad season) doesn't single-handedly set the number.</p>
       <p>The League History Timeline's Record entry is the current all-time highest single-game score, placed at the year it was set &mdash; not a full history of every time that record changed hands. See the Records &amp; Awards page for the complete Record Book.</p>
-      <p>*Playoff W-L is real bracket games only, 2024&ndash;2025 (no bracket data exists for 2022&ndash;2023). PF and PA are all-time totals and only cover 2024 onward (the seasons with scoring on record), including the current season to date. Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Wks 1st, and xW/xL cover every year with weekly matchup data on record, including the current season in progress. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
-      <p>SOS Rank and SOS are Strength of Schedule &mdash; how well every other team would have done on that team's schedule, indexed to that season's league average (100). Available for 2024&ndash;2025 only, since 2022&ndash;2023 have no weekly matchup data on record.</p>
-      <p>Playoff Info (Bracket / Playoff Picture / Final Week Race) is available on any season card with real playoff qualifiers on record (2024&ndash;2025). Playoff Picture and Final Week Race reflect that season's actual result.</p>
+      <p>*Playoff W-L is real bracket games only, 2022&ndash;2025 (2022 and 2023 were 4-team brackets). PF and PA are all-time totals across every season with scoring on record, including the current season to date. Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Wks 1st, and xW/xL cover every year with weekly matchup data on record, including the current season in progress. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
+      <p>SOS Rank and SOS are Strength of Schedule &mdash; how well every other team would have done on that team's schedule, indexed to that season's league average (100). Available for every season with weekly matchup data (2022 onward).</p>
+      <p>Playoff Info (Bracket / Playoff Picture / Final Week Race) is available on any season card with real playoff qualifiers on record (2022&ndash;2025). Playoff Picture and Final Week Race reflect that season's actual result.</p>
       <p>Final Week Race compares each team's cumulative rank right before the season's last regular-season week to the real playoff cutoff line. It's a straightforward positional read, not a full win-probability or tiebreaker simulation.</p>
       <p>Luckiest Win / Unluckiest Loss compare a team's score to others in the same result group that week (lowest-scoring winner, highest-scoring loser) &mdash; not a full win-probability model.</p>
       <p>Standings Boost/Drop compares each team's cumulative rank (regular season only) right before and right after that week, as a simple proxy for how much that week's results reshuffled the race. It isn't a true playoff-odds simulation.</p>
@@ -3925,7 +3951,7 @@ function pageRecords(){
     </div>
 
     <div class="footnotes">
-      <p>Head-to-head, Full Grid, Rivalries, and Notable Games are all scoped to ${DATA_YEARS} &mdash; 2022 and 2023 didn't retain individual matchup data on ESPN. Full Grid rows show the row team's record against the column team; Ryan Methot (2022&ndash;2023 only) isn't included since no ${DATA_YEARS} matchup data exists for that franchise.</p>
+      <p>Head-to-head, Full Grid, Rivalries, and Notable Games cover every season with matchup data (${DATA_YEARS}). Full Grid rows show the row team's record against the column team. Ryan Methot (2022&ndash;2023 only) appears as a separate franchise from Reid Mario.</p>
       <p>A pairing counts as a Rivalry once they've met at least 4 times and one side's all-time head-to-head win% is under .400 or over .600 &mdash; this flags lopsided series, not close ones, so a pairing with a near-even record never shows here even with many meetings. Milestones only compute for flagged pairs: 10th/20th meeting, a point in the series where it was tied 5-5, the longest win streak either side has put together in the matchup (3+ games), and the first meeting after the two teams last made a trade with each other. "Series tied 5-5" and "First meeting since a trade" only show when the series' own history actually produced that moment &mdash; a lopsided series won't always have passed through a 5-5 tie, and "first meeting since a trade" only checks whether a later season's meeting followed a trade year, not same-season sequencing (matchup data has no calendar dates, only week numbers).</p>
     </div>
   `;
@@ -4967,7 +4993,7 @@ function pageAnalytics(){
       <p>xW/xL is how many wins/losses a team "should" have had if every week it scored at or above that week's league average counted as a win, regardless of actual opponent. Luck is actual wins minus xW &mdash; positive means winning more than the scoring pace suggests. All-Play is a finer-grained version: each week, it's the record a team would have against all 11 other teams, not just their actual opponent &mdash; summed across the season. PF/PA/xW/xL/Luck/All-Play follow the season selector above (combined across a range, if one's picked); Career Team Grade (which also factors in rings and finishes) lives on the History and Franchise pages. 2022&ndash;2023 have no PF/PA or weekly data on record, so they're not selectable here.</p>
       <p><b>Points For vs. Points Against:</b> divided at that season's league-wide average PF and PA. Dot color marks the quadrant: green = high scoring &amp; lucky, red = low scoring &amp; unlucky, amber = high scoring but unlucky, blue = low scoring but lucky.</p>
       <p><b>Standings by Week:</b> cumulative rank after each regular-season week (ties broken by points for). Rank 1 is the top of the chart. The current top three teams are shown by default &mdash; click a name in the legend to add or hide a line.</p>
-      <p><b>Team Profile:</b> each axis is scaled 0&ndash;100 relative to the other 11 teams (100 = best in the league on that measure). Reg. Season W% covers all four seasons (2022&ndash;2025); Playoff W%, High Scoring, Luck, Consistency, and Record vs. Playoff Teams are 2024&ndash;2025 only, since there's no weekly data before that. Consistency rewards a lower week-to-week scoring swing, not higher scoring.</p>
+      <p><b>Team Profile:</b> each axis is scaled 0&ndash;100 relative to the other 11 teams (100 = best in the league on that measure). Reg. Season W% covers all four seasons (2022&ndash;2025); Playoff W%, High Scoring, Luck, Consistency, and Record vs. Playoff Teams now cover all four seasons. Consistency rewards a lower week-to-week scoring swing, not higher scoring.</p>
       <p><b>Draft Position, Skill &amp; Final Standing:</b> one point per team-season (2024&ndash;2025), not averaged by slot. Horizontal position is draft slot, vertical position is final standing, and color is that team's own average draft value-over-baseline that year (red=below the league baseline, green=above). Lets you compare draft position against draft skill as predictors of where a team actually finished.</p>
       <p><b>Playoff Odds by Start:</b> checks every team, in every season with weekly data on record, that had exactly the picked record after that many games, and shows how many went on to make the playoffs. Small samples (especially past 2-3 games) can swing hard on just one or two teams &mdash; the sample size shown lets you judge how much to trust it.</p>
       <p><b>Leaderboards:</b> scope is Career, a single season, or a custom multi-season range. Team Grade, Draft Grade, and Manager Grade are career-spanning formulas with no multi-season-subset version, so they're Career-only.</p>
@@ -6239,16 +6265,16 @@ function pageAwards(){
     <div class="grid cols-3">
       ${tieCard(ICON_TROPHY, "Most Championships", a.titleLeaders.map(id=>currentTeamName(id)), `${a.maxTitles} ring${a.maxTitles===1?'':'s'} each`)}
       ${card(ICON_STAR, "Best All-Time Win%", currentTeamName(a.bestPct), pctFmt(careerStats()[a.bestPct].w/(careerStats()[a.bestPct].w+careerStats()[a.bestPct].l)))}
-      ${card(ICON_CHART, "Highest Career PPG", a.bestPPG?currentTeamName(a.bestPPG.id):'&mdash;', a.bestPPG?`${a.bestPPG.ppg.toFixed(1)} pts/game (2024&ndash;25)`:'')}
+      ${card(ICON_CHART, "Highest Career PPG", a.bestPPG?currentTeamName(a.bestPPG.id):'&mdash;', a.bestPPG?`${a.bestPPG.ppg.toFixed(1)} pts/game (${DATA_YEARS})`:'')}
       ${tieCard(ICON_CALENDAR, "Best Regular Season", a.bestSeason.map(s=>currentTeamName(s.owner)), `${a.bestSeason[0].w}-${a.bestSeason[0].l}, ${a.bestSeason.map(s=>s.year).join('/')}`)}
       ${card(ICON_FLAME, "Highest Scoring Season", currentTeamName(a.highScoreSeason.owner), `${a.highScoreSeason.pf.toFixed(1)} points in ${a.highScoreSeason.year}`)}
       ${card(ICON_TARGET, "Highest Season Average Score", currentTeamName(a.bestSeasonAvg.owner), `${a.bestSeasonAvg.avg.toFixed(1)} pts/wk in ${a.bestSeasonAvg.year}`)}
-      ${tieCard(ICON_TICKET, "Most Playoff Appearances", a.appearLeaders.map(id=>currentTeamName(id)), `${a.maxAppear} appearances since 2024 each`)}
+      ${tieCard(ICON_TICKET, "Most Playoff Appearances", a.appearLeaders.map(id=>currentTeamName(id)), `${a.maxAppear} appearances since 2022 each`)}
       ${tieCard(ICON_MEDAL, "Most Playoff Wins", a.playoffWinLeaders.map(id=>currentTeamName(id)), `${a.maxPlayoffWins} win${a.maxPlayoffWins===1?'':'s'} each, real bracket games only`)}
       ${card(ICON_ZIGZAG_UP, "Longest Win Streak", nameFor(a.winStreak.year, a.winStreak.team), `${a.winStreak.len} straight, ${a.winStreak.year} Weeks ${a.winStreak.start}&ndash;${a.winStreak.end}`)}
       ${card(ICON_ZIGZAG_DOWN, "Longest Losing Streak", nameFor(a.lossStreak.year, a.lossStreak.team), `${a.lossStreak.len} straight losses, ${a.lossStreak.year} Weeks ${a.lossStreak.start}&ndash;${a.lossStreak.end}`)}
       ${card(ICON_HAMMER, "Most Lopsided Win", `${nameFor(a.biggest.year,winnerTeam)} over ${nameFor(a.biggest.year,loserTeam)}`, `${Math.max(a.biggest.sA,a.biggest.sB)}-${Math.min(a.biggest.sA,a.biggest.sB)}, ${a.biggest.year} Wk ${a.biggest.week}`)}
-      ${card(ICON_TREND, "Most Weeks Above League Average", currentTeamName(a.mostAboveAvg.id), `${a.mostAboveAvg.weeks} weeks, 2024&ndash;25 combined`)}
+      ${card(ICON_TREND, "Most Weeks Above League Average", currentTeamName(a.mostAboveAvg.id), `${a.mostAboveAvg.weeks} weeks, ${DATA_YEARS} combined`)}
       ${card(ICON_ROCKET, "Most Improved", currentTeamName(a.mostImproved.id), `${pctFmt(a.mostImproved.from.pct)} in ${a.mostImproved.from.year} &rarr; ${pctFmt(a.mostImproved.to.pct)} in ${a.mostImproved.to.year}`)}
       ${card(ICON_ARROW_DOWN, "Biggest Decline", currentTeamName(a.biggestDecline.id), `${pctFmt(a.biggestDecline.from.pct)} in ${a.biggestDecline.from.year} &rarr; ${pctFmt(a.biggestDecline.to.pct)} in ${a.biggestDecline.to.year}`)}
     </div>
@@ -6296,7 +6322,7 @@ function pageAwards(){
 
     <div class="footnotes">
       <p>Rivalry Index pools every regular-season and playoff meeting on file between the same two teams, current team names only. Margin Swing is the standard deviation of the margin across the series -- a high number means the series alternates between blowouts and nailbiters rather than staying close (or lopsided) every time.</p>
-      <p>Career PPG, single-season scoring, and weeks-above-average are scoped to ${DATA_YEARS}, the only seasons with weekly and points data on record. Most Improved/Biggest Decline compare only consecutive seasons for the same owner. Playoff appearances and wins are restricted to real bracket qualifiers each year (6 teams in 2024, 7 in 2025), excluding the non-qualifier consolation ladder. Every award refers to a franchise by its current team name, even if it happened under an older name.</p>
+      <p>Career PPG, single-season scoring, and weeks-above-average are scoped to ${DATA_YEARS}, the only seasons with weekly and points data on record. Most Improved/Biggest Decline compare only consecutive seasons for the same owner. Playoff appearances and wins are restricted to real bracket qualifiers each year (4 teams in 2022 and 2023, 6 in 2024, 7 in 2025), excluding the non-qualifier consolation ladder. Every award refers to a franchise by its current team name, even if it happened under an older name.</p>
       <p>Record Book covers every all-time single-game and single-season best, ${DATA_YEARS} unless noted.</p>
       <p>Bench Management compares, for every week, what a team actually started to the best lineup it could have set at the same position counts it used that week. Sorted best (least left on the bench) to worst.</p>
     </div>
@@ -12788,10 +12814,10 @@ const GLOSSARY = [
   {term:"Luck / xW / xL", def:"xW (expected wins) counts a week as a win if the team scored at or above that week's league average, regardless of who they actually played. Luck is actual wins minus xW &mdash; positive means winning more than the scoring pace suggests."},
   {term:"All-Play record", def:"A finer-grained version of xW/xL: each week, the record a team would have if they'd played all 11 other teams instead of just their actual opponent, summed across the season."},
   {term:"SOS (Strength of Schedule)", def:"How well every other team would have done on this team's schedule (each one replays its opponents week by week using the real scores). Indexed so 100 is that season's league-average schedule; above 100 is tougher and below 100 is easier. Each 1% drop in the other teams' win rate adds 1.5 points."},
-  {term:"Playoff Qualifiers", def:"The teams that actually made the real playoff bracket that year (6 teams in 2024, 7 in 2025) &mdash; separate from the consolation/placement ladder played by everyone else."},
+  {term:"Playoff Qualifiers", def:"The teams that actually made the real playoff bracket that year (4 teams in 2022 and 2023, 6 in 2024, 7 in 2025) &mdash; separate from the consolation/placement ladder played by everyone else."},
   {term:"Playoff Odds / Title Odds (Current Season Standings)", def:`Come from a 5,000-simulation Monte Carlo projection of the rest of the season, blending each team's own PPG with their current roster's Site Model-implied scoring and each team's own week-to-week volatility, and a ${CURRENT_SEASON_PLAYOFF_SPOTS}-team playoff bracket: both division winners auto-qualify and get the top two seeds, and the rest of the field is filled by record league-wide.`},
   {term:"Power Score (Current Season Power Rankings)", def:"A composite index blending actual win% (40%), last-3 average points (25%), Pythagorean win% (20%) and all-play win% (15%) into one base-100 number."},
-  {term:"Team Profile radar axes", def:"Reg. Season W% covers all four seasons (2022&ndash;2025). Playoff W%, High Scoring, Luck, Consistency, and Record vs. Playoff Teams are 2024&ndash;2025 only. Each axis is scaled 0&ndash;100 relative to the rest of the league. Consistency rewards a smaller week-to-week scoring swing, not higher scoring."},
+  {term:"Team Profile radar axes", def:"Every axis covers all four seasons (2022&ndash;2025). Each axis is scaled 0&ndash;100 relative to the rest of the league. Consistency rewards a smaller week-to-week scoring swing, not higher scoring."},
   {term:"Draft Phase buckets", def:"Draft Tendencies groups picks into R1, R2-4, R5-8, R9-12, and R13-16 to show which positions a manager prioritizes at each stretch of the draft."},
   {term:"Standings Boost/Drop", def:"Compares a team's cumulative regular-season rank right before and right after a given week &mdash; a simple proxy for how much that week's results reshuffled the race. Not a true playoff-odds simulation."},
   {term:"Luckiest Win / Unluckiest Loss", def:"Within a single week, the lowest-scoring team that still won (Luckiest Win) and the highest-scoring team that still lost (Unluckiest Loss)."},
@@ -12804,7 +12830,7 @@ const GLOSSARY = [
 
 const FAQS = [
   {q:"How is Team Grade calculated?", a:"See the Team Grade entry in the Stats Glossary above for the exact formula. In short: win%, average finish, top-3 and bottom-3 finish rates, titles, playoff/semifinal appearance rate, and points scored, blended into one 0&ndash;100 number on a school-letter scale."},
-  {q:"Why don't 2022 and 2023 have weekly stats, charts, or box scores?", a:"Only final season standings were kept from those years &mdash; no week-by-week scores survived. The historical Analytics tools, career percentiles, and award-book entries that need weekly data are scoped to 2024&ndash;2025 for that reason. The season currently in progress is the exception: Current Season and the year-selectable Analytics charts (Scoring Range, Points For vs. Against, Standings by Week) include it once it has games on the board."},
+  {q:"Do 2022 and 2023 have weekly stats, charts, and box scores?", a:"They do now. ESPN hid those seasons, but their week-by-week scores were recovered with the history scrape, so head-to-head, records, charts, and box scores cover 2022 onward. Draft-based tools (draft value, pick grades) still cover 2024&ndash;2025 only because the 2022 and 2023 drafts weren't recovered."},
   {q:"Why does a chart look like it's just a dot or a flat line early in the season?", a:"A handful of Analytics charts (like the Team Scoring Range box-and-whisker) need several weeks of scores to show real spread. With only 1&ndash;2 games played, a team's low/typical/high score are nearly identical, so there's nothing to draw a box or whiskers around yet &mdash; those charts show a single dot and a note instead, and fill back in normally as more weeks are played. Pick a completed season from the year dropdown for the full picture in the meantime."},
   {q:"Does the site update itself automatically?", a:"No &mdash; this is a static file with no backend. Updates happen by generating a new version and re-uploading it wherever the site is hosted (see the GitHub Pages instructions if you're hosting it there)."},
   {q:"What's the difference between the Rivalries and Records & Awards pages?", a:"Rivalries covers head-to-head history, flagged rivalries with milestones, and notable games between teams. Records & Awards covers season-driven superlatives (most championships, best win%, etc.) and the all-time Record Book of single-game/season bests."},
