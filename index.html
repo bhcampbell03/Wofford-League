@@ -951,8 +951,8 @@ const SEASONS = {
     {owner:"ew",team:"use GRACE5 for $5 off",w:8,l:7,pct:.533,titles:0,rank:8},
     {owner:"rm2",team:"Team Methot",w:6,l:9,pct:.400,titles:0,rank:9},
     {owner:"fa",team:"Two-Phone Baby Him",w:7,l:8,pct:.467,titles:0,rank:10},
-    {owner:"fm",team:"Off in Church",w:4,l:11,pct:.267,titles:0,rank:11},
-    {owner:"wy",team:"Azz n TDs",w:7,l:8,pct:.467,titles:0,rank:12}
+    {owner:"fm",team:"Off in Church",w:4,l:11,pct:.267,titles:0,rank:12},
+    {owner:"wy",team:"Azz n TDs",w:7,l:8,pct:.467,titles:0,rank:11}
   ],
   2023:[
     {owner:"wy",team:"Azz n TDs",w:11,l:4,pct:.733,titles:1,rank:1},
@@ -1006,12 +1006,17 @@ const _yrRange = ys => ys.length ? (Math.min(...ys)===Math.max(...ys) ? String(y
 const DATA_YEARS = _yrRange(Object.keys(MATCHUPS).map(Number));
 const FINAL_YEARS = _yrRange(Object.keys(SEASONS).map(Number));
 
-const REG_SEASON_LOSER = {
-  2022:"fm", // Off in Church, 4-11
-  2023:"rm2", // Team Methot, 3-12
-  2024:"jt", // Team Tully, 2-13
-  2025:"wy"  // Azz n TDs, 5-9 (tiebreak vs Miles Havard by final standing)
-};
+// League rule (Bylaws Article VI): the winner is the playoff-bracket champion; the
+// loser is the worst regular-season team, and a tie for worst is broken by the
+// losers (consolation) bracket -- i.e. whoever finished lowest in the final
+// standings, which for non-playoff teams is set by that bracket.
+function seasonLoser(year){
+  const roster = SEASONS[year];
+  if(!roster || !roster.length) return null;
+  const worstPct = Math.min(...roster.map(t=>t.pct));
+  const tied = roster.filter(t=>Math.abs(t.pct-worstPct)<1e-9);
+  return tied.sort((a,b)=>b.rank-a.rank)[0];
+}
 
 // Playoff appearances since 2022, sourced directly from the league's own tracked workbook
 const PLAYOFF_APPEARANCES = {
@@ -1392,7 +1397,8 @@ const BYLAWS = [
   ]},
   {title:"Article VI \u2013 Loser & Winner", items:[
     "The winner of the League is determined by the outcome of the playoff bracket championship. The winner of the playoff bracket championship game is the winner of the League.",
-    "The loser of the League is determined by regular season standings. The loser of the League is the regular season loser."
+    "The loser of the League is determined by regular season standings. The loser of the League is the regular season loser (the team with the worst regular season record).",
+    "Loser tiebreaker: if two or more teams tie for the worst regular season record, the loser is determined by the losers bracket (the consolation ladder)."
   ]},
   {title:"Article VII \u2013 Draft Position", items:[
     "Draft position for the following season is set by order of finish in the league's March Madness bracket pool",
@@ -2744,8 +2750,7 @@ function renderCommissionersCupHistoryHtml(){
 function generateRecap(year){
   const roster = SEASONS[year];
   const champ = roster.find(t=>t.titles>0) || roster.find(t=>t.rank===1);
-  const loserId = REG_SEASON_LOSER[year];
-  const loser = loserId ? roster.find(t=>t.owner===loserId) : null;
+  const loser = seasonLoser(year);
   const maxPct = Math.max(...roster.map(t=>t.pct));
   const bestRecordTeams = roster.filter(t=>t.pct===maxPct);
   const sentences = [];
@@ -3297,10 +3302,10 @@ function pageHome(){
       }).join("")}
     </div>
 
-    <div class="section-title" style="margin-top:32px">Wall of Shame <span class="sub">last place, by final standing</span></div>
+    <div class="section-title" style="margin-top:32px">Wall of Shame <span class="sub">worst regular-season record; ties broken by the losers bracket</span></div>
     <div class="shame-row">
       ${years.map(year=>{
-        const last = SEASONS[year].find(t=>t.rank===12);
+        const last = seasonLoser(year);
         return `<div class="shame-card">
           <div class="shame-year">${year}</div>
           <div class="shame-team">${last.team}</div>
@@ -3521,6 +3526,10 @@ function pageHistory(){
       <button type="button" id="stdViewBtn" class="toggle-btn active">Standard</button>
       <button type="button" id="extViewBtn" class="toggle-btn">Extended</button>
     </div>
+    <div class="view-toggle" id="recScopeToggle" style="margin-bottom:12px">
+      <button type="button" class="toggle-btn active" data-scope="reg">Regular season</button>
+      <button type="button" class="toggle-btn" data-scope="all">Including playoffs</button>
+    </div>
     <div class="table-wrap freeze-col">
     <table id="standingsTable" class="sortable">
       <thead><tr>
@@ -3538,9 +3547,9 @@ function pageHistory(){
           return `<tr>
           <td class="team-name">${currentTeamName(r.id)}</td>
           <td class="num-cell" style="font-weight:700;color:var(--gold-deep)">${r.grade.toFixed(1)}</td>
-          <td class="num-cell">${r.w}</td>
-          <td class="num-cell">${r.l}</td>
-          <td class="num-cell">${pctFmt(r.pct)}</td>
+          <td class="num-cell" data-reg="${r.w}" data-all="${r.w+ext.playoffW}">${r.w}</td>
+          <td class="num-cell" data-reg="${r.l}" data-all="${r.l+ext.playoffL}">${r.l}</td>
+          <td class="num-cell" data-reg="${pctFmt(r.pct)}" data-all="${pctFmt((r.w+ext.playoffW)/((r.w+ext.playoffW+r.l+ext.playoffL)||1))}">${pctFmt(r.pct)}</td>
           <td class="num-cell">${r.titles || 0}</td>
           <td class="num-cell">${r.avgRank.toFixed(1)}</td>
           <td class="num-cell">${ext.playoffW}-${ext.playoffL}</td>
@@ -8711,11 +8720,20 @@ function divisionTitleTrophies(){
   const liveYear = currentSeasonInProgressYear();
   return allDivisionChampions().filter(r=>r.year!==liveYear).map(r=>({year:r.year, owner:r.owner, detail:`${r.division} Division`}));
 }
+// Season loser per Bylaws Article VI (same rule as Home's Wall of Shame). Only
+// finished seasons have a SEASONS entry, so the one in progress never adds one.
+function lastPlaceTrophies(){
+  return Object.keys(SEASONS).map(Number).map(year=>{
+    const last = seasonLoser(year);
+    return last ? {year, owner:last.owner, detail:`${last.w}-${last.l}`} : null;
+  }).filter(Boolean);
+}
 const TROPHY_TYPES = [
   {key:'league', label:'League Champion', getAll:leagueTitleTrophies, color:'#C79A3C', shape:'chalice'},
   {key:'cup', label:"Commissioner's Cup", getAll:cupTitleTrophies, color:'#8A5FC2', shape:'cup'},
   {key:'division', label:'Division Champion', getAll:divisionTitleTrophies, color:'#4F86B8', shape:'shield'},
-  {key:'scoring', label:'Scoring Champion', getAll:scoringTitleChampions, color:'#C24B4B', shape:'star'}
+  {key:'scoring', label:'Scoring Champion', getAll:scoringTitleChampions, color:'#C24B4B', shape:'star'},
+  {key:'worst', label:'Last Place', getAll:lastPlaceTrophies, color:'#D2A867', shape:'spoon'}
 ];
 // Lighten (positive amt) or darken (negative amt) a #rrggbb hex color by amt
 // per channel (0-255), for building a metallic highlight/shadow gradient out
@@ -8778,6 +8796,15 @@ function trophyShapeSvg(shape, color, uid){
       <rect x="17" y="25" width="6" height="10" fill="url(#${g})"/>
       <path d="M9,36 L31,36 L27,42 L13,42 Z" fill="url(#${g})" stroke="${deep}" stroke-width="0.8"/>
       <rect x="6" y="42" width="28" height="5" rx="1.2" fill="url(#${g})" stroke="${deep}" stroke-width="0.8"/>
+    </svg>`;
+  }
+  if(shape==='spoon'){
+    // The wooden spoon: a long-handled spoon for finishing last.
+    return `<svg width="30" height="54" viewBox="0 0 26 50" xmlns="http://www.w3.org/2000/svg">
+      <defs>${grad}</defs>
+      <ellipse cx="13" cy="12" rx="9" ry="11" fill="url(#${g})" stroke="${deep}" stroke-width="1.2"/>
+      <ellipse cx="11" cy="9" rx="3" ry="5" fill="${light}" opacity="0.55"/>
+      <path d="M10.5,22 L15.5,22 L14.6,47 Q13,49.5 11.4,47 Z" fill="url(#${g})" stroke="${deep}" stroke-width="1"/>
     </svg>`;
   }
   if(shape==='shield'){
@@ -15263,6 +15290,16 @@ function attachPageHandlers(){
   if(stdBtn && extBtn && stTable){
     stdBtn.addEventListener("click", ()=>{ stTable.classList.remove("extended"); stdBtn.classList.add("active"); extBtn.classList.remove("active"); });
     extBtn.addEventListener("click", ()=>{ stTable.classList.add("extended"); extBtn.classList.add("active"); stdBtn.classList.remove("active"); });
+  }
+
+  const recToggle = document.getElementById("recScopeToggle");
+  if(recToggle && stTable){
+    recToggle.addEventListener("click", e=>{
+      const btn = e.target.closest("[data-scope]"); if(!btn) return;
+      recToggle.querySelectorAll(".toggle-btn").forEach(b=>b.classList.toggle("active", b===btn));
+      const key = btn.dataset.scope==="all" ? "data-all" : "data-reg";
+      stTable.querySelectorAll("td[data-reg]").forEach(td=>{ td.textContent = td.getAttribute(key); });
+    });
   }
 
   wireDraftYearCard();
