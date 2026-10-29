@@ -3804,7 +3804,7 @@ function wrapTeamLabel(name, maxCharsPerLine){
 
 function renderRivalryNetworkSvg(ids){
   const n = ids.length;
-  const size = 640, radius = 250, cx = size/2, cy = size/2, nodeR = 44;
+  const size = 640, radius = 258, cx = size/2, cy = size/2, nodeR = 52;
   const positions = {};
   ids.forEach((id,i)=>{
     const angle = (2*Math.PI*i/n) - Math.PI/2;
@@ -3835,11 +3835,11 @@ function renderRivalryNetworkSvg(ids){
   }).join("");
   const nodesSvg = ids.map(id=>{
     const p = positions[id];
-    const lines = wrapTeamLabel(currentTeamName(id), 11);
-    const lineHeight = 11;
+    const lines = wrapTeamLabel(currentTeamName(id), 10);
+    const lineHeight = 14.5;
     const startY = p.y - ((lines.length-1)*lineHeight)/2;
     const tspans = lines.map((line,i)=>`<tspan x="${p.x.toFixed(1)}" y="${(startY+i*lineHeight).toFixed(1)}">${line}</tspan>`).join("");
-    return `<g class="rn-node" data-owner="${id}" tabindex="0" role="button" aria-label="${currentTeamName(id)}"><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${nodeR}" fill="var(--panel)" stroke="var(--gold-deep)" stroke-width="2"></circle><text text-anchor="middle" dominant-baseline="central" font-family="var(--font-display)" font-weight="700" font-size="9.5" fill="var(--text)">${tspans}</text></g>`;
+    return `<g class="rn-node" data-owner="${id}" tabindex="0" role="button" aria-label="${currentTeamName(id)}"><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${nodeR}" fill="var(--panel)" stroke="var(--gold-deep)" stroke-width="2"></circle><text text-anchor="middle" dominant-baseline="central" font-family="var(--font-display)" font-weight="700" font-size="12.5" fill="var(--text)">${tspans}</text></g>`;
   }).join("");
   return `<svg viewBox="0 0 ${size} ${size}" class="rivalry-network-svg" role="img" aria-label="Rivalry network graph"><g>${edgesSvg}</g><g>${nodesSvg}</g></svg>`;
 }
