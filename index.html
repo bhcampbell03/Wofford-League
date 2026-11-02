@@ -8637,11 +8637,11 @@ function gbSplit(rows, spots, field){
   });
   return out;
 }
-function gbHeadHtml(g){
-  return `<th class="num-cell" data-tip="${GB_DIV_TIP}">GB Div</th>` + (g.hasWc ? `<th class="num-cell" data-tip="${GB_WC_TIP}">GB WC</th>` : '');
+function gbHeadHtml(g, wcExt){
+  return `<th class="num-cell" data-tip="${GB_DIV_TIP}">GB Div</th>` + (g.hasWc ? `<th class="num-cell${wcExt?' ext-col':''}" data-tip="${GB_WC_TIP}">GB WC</th>` : '');
 }
-function gbCellsHtml(g, owner){
-  return `<td class="num-cell">${g.div[owner]!=null?g.div[owner]:'&mdash;'}</td>` + (g.hasWc ? `<td class="num-cell">${g.wc[owner]!=null?g.wc[owner]:'&mdash;'}</td>` : '');
+function gbCellsHtml(g, owner, wcExt){
+  return `<td class="num-cell">${g.div[owner]!=null?g.div[owner]:'&mdash;'}</td>` + (g.hasWc ? `<td class="num-cell${wcExt?' ext-col':''}">${g.wc[owner]!=null?g.wc[owner]:'&mdash;'}</td>` : '');
 }
 // Playoff field size for a year's table: the real field for finished seasons
 // that have one on file, the current bylaw size for the season in progress.
@@ -9303,7 +9303,14 @@ function computePowerRankingsV2(year, throughWeek){
     const winPct = r.games ? r.w/r.games : 0;
     const pyth = (pf>0 && pa>0) ? Math.pow(pf,2.4)/(Math.pow(pf,2.4)+Math.pow(pa,2.4)) : 0.5;
     const allPlay = apN[r.owner] ? apW[r.owner]/apN[r.owner] : 0.5;
-    return { ...r, pf, pointDiff, momentum, winPct, pyth, allPlay };
+    let l3w=0, l3l=0;
+    const mine = [];
+    weeks.forEach(wk=>wk.g.forEach(([tA,sA,tB,sB])=>{
+      const a=ownerForTeam(year,tA), b=ownerForTeam(year,tB);
+      if(a===r.owner) mine.push([wk.w,sA,sB]); else if(b===r.owner) mine.push([wk.w,sB,sA]);
+    }));
+    mine.sort((x,y)=>x[0]-y[0]).slice(-3).forEach(([,f,o])=>{ if(f>o) l3w++; else l3l++; });
+    return { ...r, pf, pointDiff, momentum, winPct, pyth, allPlay, l3w, l3l };
   });
   const zW = zScores(rows.map(r=>r.winPct));
   const zL = zScores(rows.map(r=>r.recentAvg));
@@ -12497,7 +12504,7 @@ function pageLiveSeason(){
       const gbs = gbSplit(standings, CURRENT_SEASON_PLAYOFF_SPOTS);
       const prevPosById = {};
       if(prevStandings.length) playoffPictureFor(prevStandings).order.forEach((id,i)=>{ prevPosById[id] = i+1; });
-      const headRow = `<tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th>${gbHeadHtml(gbs)}<th class="num-cell" data-tip="Points for.">PF</th><th class="num-cell" data-tip="Points against.">PA</th><th class="num-cell" data-tip="Strength of schedule: how well every other team would have done on this team's schedule so far. 100 = league-average schedule; above 100 is tougher, below is easier.">SOS</th><th class="num-cell" data-tip="All-play record: record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">AP W-L</th><th class="num-cell" data-tip="Playoff odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Playoff%</th><th class="num-cell" data-tip="Title odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Title%</th><th class="num-cell" data-tip="Combined wins (if currently in a playoff spot) or combined wins + the current bubble team losing, needed to lock in / stay alive for a spot in the ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field, based on today's cutoff line. The field counts the two division leaders as automatic qualifiers.">Magic #</th></tr>`;
+      const headRow = `<tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th>${gbHeadHtml(gbs,true)}<th class="num-cell" data-tip="Points for.">PF</th><th class="num-cell" data-tip="Points against.">PA</th><th class="num-cell" data-tip="Strength of schedule: how well every other team would have done on this team's schedule so far. 100 = league-average schedule; above 100 is tougher, below is easier.">SOS</th><th class="num-cell" data-tip="All-play record: record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">AP W-L</th><th class="num-cell" data-tip="Playoff odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Playoff%</th><th class="num-cell" data-tip="Title odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Title%</th><th class="num-cell" data-tip="Combined wins (if currently in a playoff spot) or combined wins + the current bubble team losing, needed to lock in / stay alive for a spot in the ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field, based on today's cutoff line. The field counts the two division leaders as automatic qualifiers.">Magic #</th></tr>`;
       function rowHtml(r, idSuffix='', pos=null, prevPos=null, lead=null){
         const ap = allPlayById[r.owner];
         const shownRank = pos!=null ? pos : r.rank;
@@ -12524,7 +12531,7 @@ function pageLiveSeason(){
           <td class="num-cell">${shownRank}${rankArrow}</td>
           <td class="team-name">${currentTeamName(r.owner)}${divLeaderMarkHtml(pic.leaders[r.owner])}</td>
           <td class="num-cell">${r.w}-${r.l}</td>
-          ${gbCellsHtml(gbs, r.owner)}
+          ${gbCellsHtml(gbs, r.owner, true)}
           <td class="num-cell">${r.pf.toFixed(1)}</td>
           <td class="num-cell">${r.pa.toFixed(1)}</td>
           <td class="num-cell">${sosById[r.owner] ? sosById[r.owner].index.toFixed(0) : '&mdash;'}</td>
@@ -12539,10 +12546,11 @@ function pageLiveSeason(){
       return `<div class="view-toggle" id="standingsViewToggle" style="margin-bottom:12px">
         <button type="button" class="toggle-btn${standingsView==='division'?' active':''}" data-view="division" onclick="setStandingsView('division')">Division</button>
         <button type="button" class="toggle-btn${standingsView==='league'?' active':''}" data-view="league" onclick="setStandingsView('league')">League</button>
+        ${gbs.hasWc ? `<button type="button" class="toggle-btn${window._standingsExpanded?' active':''}" id="standingsExpandBtn" onclick="toggleStandingsExpanded()" title="Show games back of the last wild card spot">Expanded</button>` : ''}
       </div>
       <div id="standingsLeagueView" style="display:${standingsView==='league'?'block':'none'}">
         <div class="table-wrap standings-wrap">
-          <table class="table-compact division-table league-sort" id="leagueTable">
+          <table class="table-compact division-table league-sort${window._standingsExpanded?' extended':''}" id="leagueTable">
             <thead>${headRow}</thead>
             <tbody>${leagueRows.map((r,i)=>(i===CURRENT_SEASON_PLAYOFF_SPOTS ? `<tr class="playoff-line-row"><td colspan="12" style="padding:2px 0"><div style="border-top:2px dashed var(--gold-deep)" title="Playoff line: top ${CURRENT_SEASON_PLAYOFF_SPOTS} make the playoffs"></div></td></tr>` : '') + rowHtml(r,'L',i+1,prevPosById[r.owner]!=null?prevPosById[r.owner]:null,gbLeader(leagueRows))).join("")}</tbody>
           </table>
@@ -12555,7 +12563,7 @@ function pageLiveSeason(){
           return `<div>
             <div class="division-name">${g.name}</div>
             <div class="table-wrap standings-wrap">
-            <table class="sortable table-compact division-table">
+            <table class="sortable table-compact division-table${window._standingsExpanded?' extended':''}">
               <thead>${headRow}</thead>
               <tbody>${rows.map(r=>rowHtml(r,'',null,null,gbLeader(rows))).join("")}</tbody>
             </table>
@@ -12572,7 +12580,7 @@ function pageLiveSeason(){
     <div id="jump-cs-power" class="section-title" style="margin-top:24px;">${iconSvg('power')}Power Rankings</div>
     <div class="table-wrap" style="max-width:760px">
     <table class="sortable table-compact">
-      <thead><tr><th>#</th><th>Team</th><th class="num-cell">Record</th><th class="num-cell" data-tip="Average of the last 3 games played.">Last 3 Avg</th><th class="num-cell" data-tip="Composite Power Score: 40% win%, 25% last-3 average PF, 20% Pythagorean win%, 15% all-play win%. Base 100.">Power Score</th><th data-tip="Power Rankings rank, week by week this season. Green = trending up, red = trending down.">Trend</th></tr></thead>
+      <thead><tr><th>#</th><th>Team</th><th class="num-cell">Record</th><th class="num-cell" data-tip="Win-loss record over the last 3 games played.">Last 3</th><th class="num-cell" data-tip="Average of the last 3 games played.">Last 3 Avg</th><th class="num-cell" data-tip="Composite Power Score: 40% win%, 25% last-3 average PF, 20% Pythagorean win%, 15% all-play win%. Base 100.">Power Score</th><th data-tip="Power Rankings rank, week by week this season. Green = trending up, red = trending down.">Trend</th></tr></thead>
       <tbody>
         ${powerNow.map(r=>{
           const prev = prevRankById[r.owner];
@@ -12587,6 +12595,7 @@ function pageLiveSeason(){
             <td class="num-cell">${r.rank} <span style="font-size:10px">${moveHtml}</span></td>
             <td class="team-name">${currentTeamName(r.owner)}</td>
             <td class="num-cell">${r.w}-${r.l}</td>
+            <td class="num-cell">${r.l3w}-${r.l3l}</td>
             <td class="num-cell">${r.recentAvg.toFixed(1)}</td>
             <td class="num-cell" title="Win ${pctFmt(r.winPct)} &middot; Last 3 ${r.recentAvg.toFixed(2)} &middot; Pythagorean ${pctFmt(r.pyth)} &middot; All-play ${pctFmt(r.allPlay)}">${Math.round(r.powerScore)}</td>
             <td>${renderRankSparkline(rankByWeek.series[r.owner]||[], rankByWeek.ids.length)}</td>
@@ -12724,13 +12733,18 @@ function pageLiveSeason(){
 // skeleton-loading Playoff Odds / Title Odds cells left by pageLiveSeason.
 // Current Season standings: Division (two tables) vs. League (one table,
 // playoff line after the top 7). The choice sticks for the rest of the visit.
+function toggleStandingsExpanded(){
+  window._standingsExpanded = !window._standingsExpanded;
+  document.querySelectorAll('#leagueTable, #standingsBody table').forEach(t=>t.classList.toggle('extended', window._standingsExpanded));
+  const b = document.getElementById('standingsExpandBtn'); if(b) b.classList.toggle('active', window._standingsExpanded);
+}
 function setStandingsView(view){
   window._standingsView = view==='league' ? 'league' : 'division';
   const lg = document.getElementById('standingsLeagueView');
   const dv = document.getElementById('standingsBody');
   if(lg) lg.style.display = window._standingsView==='league' ? 'block' : 'none';
   if(dv) dv.style.display = window._standingsView==='division' ? 'grid' : 'none';
-  document.querySelectorAll('#standingsViewToggle .toggle-btn').forEach(b=>{
+  document.querySelectorAll('#standingsViewToggle .toggle-btn[data-view]').forEach(b=>{
     b.classList.toggle('active', b.dataset.view===window._standingsView);
   });
 }
