@@ -297,6 +297,11 @@ if(typeof MATCHUPS==="undefined"){
   table{width:100%;border-collapse:collapse;font-size:13px;font-family:var(--font-body);}
   th{text-align:left;color:var(--gold-deep);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;padding:5px 8px;border-bottom:2px solid var(--gold-deep);box-shadow:0 3px 0 -2px var(--line);font-family:var(--font-display);}
   table.sortable th{cursor:pointer;user-select:none;}
+  .tiers-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;align-items:start;}
+  .tier-table td.team-name{white-space:nowrap;}
+  .tier-card{padding:12px 14px;}
+  .tier-head{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-display);font-weight:800;font-size:15px;margin-bottom:2px;}
+  .tier-table th,.tier-table td{padding:4px 6px;font-size:12px;}
   table.league-sort th{cursor:pointer;user-select:none;}
   table.league-sort th:hover{color:var(--gold);}
   table.league-sort th.sorted-asc::after{content:" \25B2";font-size:9px;}
@@ -3537,7 +3542,7 @@ function pageHistory(){
         <th class="num-cell">Win%</th><th class="num-cell">Titles</th><th class="num-cell">Avg. finish</th>
         <th class="num-cell">Playoff W-L*</th><th class="num-cell" data-tip="All-time points for: every season with scoring on record (2022 on), including the current season to date.">PF</th><th class="num-cell" data-tip="All-time points against: every season with scoring on record (2022 on), including the current season to date.">PA</th>
         <th class="num-cell ext-col">Blowout W</th><th class="num-cell ext-col">Blowout L</th>
-        <th class="num-cell ext-col">Wks 1st</th><th class="num-cell ext-col">xW</th><th class="num-cell ext-col">xL</th>
+        <th class="num-cell ext-col" data-tip="Weeks in 1st place: regular-season weeks this team sat first in the standings after that week's games.">Weeks in 1st</th><th class="num-cell ext-col">xW</th><th class="num-cell ext-col">xL</th>
         <th class="num-cell ext-col">Bench Left**</th>
       </tr></thead>
       <tbody>
@@ -3702,7 +3707,7 @@ function pageHistory(){
     <div class="footnotes">
       <p>League Parity is the standard deviation of final-standings win% across all 12 teams that year, regular season only &mdash; a smaller number means a more competitively balanced league that year. Standard deviation is used instead of a simple best-minus-worst spread so one outlier team (a blowout-good or blowout-bad season) doesn't single-handedly set the number.</p>
       <p>The League History Timeline's Record entry is the current all-time highest single-game score, placed at the year it was set &mdash; not a full history of every time that record changed hands. See the Records &amp; Awards page for the complete Record Book.</p>
-      <p>*Playoff W-L is real bracket games only, 2022&ndash;2025 (2022 and 2023 were 4-team brackets). PF and PA are all-time totals across every season with scoring on record, including the current season to date. Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Wks 1st, and xW/xL cover every year with weekly matchup data on record, including the current season in progress. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
+      <p>*Playoff W-L is real bracket games only, 2022&ndash;2025 (2022 and 2023 were 4-team brackets). PF and PA are all-time totals across every season with scoring on record, including the current season to date. Team Grade blends win%, average finish, rings, and scoring margin into one 0&ndash;100 number. Blowout W/L (30+ point margin), Weeks in 1st (weeks sitting in 1st place in the standings), and xW/xL cover every year with weekly matchup data on record, including the current season in progress. Team Methot (Ryan Methot, 2022&ndash;2023 only) isn't shown here, separate from Reid Mario's 2024&ndash;2025 tenure in the same roster slot.</p>
       <p>SOS Rank and SOS are Strength of Schedule &mdash; how well every other team would have done on that team's schedule, indexed to that season's league average (100). Available for every season with weekly matchup data (2022 onward).</p>
       <p>Playoff Info (Bracket / Playoff Picture / Final Week Race) is available on any season card with real playoff qualifiers on record (2022&ndash;2025). Playoff Picture and Final Week Race reflect that season's actual result.</p>
       <p>Final Week Race compares each team's cumulative rank right before the season's last regular-season week to the real playoff cutoff line. It's a straightforward positional read, not a full win-probability or tiebreaker simulation.</p>
@@ -12326,12 +12331,12 @@ function renderThisWeekCardHtml(year, standings){
 
 // ---- Current Season: playoff scenarios in plain English ---------------------
 // Once 3 or fewer regular-season weeks remain, every combination of the
-// remaining games (at most 2^18) is played out against the current records and
+// remaining games (at most 2^24) is played out against the current records and
 // each team's result is read off: in the 7-team field, out, or decided by a
 // points tiebreak. Per team, that boils down to "wins N of the rest and is in
 // no matter what" / "N or fewer wins is out no matter what".
-const SCENARIO_WEEKS_LEFT = 3;
-function computePlayoffScenarios(year){
+const SCENARIO_WEEKS_LEFT = 4;
+function scenarioSetup(year){
   const owners = ownersForYears([year]);
   const played = new Set((MATCHUPS[year]||[]).filter(w=>!w.playoff).map(w=>w.w));
   const remainingWeeks = (FULL_SCHEDULE[year]||[]).filter(w=>!w.playoff && !played.has(w.w));
@@ -12356,30 +12361,95 @@ function computePlayoffScenarios(year){
   Object.keys(CURRENT_DIVISIONS).forEach((d,di)=>CURRENT_DIVISIONS[d].forEach(id=>{ if(id in idx) divOf[idx[id]] = di; }));
   const nDiv = Object.keys(CURRENT_DIVISIONS).length;
   const spots = Math.min(CURRENT_SEASON_PLAYOFF_SPOTS, n);
-  // tally[t][k] = [in, tiebreak, out] over all outcomes where team t wins k of its remaining games
-  const tally = owners.map((_, t)=>Array.from({length:remCount[t]+1}, ()=>[0,0,0]));
-  const W = new Array(n), inField = new Array(n), order = new Array(n);
-  const cmp = (a,b)=> (W[b]-W[a]) || (basePf[b]-basePf[a]);
-  const total = 1<<G;
-  for(let mask=0; mask<total; mask++){
-    for(let i=0;i<n;i++) W[i]=baseW[i];
-    for(let g=0; g<G; g++){ if(mask & (1<<g)) W[games[g][0]]++; else W[games[g][1]]++; }
-    for(let i=0;i<n;i++){ order[i]=i; inField[i]=0; }
-    order.sort(cmp);
-    // division leaders first, then best remaining records
-    const seenDiv = new Array(nDiv).fill(false); let used = 0;
-    for(let k=0;k<n;k++){ const t=order[k]; const d=divOf[t]; if(d>=0 && !seenDiv[d]){ seenDiv[d]=true; inField[t]=1; used++; } }
-    for(let k=0;k<n && used<spots;k++){ const t=order[k]; if(!inField[t]){ inField[t]=1; used++; } }
+  return {available:true, year, owners, n, idx, base, baseW, basePf, games, G, remCount, divOf, nDiv, spots, remainingWeeks};
+}
+// The 2^G sweep, stepped so the page can stay responsive: step(count) plays out
+// the next `count` outcomes and returns true when all of them are done. Wins are
+// updated incrementally (only the bits that flip between consecutive outcomes)
+// and the field is read off integer keys (wins, then points for) with no sort.
+function scenarioEngine(ctx){
+  const {n, baseW, basePf, games, G, remCount, divOf, nDiv, spots} = ctx;
+  const maxR = Math.max(...remCount);
+  const stride = (maxR+1)*3;
+  const tally = new Int32Array(n*stride);
+  const tr = new Int32Array(n);
+  Array.from({length:n},(_,i)=>i).sort((x,y)=>(basePf[y]-basePf[x]) || (x-y)).forEach((i,pos)=>{ tr[i] = n-pos; });
+  const W = new Int32Array(n), key = new Int32Array(n);
+  const best = new Int32Array(Math.max(nDiv,1));
+  const pool = new Int32Array(n);
+  const hasIn = new Uint8Array(64), hasOut = new Uint8Array(64);
+  // Split the games into two halves and collapse each half's outcomes into the
+  // distinct win-change vectors it can produce (with how many outcomes make each).
+  // Every full outcome is then one pairing of a vector from each half, weighted by
+  // the product of the counts -- far fewer evaluations than 2^G, same tallies.
+  function halfVectors(gs){
+    const map = new Map();
+    const tot = Math.pow(2, gs.length);
+    for(let m=0;m<tot;m++){
+      const v = new Array(n).fill(0);
+      gs.forEach(([a,b],g)=>{ if(m & (1<<g)) v[a]++; else v[b]++; });
+      const k = v.join(',');
+      const e = map.get(k);
+      if(e) e.c++; else map.set(k, {v:Int8Array.from(v), c:1});
+    }
+    return [...map.values()];
+  }
+  const half = Math.ceil(G/2);
+  const vecA = halfVectors(games.slice(0, half)), vecB = halfVectors(games.slice(half));
+  const total = Math.pow(2, G);
+  const pairs = vecA.length * vecB.length;
+  let pos = 0, weight = 1;
+  function evalOne(){
+    best.fill(-1);
+    for(let i=0;i<n;i++){ const k = W[i]*32 + tr[i]; key[i]=k; const d=divOf[i]; if(d>=0 && k>best[d]) best[d]=k; }
+    let m = 0, leaders = 0;
+    for(let i=0;i<n;i++){
+      const d = divOf[i];
+      if(d>=0 && key[i]===best[d]) leaders++;
+      else { let v = key[i], j = m++; while(j>0 && pool[j-1]<v){ pool[j]=pool[j-1]; j--; } pool[j]=v; }
+    }
+    const slots = spots - leaders;
+    const cut = slots<=0 ? 1e9 : (slots>m ? -1 : pool[slots-1]);
+    hasIn.fill(0); hasOut.fill(0);
+    for(let i=0;i<n;i++){
+      const d = divOf[i];
+      const inF = (d>=0 && key[i]===best[d]) || key[i]>=cut;
+      key[i] = inF ? key[i] : -key[i]-1;   // negative = out (keeps the sign test below cheap)
+      if(inF) hasIn[W[i]]=1; else hasOut[W[i]]=1;
+    }
     for(let t=0;t<n;t++){
-      let amb = false;
-      for(let u=0;u<n;u++){ if(u!==t && W[u]===W[t] && inField[u]!==inField[t]){ amb = true; break; } }
-      const k = W[t]-baseW[t];
-      tally[t][k][amb ? 1 : (inField[t] ? 0 : 2)]++;
+      const w = W[t];
+      const cat = (hasIn[w] && hasOut[w]) ? 1 : (key[t]>=0 ? 0 : 2);
+      tally[t*stride + (w-baseW[t])*3 + cat] += weight;
     }
   }
+  return {
+    total: pairs,
+    step(count){
+      const end = Math.min(pairs, pos+count);
+      while(pos<end){
+        const ia = (pos / vecB.length) | 0, ib = pos - ia*vecB.length;
+        const A = vecA[ia], B = vecB[ib];
+        for(let i=0;i<n;i++) W[i] = baseW[i] + A.v[i] + B.v[i];
+        weight = A.c * B.c;
+        evalOne();
+        pos++;
+      }
+      return pos>=pairs;
+    },
+    progress(){ return pos/pairs; },
+    result(){
+      return {tallyOf:(t,k)=>[tally[t*stride+k*3], tally[t*stride+k*3+1], tally[t*stride+k*3+2]]};
+    }
+  };
+}
+function scenarioFinish(ctx, engine){
+  const {owners, base, baseW, remCount, remainingWeeks, G} = ctx;
+  const tallyOf = engine.result().tallyOf;
+  const tallyArr = owners.map((_, t)=>Array.from({length:remCount[t]+1}, (_, k)=>tallyOf(t,k)));
   const rows = owners.map((id, t)=>{
     const R = remCount[t];
-    const T = tally[t];
+    const T = tallyArr[t];
     let clinchK = null;                     // fewest wins after which every outcome is "in"
     for(let k=0;k<=R;k++){
       let ok = true;
@@ -12406,6 +12476,29 @@ function computePlayoffScenarios(year){
   return {available:true, weeksLeft:remainingWeeks.length, games:G, rows};
 }
 
+
+// Sync version (used when the work is small or for tests); the page itself uses
+// computePlayoffScenariosAsync so a 4-week sweep never freezes the UI.
+function computePlayoffScenarios(year){
+  const ctx = scenarioSetup(year);
+  if(!ctx.available) return ctx;
+  const eng = scenarioEngine(ctx);
+  eng.step(eng.total);
+  return scenarioFinish(ctx, eng);
+}
+function computePlayoffScenariosAsync(year, onProgress){
+  return new Promise(resolve=>{
+    const ctx = scenarioSetup(year);
+    if(!ctx.available){ resolve(ctx); return; }
+    const eng = scenarioEngine(ctx);
+    (function run(){
+      const done = eng.step(1<<18);
+      if(onProgress) onProgress(eng.progress());
+      if(done) resolve(scenarioFinish(ctx, eng)); else setTimeout(run, 0);
+    })();
+  });
+}
+
 function scenarioSentence(r){
   const plural = k=>k===1?'win':'wins';
   if(r.status==='in') return 'Clinched a playoff spot.';
@@ -12427,8 +12520,8 @@ function scenarioSentence(r){
   return parts.join(' ');
 }
 
-function renderPlayoffScenariosHtml(year){
-  const sc = computePlayoffScenarios(year);
+function renderPlayoffScenariosHtml(year, scIn){
+  const sc = scIn || computePlayoffScenarios(year);
   if(!sc.available){
     return `<p class="note">Plain-English playoff scenarios turn on when ${SCENARIO_WEEKS_LEFT} regular-season weeks are left${sc.weeksLeft?` (${sc.weeksLeft} left now)`:''}. Until then, the Playoff% column in Standings is the best read.</p>`;
   }
@@ -12487,7 +12580,7 @@ function pageLiveSeason(){
     </div>` : ''}
     ${renderJumpNav([
       {id:'jump-cs-standings',label:'Standings'},{id:'jump-cs-scenarios',label:'Scenarios'},
-      {id:'jump-cs-power',label:'Power Rankings'},{id:'jump-primetime',label:'Primetime'},{id:'jump-cs-positional',label:'Positional Strength'},
+      {id:'jump-cs-tiers',label:'Contender Tiers'},{id:'jump-cs-power',label:'Power Rankings'},{id:'jump-primetime',label:'Primetime'},{id:'jump-cs-positional',label:'Positional Strength'},
       {id:'jump-cup',label:"Commissioner's Cup"},{id:'jump-cs-bracket',label:'Bracket'},{id:'jump-cs-scout',label:'Scouting'},
       {id:'jump-cs-bench',label:'Bench'},{id:'jump-cs-rosters',label:'Rosters'},{id:'jump-cs-print',label:'Print Recaps'}
     ])}
@@ -12502,9 +12595,20 @@ function pageLiveSeason(){
       // Playoff picture: division leaders always make the field and get the top seeds.
       const pic = playoffPictureFor(standings);
       const gbs = gbSplit(standings, CURRENT_SEASON_PLAYOFF_SPOTS);
+      const pfRankById = {}; standings.slice().sort((a,b)=>b.pf-a.pf).forEach((r,i)=>{ pfRankById[r.owner]=i+1; });
+      const streakById = currentActiveStreaks(year);
+      const wk1ById = {}; { const sw = computeStandingsByWeek(year); Object.keys(sw.series).forEach(id=>{ wk1ById[id] = sw.series[id].filter(x=>x===1).length; }); }
+      const divRecById = {};
+      { const divOfOwner = {}; Object.keys(CURRENT_DIVISIONS).forEach(d=>CURRENT_DIVISIONS[d].forEach(id=>{ divOfOwner[id]=d; }));
+        (MATCHUPS[year]||[]).filter(w=>!w.playoff).forEach(wk=>wk.g.forEach(([tA,sA,tB,sB])=>{
+          const a = ownerForTeam(year,tA), b = ownerForTeam(year,tB);
+          if(!a || !b || !divOfOwner[a] || divOfOwner[a]!==divOfOwner[b]) return;
+          (divRecById[a]=divRecById[a]||[0,0]); (divRecById[b]=divRecById[b]||[0,0]);
+          if(sA>sB){ divRecById[a][0]++; divRecById[b][1]++; } else { divRecById[b][0]++; divRecById[a][1]++; }
+        })); }
       const prevPosById = {};
       if(prevStandings.length) playoffPictureFor(prevStandings).order.forEach((id,i)=>{ prevPosById[id] = i+1; });
-      const headRow = `<tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th>${gbHeadHtml(gbs,true)}<th class="num-cell" data-tip="Points for.">PF</th><th class="num-cell" data-tip="Points against.">PA</th><th class="num-cell" data-tip="Strength of schedule: how well every other team would have done on this team's schedule so far. 100 = league-average schedule; above 100 is tougher, below is easier.">SOS</th><th class="num-cell" data-tip="All-play record: record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">AP W-L</th><th class="num-cell" data-tip="Playoff odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Playoff%</th><th class="num-cell" data-tip="Title odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Title%</th><th class="num-cell" data-tip="Combined wins (if currently in a playoff spot) or combined wins + the current bubble team losing, needed to lock in / stay alive for a spot in the ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field, based on today's cutoff line. The field counts the two division leaders as automatic qualifiers.">Magic #</th></tr>`;
+      const headRow = `<tr><th>#</th><th class="team-col">Team</th><th class="num-cell">W-L</th>${gbHeadHtml(gbs,true)}<th class="num-cell" data-tip="Points for.">PF</th><th class="num-cell" data-tip="Points against.">PA</th><th class="num-cell ext-col" data-tip="Points for per game.">PF/G</th><th class="num-cell ext-col" data-tip="Points against per game.">PA/G</th><th class="num-cell ext-col" data-tip="Rank in points for, 1 = most. Points for is the playoff tiebreaker after record.">PF Rk</th><th class="num-cell" data-tip="Strength of schedule: how well every other team would have done on this team's schedule so far. 100 = league-average schedule; above 100 is tougher, below is easier.">SOS</th><th class="num-cell" data-tip="All-play record: record if every team had played this team's exact schedule of weekly scores against all 11 opponents, not just their real one.">AP W-L</th><th class="num-cell" data-tip="Playoff odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Playoff%</th><th class="num-cell" data-tip="Title odds from a 2,000-simulation Monte Carlo projection of the rest of the season.">Title%</th><th class="num-cell ext-col" data-tip="Chance of finishing as the 1 seed (the first-round bye) in a 2,000-simulation Monte Carlo projection of the rest of the season.">1-Seed%</th><th class="num-cell" data-tip="Combined wins (if currently in a playoff spot) or combined wins + the current bubble team losing, needed to lock in / stay alive for a spot in the ${CURRENT_SEASON_PLAYOFF_SPOTS}-team field, based on today's cutoff line. The field counts the two division leaders as automatic qualifiers.">Magic #</th><th class="num-cell ext-col" data-tip="Current streak: W = wins in a row, L = losses in a row.">Streak</th><th class="num-cell ext-col" data-tip="Record against teams in the same division.">Div Rec</th><th class="num-cell ext-col" data-tip="Weeks in 1st place: regular-season weeks this team sat first in the standings (record, then points for) after that week's games.">Weeks in 1st</th></tr>`;
       function rowHtml(r, idSuffix='', pos=null, prevPos=null, lead=null){
         const ap = allPlayById[r.owner];
         const shownRank = pos!=null ? pos : r.rank;
@@ -12534,11 +12638,18 @@ function pageLiveSeason(){
           ${gbCellsHtml(gbs, r.owner, true)}
           <td class="num-cell">${r.pf.toFixed(1)}</td>
           <td class="num-cell">${r.pa.toFixed(1)}</td>
+          <td class="num-cell ext-col">${r.games ? (r.pf/r.games).toFixed(1) : '&mdash;'}</td>
+          <td class="num-cell ext-col">${r.games ? (r.pa/r.games).toFixed(1) : '&mdash;'}</td>
+          <td class="num-cell ext-col">${pfRankById[r.owner]!=null ? pfRankById[r.owner] : '&mdash;'}</td>
           <td class="num-cell">${sosById[r.owner] ? sosById[r.owner].index.toFixed(0) : '&mdash;'}</td>
           <td class="num-cell">${ap ? `${ap.w}-${ap.l}` : '&mdash;'}</td>
           <td class="num-cell"><span id="mpCell${idSuffix}-${r.owner}"><span class="skeleton" style="width:24px">--</span></span></td>
           <td class="num-cell"><span id="wlCell${idSuffix}-${r.owner}"><span class="skeleton" style="width:24px">--</span></span></td>
+          <td class="num-cell ext-col"><span id="osCell${idSuffix}-${r.owner}"><span class="skeleton" style="width:24px">--</span></span></td>
           <td class="num-cell">${magicCell}</td>
+          <td class="num-cell ext-col">${streakById[r.owner] ? (streakById[r.owner].win?'W':'L')+streakById[r.owner].len : '&mdash;'}</td>
+          <td class="num-cell ext-col">${divRecById[r.owner] ? divRecById[r.owner][0]+'-'+divRecById[r.owner][1] : '0-0'}</td>
+          <td class="num-cell ext-col">${wk1ById[r.owner]!=null ? wk1ById[r.owner] : 0}</td>
         </tr>`;
       }
       const standingsView = window._standingsView==='league' ? 'league' : 'division';
@@ -12550,9 +12661,9 @@ function pageLiveSeason(){
       </div>
       <div id="standingsLeagueView" style="display:${standingsView==='league'?'block':'none'}">
         <div class="table-wrap standings-wrap">
-          <table class="table-compact division-table league-sort${window._standingsExpanded?' extended':''}" id="leagueTable">
+          <table class="table-compact division-table league-sort no-collapse${window._standingsExpanded?' extended':''}" id="leagueTable">
             <thead>${headRow}</thead>
-            <tbody>${leagueRows.map((r,i)=>(i===CURRENT_SEASON_PLAYOFF_SPOTS ? `<tr class="playoff-line-row"><td colspan="12" style="padding:2px 0"><div style="border-top:2px dashed var(--gold-deep)" title="Playoff line: top ${CURRENT_SEASON_PLAYOFF_SPOTS} make the playoffs"></div></td></tr>` : '') + rowHtml(r,'L',i+1,prevPosById[r.owner]!=null?prevPosById[r.owner]:null,gbLeader(leagueRows))).join("")}</tbody>
+            <tbody>${leagueRows.map((r,i)=>(i===CURRENT_SEASON_PLAYOFF_SPOTS ? `<tr class="playoff-line-row"><td colspan="20" style="padding:2px 0"><div style="border-top:2px dashed var(--gold-deep)" title="Playoff line: top ${CURRENT_SEASON_PLAYOFF_SPOTS} make the playoffs"></div></td></tr>` : '') + rowHtml(r,'L',i+1,prevPosById[r.owner]!=null?prevPosById[r.owner]:null,gbLeader(leagueRows))).join("")}</tbody>
           </table>
         </div>
         <p class="note" style="margin-top:8px"><span id="leagueSortNote"></span>The ${CURRENT_SEASON_PLAYOFF_SPOTS}-team playoff field is above the dashed line: the two division leaders (${DIV_LEADER_MARK}) are always in and seeded first, then the best remaining records (win%, then points for). Teams below the line are ranked by record.</p>
@@ -12563,7 +12674,7 @@ function pageLiveSeason(){
           return `<div>
             <div class="division-name">${g.name}</div>
             <div class="table-wrap standings-wrap">
-            <table class="sortable table-compact division-table${window._standingsExpanded?' extended':''}">
+            <table class="sortable table-compact division-table no-collapse${window._standingsExpanded?' extended':''}">
               <thead>${headRow}</thead>
               <tbody>${rows.map(r=>rowHtml(r,'',null,null,gbLeader(rows))).join("")}</tbody>
             </table>
@@ -12576,6 +12687,9 @@ function pageLiveSeason(){
 
     <div id="jump-cs-scenarios" class="section-title" style="margin-top:24px;">${iconSvg('target')}Playoff Scenarios <span class="sub">what each team needs to make the playoffs</span></div>
     <div id="scenarioWrap">${(()=>{ const w = nextUnplayedWeek(); const left = ((FULL_SCHEDULE[year]||[]).filter(x=>!x.playoff).length) - (MATCHUPS[year]||[]).filter(x=>!x.playoff).length; return left<=SCENARIO_WEEKS_LEFT && left>0 ? '<p class="note">Working out every scenario&hellip;</p>' : renderPlayoffScenariosHtml(year); })()}</div>
+
+    <div id="jump-cs-tiers" class="section-title" style="margin-top:24px;">${iconSvg('target')}Contender Tiers <span class="sub">who is in the title race, who is on the bubble, who needs help</span></div>
+    <div id="contenderTiers"><p class="note">Working out the tiers&hellip;</p></div>
 
     <div id="jump-cs-power" class="section-title" style="margin-top:24px;">${iconSvg('power')}Power Rankings</div>
     <div class="table-wrap" style="max-width:760px">
@@ -12748,14 +12862,44 @@ function setStandingsView(view){
     b.classList.toggle('active', b.dataset.view===window._standingsView);
   });
 }
+function renderContenderTiers(year, odds){
+  const wrap = document.getElementById('contenderTiers');
+  if(!wrap) return;
+  const standings = computeCurrentStandings(year);
+  const recById = {}; standings.forEach(r=>{ recById[r.owner]=r; });
+  const pic = playoffPictureFor(standings);
+  const tiers = [
+    {key:'bye',  label:'Bye Contenders',  color:'var(--gold-deep)', blurb:'Realistic shot at the 1 seed and the first-round bye.',  test:o=>o.oneSeedPct>=0.08},
+    {key:'in',   label:'Likely In',       color:'var(--green)',     blurb:'Favored to make the field, but not in the bye race.',    test:o=>o.playoffPct>=0.55},
+    {key:'bub',  label:'On the Bubble',   color:'var(--muted)',     blurb:'Playoff odds between 30% and 55%. The next few weeks decide it.', test:o=>o.playoffPct>=0.30},
+    {key:'long', label:'Long Shots',      color:'var(--red)',       blurb:'Below 30% to make the field. Needs wins and help.',      test:()=>true}
+  ];
+  const groups = tiers.map(t=>({...t, rows:[]}));
+  odds.slice().sort((a,b)=>b.champPct-a.champPct || b.playoffPct-a.playoffPct).forEach(o=>{
+    for(const g of groups){ if(g.test(o)){ g.rows.push(o); break; } }
+  });
+  const pct = x=>(x*100).toFixed(x>=0.995||x===0?0:1)+'%';
+  wrap.innerHTML = `<div class="tiers-grid">` + groups.filter(g=>g.rows.length).map(g=>`
+    <div class="card tier-card" style="border-left:4px solid ${g.color}">
+      <div class="tier-head"><span style="color:${g.color}">${g.label}</span><span class="note">${g.rows.length} team${g.rows.length===1?'':'s'}</span></div>
+      <div class="note" style="margin:0 0 8px">${g.blurb}</div>
+      <table class="table-compact tier-table"><thead><tr><th class="team-col">Team</th><th class="num-cell">W-L</th><th class="num-cell">Playoff</th><th class="num-cell">1 Seed</th><th class="num-cell">Title</th></tr></thead><tbody>
+      ${g.rows.map(o=>{ const r = recById[o.owner]||{w:0,l:0}; return `<tr><td class="team-name">${currentTeamName(o.owner)}${divLeaderMarkHtml(pic.leaders[o.owner])}</td><td class="num-cell">${r.w}-${r.l}</td><td class="num-cell">${pct(o.playoffPct)}</td><td class="num-cell">${pct(o.oneSeedPct)}</td><td class="num-cell">${pct(o.champPct)}</td></tr>`; }).join('')}
+      </tbody></table>
+    </div>`).join('') + `</div>
+    <p class="note" style="margin-top:8px">Tiers come from the same 2,000-simulation projection as the Standings odds columns, so they shift as results come in. Bye Contenders have an 8% or better chance at the 1 seed; the other tiers go by playoff odds (55% and 30% cutoffs). The ${DIV_LEADER_MARK} marks a division leader.</p>`;
+}
 function fillChampionshipOdds(year){
   const champOdds = simulateChampionshipOdds(year);
+  renderContenderTiers(year, champOdds);
   champOdds.forEach(r=>{
     const tip = `Proj. final wins: ${r.projWins.toFixed(1)} &middot; 1-seed in ${(r.oneSeedPct*100).toFixed(0)}% of sims`;
     // '' = Division view cells, 'L' = League view cells (same numbers, both kept filled)
     ['', 'L'].forEach(sfx=>{
       const mp = document.getElementById(`mpCell${sfx}-${r.owner}`);
       const wl = document.getElementById(`wlCell${sfx}-${r.owner}`);
+      const os = document.getElementById(`osCell${sfx}-${r.owner}`);
+      if(os) os.innerHTML = (r.oneSeedPct*100).toFixed(1)+'%';
       if(mp){ mp.innerHTML = (r.playoffPct*100).toFixed(1)+'%'; mp.title = tip; }
       if(wl){ wl.innerHTML = (r.champPct*100).toFixed(1)+'%'; wl.title = tip; }
     });
@@ -15000,6 +15144,10 @@ document.addEventListener("click", e=>{
     const t = (r.children[col]||{}).textContent || "";
     if(col===1) return t.trim().toLowerCase();
     if(col===2){ const m = t.match(/(\d+)-(\d+)/); return m ? (+m[1])/(((+m[1])+(+m[2]))||1) : -1; }
+    const sk = t.trim().match(/^([WL])(\d+)$/);
+    if(sk) return sk[1]==="W" ? +sk[2] : -(+sk[2]);
+    const rc = t.trim().match(/^(\d+)-(\d+)$/);
+    if(rc) return (+rc[1])/(((+rc[1])+(+rc[2]))||1);
     const m = t.replace(/,/g,"").match(/[+-]?\d+\.?\d*/);
     return m ? parseFloat(m[0]) : -Infinity;
   };
@@ -15838,7 +15986,12 @@ function attachPageHandlers(){
 
   const scenarioWrap = document.getElementById('scenarioWrap');
   if(scenarioWrap && standingsBody && /Working out/.test(scenarioWrap.textContent)){
-    setTimeout(()=>{ scenarioWrap.innerHTML = renderPlayoffScenariosHtml(+standingsBody.dataset.year); }, 60);
+    setTimeout(()=>{
+      const yr = +standingsBody.dataset.year;
+      computePlayoffScenariosAsync(yr, f=>{
+        if(scenarioWrap.isConnected && /Working out/.test(scenarioWrap.textContent)) scenarioWrap.innerHTML = `<p class="note">Working out every scenario&hellip; ${Math.round(f*100)}%</p>`;
+      }).then(sc=>{ if(scenarioWrap.isConnected) scenarioWrap.innerHTML = renderPlayoffScenariosHtml(yr, sc); });
+    }, 60);
   }
 
   // Current Season: Matchup Scouting Report generator
