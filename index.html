@@ -494,6 +494,24 @@ if(typeof MATCHUPS==="undefined"){
   /* ---- polish: sticky jump-nav, collapsible sections, column toggle, motion ---- */
   .jump-nav{position:sticky;top:var(--jn-top,93px);z-index:40;background:var(--bg);padding-top:8px;margin-top:-8px;}
   .jump-nav a.active{color:var(--gold-deep);border-bottom-color:var(--gold);}
+  /* Analysis hub (feature picker) */
+  .ah-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:14px}
+  .ah-tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;font:inherit;color:inherit;background:var(--panel,#fff);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px;padding:14px 16px;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s}
+  .ah-tile:hover,.ah-tile:focus-visible{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.12);border-color:var(--gold-deep);outline:none}
+  .ah-ic{color:var(--gold-deep);display:inline-flex}
+  .ah-ic .section-icon{margin:0}
+  .ah-t{font-family:var(--font-display);font-weight:800;font-size:16px}
+  .ah-b{font-size:12px;color:var(--muted);line-height:1.45}
+  .ah-n{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gold-deep);margin-top:2px}
+  .ah-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 16px}
+  .ah-bt{font-family:var(--font-display);font-weight:800;font-size:18px}
+  .ah-subs{margin:0 0 0 6px}
+  .ah-off{display:none !important}
+  .ah-sec[hidden],.ah-hub[hidden],.ah-bar[hidden]{display:none !important}
+  .jump-nav.ah-nav a:not([href^="#stack-"]){display:none}
+  .jump-nav.ah-nav:not(:has(a[href^="#stack-"])){display:none}
+  @media print{ .ah-sec[hidden]{display:block !important} .ah-hub,.ah-bar{display:none !important} }
+
   .section-title{scroll-margin-top:calc(var(--jn-top,93px) + 52px);}
   .section-title.sec-toggle{cursor:pointer;user-select:none;}
   .section-title.sec-toggle::after{content:"\25BE";margin-left:10px;font-size:.8em;color:var(--muted);display:inline-block;transition:transform .2s ease;transform:rotate(-90deg);}
@@ -14116,10 +14134,11 @@ function renderPlayoffScenariosHtml(year, scIn){
     if(!list.length) return '';
     return `<div class="sc-line"><span class="sc-k">Root for (week ${sw.week})</span> ${list.slice(0,3).map(x=>`${currentTeamName(x.team)} over ${currentTeamName(x.other)} <span class="note">(+${Math.round(x.d*100)} pts)</span>`).join(' &middot; ')}</div>`;
   }
-  const css = `<style>.sc-line{margin-top:6px;font-size:12px;line-height:1.5}.sc-k{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}.sc-chip{display:inline-block;padding:1px 7px;margin:2px 4px 2px 0;border:1px solid var(--muted);border-radius:10px;font-size:11px;white-space:nowrap}.sc-race{font-weight:800;border-width:2px}.sc-pill{display:inline-block;margin-left:6px;padding:0 7px;border-radius:10px;font-size:11px;font-weight:800;color:#fff;vertical-align:1px}</style>`;
+  const css = `<style>.sc-line{margin-top:6px;font-size:12px;line-height:1.5}.sc-k{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}.sc-chip{display:inline-block;padding:1px 7px;margin:2px 4px 2px 0;border:1px solid var(--muted);border-radius:10px;font-size:11px;white-space:nowrap}.sc-race{font-weight:800;border-width:2px}.sc-det{margin-top:4px}.sc-det>summary{cursor:pointer;font-size:11px;font-weight:700;color:var(--gold-deep);list-style:none}.sc-det>summary::-webkit-details-marker{display:none}.sc-det[open]>summary{margin-bottom:2px}.sc-pill{display:inline-block;margin-left:6px;padding:0 7px;border-radius:10px;font-size:11px;font-weight:800;color:#fff;vertical-align:1px}</style>`;
   return css + `<p class="note" style="margin-bottom:10px">Every possible result of the remaining ${sc.games} games was played out against today's records (${sc.weeksLeft} week${sc.weeksLeft===1?'':'s'} left). Division leaders get the top seeds; ties are broken by points scored. ${counts.in} clinched, ${counts.alive} alive, ${counts.out} out. The percentage next to each name is that team's chance to make the playoffs (same projection as the Standings column). In each team's remaining games, bold opponents are direct playoff rivals (20% to 90% to make it).</p>
+    <p style="margin:0 0 8px"><button type="button" class="filter-chip chip-sm" onclick="document.querySelectorAll('#scenarioWrap .sc-det').forEach(d=>d.open=true)">Expand all</button> <button type="button" class="filter-chip chip-sm" onclick="document.querySelectorAll('#scenarioWrap .sc-det').forEach(d=>d.open=false)">Collapse all</button></p>
     <div class="table-wrap"><table class="table-compact"><thead><tr><th>Team</th><th class="num-cell">Record</th><th>Status</th><th>What it takes</th></tr></thead><tbody>
-    ${rows.map(r=>{ const p = pOf(r.id); return `<tr><td class="team-name" style="white-space:nowrap;vertical-align:top">${currentTeamName(r.id)}${p!=null?`<span class="sc-pill" style="background:${pillColor(p)}" title="Chance to make the playoffs">${scenarioPct(p)}</span>`:''}</td><td class="num-cell" style="vertical-align:top">${r.w}-${r.l}</td><td style="vertical-align:top">${badge(r.status)}</td><td style="white-space:normal;min-width:300px">${scenarioSentence(r, true)}<div class="sc-line">${cutLine(r.id)}</div>${r.status==='alive'||r.status==='in'?ladder(r):''}${r.status!=='out'?nextGame(r.id):''}${schedule(r.id)}${r.status==='alive'?rooting(r.id):''}</td></tr>`; }).join("")}
+    ${rows.map(r=>{ const p = pOf(r.id); return `<tr><td class="team-name" style="white-space:nowrap;vertical-align:top">${currentTeamName(r.id)}${p!=null?`<span class="sc-pill" style="background:${pillColor(p)}" title="Chance to make the playoffs">${scenarioPct(p)}</span>`:''}</td><td class="num-cell" style="vertical-align:top">${r.w}-${r.l}</td><td style="vertical-align:top">${badge(r.status)}</td><td style="white-space:normal;min-width:300px">${scenarioSentence(r, true)}<details class="sc-det"><summary>Show details</summary><div class="sc-line">${cutLine(r.id)}</div>${r.status==='alive'||r.status==='in'?ladder(r):''}${r.status!=='out'?nextGame(r.id):''}${schedule(r.id)}${r.status==='alive'?rooting(r.id):''}</details></td></tr>`; }).join("")}
     </tbody></table></div>` + gamesHtml;
 }
 
@@ -14167,7 +14186,7 @@ function pageLiveSeason(){
     </div>` : ''}
     ${renderJumpNav([
       {id:'jump-cs-standings',label:'Standings'},{id:'jump-cs-scenarios',label:'Scenarios'},
-      {id:'jump-cs-tiers',label:'Contender Tiers'},{id:'jump-cs-power',label:'Power Rankings'},{id:'jump-primetime',label:'Primetime'},{id:'jump-cs-positional',label:'Positional Strength'},
+      {id:'jump-cs-tiers',label:'Contender Tiers'},{id:'jump-cs-trajectory',label:'Odds Trajectory'},{id:'jump-cs-power',label:'Power Rankings'},{id:'jump-primetime',label:'Primetime'},{id:'jump-cs-positional',label:'Positional Strength'},
       {id:'jump-cup',label:"Commissioner's Cup"},{id:'jump-cs-bracket',label:'Bracket'},{id:'jump-cs-scout',label:'Scouting'},
       {id:'jump-cs-bench',label:'Bench'},{id:'jump-cs-rosters',label:'Rosters'},{id:'jump-cs-print',label:'Print Recaps'}
     ])}
@@ -14277,6 +14296,9 @@ function pageLiveSeason(){
 
     <div id="jump-cs-tiers" class="section-title" style="margin-top:24px;">${iconSvg('target')}Contender Tiers <span class="sub">who is in the title race, who is on the bubble, who needs help</span></div>
     <div id="contenderTiers"><p class="note">Working out the tiers&hellip;</p></div>
+
+    <div id="jump-cs-trajectory" class="section-title" style="margin-top:24px;">${iconSvg('rise')}Odds Trajectory <span class="sub">how each team's chances have moved week by week</span></div>
+    <div id="oddsTrajectory"><p class="note">Replaying the season week by week&hellip;</p></div>
 
     <div id="jump-cs-power" class="section-title" style="margin-top:24px;">${iconSvg('power')}Power Rankings</div>
     <div class="table-wrap" style="max-width:760px">
@@ -14475,6 +14497,97 @@ function renderContenderTiers(year, odds){
       </tbody></table>
     </div>`).join('') + `</div>
     <p class="note" style="margin-top:8px">Tiers come from the same 5,000-simulation projection as the Standings odds columns, so they shift as results come in. Bye Contenders have a 15% or better chance at the 1 seed; the other tiers go by playoff odds (55% and 30% cutoffs). The ${DIV_LEADER_MARK} marks a division leader.</p>`;
+}
+
+// ---- Current Season: odds trajectory --------------------------------------
+// Replays the season one week at a time: for each completed week, hides every
+// later result (oddsWithDataBefore) and re-runs the same projection the Standings
+// odds use. The newest point reuses the live Standings numbers so the chart ends
+// exactly where the Standings columns and Contender Tiers are.
+const ODDS_TRAJ_SIMS = 2000;
+window.ODDS_TRAJ = window.ODDS_TRAJ || {};
+function computeOddsTrajectory(year, onProgress){
+  return new Promise(resolve=>{
+    const weeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff).map(w=>w.w).sort((a,b)=>a-b);
+    const pts = [];
+    let i = 0;
+    (function step(){
+      if(i>=weeks.length){ resolve({weeks, pts}); return; }
+      const w = weeks[i];
+      let res;
+      try{
+        if(i===weeks.length-1 && (window.LAST_CHAMP_ODDS||{})[year]) res = window.LAST_CHAMP_ODDS[year];
+        else res = oddsWithDataBefore(year, w+1, ()=>simulateChampionshipOdds(year, undefined, ODDS_TRAJ_SIMS));
+      }catch(e){ res = []; }
+      const m = {}; res.forEach(r=>{ m[r.owner] = {playoff:r.playoffPct, seed:r.oneSeedPct, title:r.champPct}; });
+      pts.push(m); i++;
+      if(onProgress) onProgress(i/weeks.length);
+      setTimeout(step, 0);
+    })();
+  });
+}
+function renderOddsTrajectoryUi(year, data){
+  const wrap = document.getElementById('oddsTrajectory'); if(!wrap) return;
+  const {weeks, pts} = data;
+  if(weeks.length<2){ wrap.innerHTML = '<p class="note">The trajectory needs at least two completed weeks.</p>'; return; }
+  const ids = allOwnerIdsSorted().filter(id=>id!=="rm2" && pts[pts.length-1][id]);
+  const METRICS = {playoff:'Make playoffs', seed:'Get the 1 seed', title:'Win the title'};
+  const st = {metric:'playoff', focus:'all'};
+  wrap.innerHTML = `<div class="chart-toolbar">
+      <div class="chip-row" id="otMetric">${Object.keys(METRICS).map(k=>`<span class="filter-chip chip-sm${k===st.metric?' active':''}" data-m="${k}">${METRICS[k]}</span>`).join('')}</div>
+      <select id="otFocus" style="min-width:190px"><option value="all">All teams</option><option value="top6">Top 6 right now</option>${ids.map(id=>`<option value="${id}">Highlight: ${currentTeamName(id)}</option>`).join('')}</select>
+    </div>
+    <div class="chart-wrap" style="height:380px"><canvas id="chartOddsTraj"></canvas></div>
+    <div id="otMovers" style="margin-top:12px"></div>
+    <p class="note" style="margin-top:8px">Each point is a fresh ${ODDS_TRAJ_SIMS.toLocaleString()}-run simulation that only knows the games played through that week, using the same model as the Standings odds. The last point matches the Standings column. Strength estimates blend in today's rosters, so early weeks lean on current roster values.</p>`;
+  const val = (wi,id)=>{ const p = pts[wi][id]; return p ? p[st.metric]*100 : null; };
+  function draw(){
+    const last = pts.length-1;
+    let shown = ids.slice();
+    if(st.focus==='top6') shown = ids.slice().sort((a,b)=>val(last,b)-val(last,a)).slice(0,6);
+    const focusId = (st.focus!=='all' && st.focus!=='top6') ? st.focus : null;
+    renderStaticChart('chartOddsTraj', canvas=>new Chart(canvas, {
+      type:'line',
+      data:{ labels: weeks.map(w=>'Wk '+w),
+        datasets: shown.map(id=>{
+          const dim = focusId && id!==focusId, c = ownerColor(id);
+          return {label: currentTeamName(id), data: weeks.map((_,wi)=>val(wi,id)),
+            borderColor: dim ? c+'44' : c, backgroundColor: dim ? c+'44' : c,
+            borderWidth: focusId && id===focusId ? 4 : 2, pointRadius: focusId && id===focusId ? 4 : 2, pointHoverRadius:5, tension:0.25, order: focusId && id===focusId ? 0 : 1};
+        })},
+      options:{ maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+        plugins:{ legend:{position:'bottom', labels:{usePointStyle:true, boxWidth:8, font:{size:11}}},
+          tooltip:{ itemSort:(a,b)=>b.raw-a.raw, callbacks:{label:c=>`${c.dataset.label}: ${c.raw==null?'-':c.raw.toFixed(1)+'%'}`} },
+          datalabels:{display:false} },
+        scales:{ y:{min:0, max:100, ticks:{callback:v=>v+'%'}, title:{display:true, text:'Chance: '+METRICS[st.metric].toLowerCase()}}, x:{title:{display:true, text:'After week'}} } }
+    }));
+    // movers: change over the most recent week
+    const prev = last-1;
+    const mv = ids.map(id=>({id, now:val(last,id), was:val(prev,id)})).filter(x=>x.now!=null && x.was!=null).map(x=>({...x, d:x.now-x.was}));
+    const up = mv.slice().sort((a,b)=>b.d-a.d).slice(0,3), dn = mv.slice().sort((a,b)=>a.d-b.d).slice(0,3);
+    const line = x=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)"><span>${currentTeamName(x.id)}</span><span><span class="note">${x.was.toFixed(0)}% &rarr; ${x.now.toFixed(0)}%</span> <b style="color:${x.d>=0?'var(--green)':'var(--red)'}">${x.d>=0?'+':''}${x.d.toFixed(1)}</b></span></div>`;
+    document.getElementById('otMovers').innerHTML = `<div class="tiers-grid">
+      <div class="card tier-card" style="border-left:4px solid var(--green)"><div class="tier-head"><span style="color:var(--green)">Biggest risers, week ${weeks[last]}</span></div>${up.map(line).join('')}</div>
+      <div class="card tier-card" style="border-left:4px solid var(--red)"><div class="tier-head"><span style="color:var(--red)">Biggest fallers, week ${weeks[last]}</span></div>${dn.map(line).join('')}</div></div>`;
+  }
+  wrap.querySelector('#otMetric').addEventListener('click', e=>{
+    const c = e.target.closest('[data-m]'); if(!c) return;
+    st.metric = c.dataset.m;
+    wrap.querySelectorAll('#otMetric .filter-chip').forEach(x=>x.classList.toggle('active', x===c));
+    draw();
+  });
+  wrap.querySelector('#otFocus').addEventListener('change', e=>{ st.focus = e.target.value; draw(); });
+  draw();
+}
+function loadOddsTrajectory(year){
+  const wrap = document.getElementById('oddsTrajectory'); if(!wrap) return;
+  const cached = window.ODDS_TRAJ[year];
+  const nWeeks = (MATCHUPS[year]||[]).filter(w=>!w.playoff).length;
+  if(cached && cached.weeks.length===nWeeks){ renderOddsTrajectoryUi(year, cached); return; }
+  computeOddsTrajectory(year, f=>{
+    const w = document.getElementById('oddsTrajectory');
+    if(w && /Replaying/.test(w.textContent)) w.innerHTML = `<p class="note">Replaying the season week by week&hellip; ${Math.round(f*100)}%</p>`;
+  }).then(d=>{ window.ODDS_TRAJ[year] = d; if(document.getElementById('oddsTrajectory')) renderOddsTrajectoryUi(year, d); });
 }
 function fillChampionshipOdds(year){
   const champOdds = simulateChampionshipOdds(year);
@@ -17582,6 +17695,11 @@ function attachPageHandlers(){
     }, 60);
   }
 
+  const trajWrap = document.getElementById('oddsTrajectory');
+  if(trajWrap && standingsBody && /Replaying/.test(trajWrap.textContent)){
+    setTimeout(()=>loadOddsTrajectory(+standingsBody.dataset.year), 900);
+  }
+
   // Current Season: Matchup Scouting Report generator
   const scoutGenerateBtn = document.getElementById('scoutGenerateBtn');
   if(scoutGenerateBtn && standingsBody){
@@ -18018,6 +18136,7 @@ window.addEventListener("afterprint", ()=>{
 // ---- Page polish: collapsible sections, wide-table column toggle, count-up numbers, sticky jump-nav scrollspy ----
 const COLLAPSE_SECTION_IDS = ['jump-cs-bench','jump-cs-rosters','jump-cs-print','jump-phase','jump-position','jump-diamonds','jump-diamondspos','jump-injury','jump-bestworst','jump-teamreports','jump-th-percentiles'];
 function openSection(title){
+  if(title && title.id && window.analyticsHubFor && document.querySelector('.ah-hub')) window.analyticsHubFor(title.id);
   if(!title || !title.classList || !title.classList.contains('sec-toggle')) return;
   const body = title.nextElementSibling;
   if(body && body.classList.contains('sec-body') && body.hidden){ body.hidden=false; title.classList.add('sec-open'); }
@@ -18089,8 +18208,85 @@ function updateJumpNavSpy(){
   links.forEach(a=>a.classList.toggle('active', a===active));
   if(active){ const nb=nav.getBoundingClientRect(), ab=active.getBoundingClientRect(); if(ab.left<nb.left||ab.right>nb.right) nav.scrollTo({left:active.offsetLeft-40,behavior:'smooth'}); }
 }
+
+/* ---- Analysis page: "pick a feature" hub. Every section stays in the DOM (so
+   all the existing chart and table code keeps working); the hub just shows the
+   tile grid first and reveals one feature at a time. ---- */
+const AH_FEATURES = [
+  {key:'charts',  icon:'chart',    title:'Charts',            blurb:'Schedule luck, standings by week, power rankings, PF vs. PA, team radar and more.', years:true,  secs:[['jump-charts','Charts']]},
+  {key:'scoring', icon:'standings',title:'Scoring & Luck',    blurb:'Scoring, expected wins, margins, primetime, weekly highs and lows, bench points.', years:true,  secs:[['jump-scoringluck','Scoring & Luck']]},
+  {key:'boards',  icon:'power',    title:'Leaderboards',      blurb:'Rank every team on any stat, by season, range or career.',                          years:true,  secs:[['jump-leaderboards','Leaderboards']]},
+  {key:'lab',     icon:'chart',    title:'Stats Lab',         blurb:'Build your own chart: pick teams, a stat and a display.',                           years:true,  secs:[['jump-statslab','Stats Lab']]},
+  {key:'finder',  icon:'target',   title:'Finder',            blurb:'Filter every game, streak or trade in league history.',                             years:false, secs:[['jump-finder','Finder']]},
+  {key:'draft',   icon:'draft',    title:'Draft Value',       blurb:'Pick grades, value curve, draft skill, steals and busts, and every team\'s draft report.', years:false,
+     secs:[['jump-pickvalue','Pick Value'],['jump-curve','Value Curve'],['jump-skill','Draft Skill'],['jump-phase','By Phase'],['jump-position','By Position'],['jump-diamonds','Diamonds & Worst'],['jump-diamondspos','Diamonds by Pos'],['jump-bestworst','Best & Worst Picks'],['jump-teamreports','Team Reports']]},
+  {key:'injury',  icon:'bench',    title:'Injury Impact',     blurb:'What missed games cost each team.',                                                 years:false, secs:[['jump-injury','Injury Impact']]},
+  {key:'odds',    icon:'odds',     title:'Playoff Odds by Start', blurb:'How often a given start (like 1-0 or 0-2) leads to the playoffs.',               years:false, secs:[['jump-oddscalc','Playoff Odds by Start']]}
+];
+window.AH = window.AH || {open:null, sub:null};
+function analyticsHubInit(app){
+  const first = document.getElementById('jump-charts');
+  if(!first || first.parentNode!==app || app.querySelector('.ah-hub')) return;
+  const kids = [...app.children];
+  const firstIdx = kids.indexOf(first);
+  const foot = kids.find(k=>k.classList && k.classList.contains('footnotes'));
+  const footIdx = foot ? kids.indexOf(foot) : kids.length;
+  const nav = kids.find(k=>k.classList && k.classList.contains('jump-nav'));
+  const pre = kids.slice(0, firstIdx).filter(k=>k!==nav);            // title, season pickers, note
+  const startIds = []; AH_FEATURES.forEach(f=>f.secs.forEach(x=>startIds.push(x[0])));
+  const wraps = {};
+  let cur = null;
+  kids.slice(firstIdx, footIdx).forEach(k=>{
+    if(k.id && startIds.includes(k.id)){
+      cur = document.createElement('div'); cur.className='ah-sec'; cur.dataset.ahSec = k.id; cur.hidden = true;
+      wraps[k.id] = cur; k.parentNode.insertBefore(cur, k);
+    }
+    if(cur) cur.appendChild(k);
+  });
+  const titleEl = pre[0], pickers = pre.slice(1);
+  if(titleEl) titleEl.classList.add('ah-title');
+  if(nav) nav.classList.add('ah-nav');
+  const hub = document.createElement('div'); hub.className='ah-hub';
+  hub.innerHTML = `<div class="section-title">${iconSvg('chart')}Analysis <span class="sub">pick a feature to open it</span></div>
+    <div class="ah-grid">${AH_FEATURES.map(f=>`<button type="button" class="ah-tile" data-ah="${f.key}">
+      <span class="ah-ic">${iconSvg(f.icon,22)}</span><span class="ah-t">${f.title}</span><span class="ah-b">${f.blurb}</span>${f.secs.length>1?`<span class="ah-n">${f.secs.length} views</span>`:''}</button>`).join('')}</div>`;
+  const bar = document.createElement('div'); bar.className='ah-bar'; bar.hidden = true;
+  const firstWrap = wraps[startIds[0]];
+  firstWrap.parentNode.insertBefore(hub, firstWrap);
+  hub.after(bar);
+  function show(key, sub){
+    const f = AH_FEATURES.find(x=>x.key===key);
+    window.AH.open = f ? key : null; window.AH.sub = null;
+    hub.hidden = !!f; bar.hidden = !f;
+    if(titleEl) titleEl.classList.add('ah-off');
+    pickers.forEach(p=>{ p.classList.toggle('ah-off', !(f && f.years)); });
+    if(foot) foot.classList.toggle('ah-off', !f);
+    if(nav) nav.classList.toggle('ah-nav-feature', !!f);
+    Object.values(wraps).forEach(w=>{ w.hidden = true; });
+    if(!f){ bar.innerHTML=''; return; }
+    const subId = (sub && f.secs.some(x=>x[0]===sub)) ? sub : f.secs[0][0];
+    window.AH.sub = subId;
+    bar.innerHTML = `<button type="button" class="filter-chip chip-sm ah-back">&larr; All features</button><span class="ah-bt">${f.title}</span>`
+      + (f.secs.length>1 ? `<div class="chip-row ah-subs">${f.secs.map(x=>`<span class="filter-chip chip-sm${x[0]===subId?' active':''}" data-sub="${x[0]}">${x[1]}</span>`).join('')}</div>` : '');
+    f.secs.forEach(x=>{ const w = wraps[x[0]]; if(w) w.hidden = (x[0]!==subId); });
+    const t = document.getElementById(subId);
+    if(t && t.classList.contains('sec-toggle')){
+      const body = t.nextElementSibling;
+      if(body && body.classList.contains('sec-body')){ body.hidden = false; t.classList.add('sec-open'); }
+    }
+    setTimeout(()=>{ try{ Object.values(_chartInstances).forEach(c=>c && c.resize && c.resize()); }catch(e){} window.dispatchEvent(new Event('resize')); }, 30);
+  }
+  hub.addEventListener('click', e=>{ const b = e.target.closest('.ah-tile'); if(b){ show(b.dataset.ah); window.scrollTo(0,0); } });
+  bar.addEventListener('click', e=>{
+    if(e.target.closest('.ah-back')){ show(null); window.scrollTo(0,0); return; }
+    const c = e.target.closest('[data-sub]'); if(c) show(window.AH.open, c.dataset.sub);
+  });
+  window.analyticsHubShow = show;
+  window.analyticsHubFor = id=>{ const f = AH_FEATURES.find(x=>x.secs.some(y=>y[0]===id)); if(f) show(f.key, id); };
+  show(null);
+}
 function polishPage(app){
-  collapseSections(app); collapseWideTables(app); animateNumbers(app); updateJumpNavOffset(); updateJumpNavSpy();
+  collapseSections(app); if(currentPage==='Analytics') analyticsHubInit(app); collapseWideTables(app); animateNumbers(app); updateJumpNavOffset(); updateJumpNavSpy();
 }
 (function(){
   let ticking=false;
