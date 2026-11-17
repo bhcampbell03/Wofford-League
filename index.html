@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="gridiron">
+<html lang="en">
 <head>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wofford League</title>
@@ -864,6 +863,75 @@ if(typeof MATCHUPS==="undefined"){
   .trophy-item .trophy-type{font-size:9px;line-height:1.2;color:#EFDFBB;margin-top:1px;}
   .trophy-empty{position:relative;z-index:1;padding:26px 10px;text-align:center;color:#C9B896;
     font-family:var(--font-body);font-style:italic;font-size:13px;}
+.gm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:10px 0 14px}
+.gm-tile{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border:1px solid var(--line,#ddd);border-radius:var(--card-radius,8px);background:var(--panel,#fff);color:var(--text,#222);cursor:pointer;font:inherit;transition:transform .12s,border-color .12s}
+.gm-tile:hover{transform:translateY(-2px);border-color:var(--gold,#c90)}
+.gm-tile.active{border-color:var(--gold,#c90);box-shadow:0 0 0 2px var(--gold,#c90) inset}
+.gm-tile-tag{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#777)}
+.gm-tile-title{font-weight:700;font-size:16px}
+.gm-tile-desc{font-size:12.5px;color:var(--muted,#777);line-height:1.35}
+.gm-tile-best{font-size:12px;font-weight:600;color:var(--gold-deep,#8a6d0b);min-height:14px}
+.gm-stage{padding:16px;margin-bottom:14px}
+.gm-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.gm-head h3{margin:0;font-size:18px}
+.gm-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.gm-controls select,.gm-slot select{padding:6px 8px;border:1px solid var(--line,#ccc);border-radius:6px;background:var(--panel2,#fff);color:var(--text,#222);font:inherit;font-size:13px;max-width:100%}
+.gm-lab{font-size:12.5px;color:var(--muted,#777);display:flex;gap:6px;align-items:center}
+.gm-hud{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted,#777);margin:4px 0 8px}
+.gm-hud b,.gm-hud-inline{color:var(--text,#222)}
+.gm-hud-inline{font-size:13px}
+.gm-prompt{margin:8px 0;line-height:1.4}
+.gm-prompt.big{font-size:18px;font-weight:600}
+.gm-btn{padding:9px 16px;border-radius:6px;border:1px solid var(--gold-deep,#8a6d0b);background:var(--gold,#d9a520);color:#1b1708;font-weight:700;font:inherit;font-weight:700;cursor:pointer}
+.gm-btn.small{padding:5px 10px;font-size:12.5px}
+.gm-btn:disabled{opacity:.5;cursor:default}
+.gm-actions{display:flex;gap:10px;margin:12px 0;flex-wrap:wrap}
+.gm-duel{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin:12px 0}
+.gm-duel-card{border:1px solid var(--line,#ddd);border-radius:8px;padding:14px;text-align:center;background:var(--panel2,#f4f4f4)}
+.gm-duel-card.good{border-color:var(--green,#4a7);background:rgba(80,160,100,.15)}
+.gm-duel-card.bad{border-color:var(--red,#b44);background:rgba(190,70,60,.14)}
+.gm-duel-name{font-size:13.5px;color:var(--muted,#777);min-height:36px}
+.gm-duel-val{font-size:28px;font-weight:800;margin-top:6px}
+.gm-vs{align-self:center;color:var(--muted,#777);font-size:12px;text-transform:uppercase}
+.gm-opts{display:grid;gap:8px;margin:10px 0}
+.gm-opts.cols{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.gm-opt{position:relative;text-align:left;padding:10px 12px;border:1px solid var(--line,#ccc);border-radius:6px;background:var(--panel2,#fff);color:var(--text,#222);font:inherit;cursor:pointer;display:flex;gap:8px;align-items:center}
+.gm-opt:hover:not(:disabled){border-color:var(--gold,#c90)}
+.gm-opt:disabled{cursor:default}
+.gm-opt.good{border-color:var(--green,#4a7);background:rgba(80,160,100,.18)}
+.gm-opt.bad{border-color:var(--red,#b44);background:rgba(190,70,60,.16)}
+.gm-opt.picked{border-color:var(--gold,#c90)}
+.gm-badge{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--gold,#d9a520);color:#1b1708;align-items:center;justify-content:center;font-size:12px}
+.gm-val{margin-left:auto;font-weight:700}
+.gm-result{margin:10px 0;font-weight:600}
+.gm-result.good{color:var(--green,#3b7a4b)}.gm-result.bad{color:var(--red,#b44)}
+.gm-final{font-size:54px;font-weight:800;margin:6px 0}.gm-final span{font-size:22px;color:var(--muted,#777)}
+.gm-clues{padding-left:22px;line-height:1.5;margin:8px 0}
+.gm-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin:10px 0}
+.gm-slot{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted,#777)}
+.gm-slot span{font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.gm-final-row{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0}
+.gm-final-row div{display:flex;flex-direction:column}.gm-final-row span{font-size:12px;color:var(--muted,#777)}.gm-final-row b{font-size:24px}
+.gm-bracket{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:10px 0}
+.gm-round h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted,#777)}
+.gm-round{display:flex;flex-direction:column;justify-content:space-around;gap:10px}
+.gm-game{display:flex;flex-direction:column;border:1px solid var(--line,#ccc);border-radius:6px;overflow:hidden}
+.gm-team{display:flex;align-items:center;gap:6px;padding:8px 10px;border:0;background:var(--panel2,#fff);color:var(--text,#222);font:inherit;font-size:13px;text-align:left;cursor:pointer}
+.gm-team+.gm-team{border-top:1px solid var(--line,#ccc)}
+.gm-team.on{background:var(--gold,#d9a520);color:#1b1708;font-weight:700}
+.gm-team:disabled{cursor:default;opacity:.75}
+.gm-seed{display:inline-block;min-width:18px;font-size:11px;font-weight:700;color:var(--muted,#777)}
+.gm-team.on .gm-seed{color:#1b1708}
+.gm-pct{margin-left:auto;font-size:11.5px;opacity:.8}
+.gm-tbd{color:var(--muted,#777);font-style:italic}
+.gm-champ{margin:10px 0;font-size:15px}
+.gm-canvas-wrap{position:relative;display:inline-block;max-width:100%;touch-action:none}
+.gm-canvas-wrap canvas{display:block;border-radius:8px;max-width:100%;touch-action:none;cursor:pointer}
+.gm-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);border-radius:8px}
+.gm-overlay-in{text-align:center;color:#fff;padding:16px}.gm-overlay-in h4{margin:0 0 6px;font-size:22px}.gm-overlay-in p{margin:0 0 12px}
+.gm-table td,.gm-table th{padding:4px 8px}
+@media(max-width:640px){.gm-bracket{grid-template-columns:1fr}.gm-duel{grid-template-columns:1fr}.gm-vs{display:none}.gm-grid{grid-template-columns:1fr 1fr}.gm-tile-desc{display:none}}
+
 </style>
 </head>
 <body>
@@ -2871,7 +2939,7 @@ const LAUREL_SVG = `<svg width="150" height="58" viewBox="0 0 150 58" fill="none
 
 // Set SHOW_ODDS to true to bring the Odds tab (and its menu, directory and search entries) back.
 const SHOW_ODDS = false;
-const PAGES = ["Home","Dashboard","Current Season","Odds","Analytics","History","Rivalries","Transactions","Trade Calculator","Franchise"].filter(p=>SHOW_ODDS || p!=="Odds");
+const PAGES = ["Home","Dashboard","Current Season","Odds","Analytics","History","Rivalries","Transactions","Trade Calculator","Franchise","Games"].filter(p=>SHOW_ODDS || p!=="Odds");
 // Shorter label for the nav bar only -- the page id (routing, search index,
 // PLAYOFF_QUALIFIERS lookups, etc.) stays "Records & Awards" everywhere else.
 const NAV_LABELS = {"Trade Calculator": "Calculator"};
@@ -2897,6 +2965,7 @@ async function adminHash(pw){
 }
 
 const NAV_ICONS = {
+  "Games": '<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10v5M4.5 12.5h5"/><circle cx="16" cy="11.5" r="1"/><circle cx="18.5" cy="14" r="1"/>',
   "Home": '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
   "Dashboard": '<path d="M4 18a8 8 0 1116 0"/><path d="M12 18l4-6"/><circle cx="12" cy="18" r="1.5"/>',
   "Current Season": '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4M16 2v4"/>',
@@ -3107,9 +3176,11 @@ function renderPage(){
   else if(currentPage==="Transactions") app.innerHTML = pageTransactions();
   else if(currentPage==="Trade Calculator") app.innerHTML = pageTradeCalculator();
   else if(currentPage==="Franchise") app.innerHTML = pageTeamHub(_hubOwnerId || undefined);
+  else if(currentPage==="Games") app.innerHTML = pageGames();
   else if(currentPage==="Guide") app.innerHTML = pageReference();
   else if(currentPage==="Admin") app.innerHTML = pageAdmin();
   attachPageHandlers();
+  if(currentPage==="Games") gamesInit(); else GM.stopAll();
   const brandText = document.getElementById("brandText");
   if(brandText) brandText.style.display = currentPage==="Home" ? "none" : "inline";
   const adminBubble = document.getElementById("adminBubble");
@@ -5270,15 +5341,15 @@ function teamScoringRange(yearSel){
 
 if(typeof Chart !== "undefined"){
   Chart.defaults.font.family = "'Source Serif 4', serif";
-  Chart.defaults.color = (getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#746B58');
-  Chart.defaults.borderColor = (getComputedStyle(document.documentElement).getPropertyValue('--line').trim()||'#E0CD86');
-  Chart.defaults.plugins.legend.labels.color = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'));
+  Chart.defaults.color = "#746B58";
+  Chart.defaults.borderColor = "#E0CD86";
+  Chart.defaults.plugins.legend.labels.color = "#221F1A";
   Chart.defaults.plugins.legend.labels.font = {family:"'Montserrat',sans-serif", weight:700, size:11};
-  Chart.defaults.plugins.tooltip.backgroundColor = (getComputedStyle(document.documentElement).getPropertyValue('--tipbg').trim()||'#1C1C1D');
-  Chart.defaults.plugins.tooltip.titleColor = (getComputedStyle(document.documentElement).getPropertyValue('--gold').trim()||'#DBA514');
+  Chart.defaults.plugins.tooltip.backgroundColor = "#1C1C1D";
+  Chart.defaults.plugins.tooltip.titleColor = "#DBA514";
   Chart.defaults.plugins.tooltip.titleFont = {family:"'Montserrat',sans-serif", weight:700};
   Chart.defaults.plugins.tooltip.bodyColor = "#F7F3E8";
-  Chart.defaults.plugins.tooltip.borderColor = (getComputedStyle(document.documentElement).getPropertyValue('--gold-deep').trim()||'#8F6B0D');
+  Chart.defaults.plugins.tooltip.borderColor = "#8F6B0D";
   Chart.defaults.plugins.tooltip.borderWidth = 1;
   Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.plugins.tooltip.cornerRadius = 6;
@@ -5348,7 +5419,7 @@ function makeTeamLabelPlugin(rows, datasetIndex){
       const meta = chart.getDatasetMeta(datasetIndex);
       ctx.save();
       ctx.font = '700 9px Montserrat, sans-serif';
-      ctx.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A');
+      ctx.fillStyle = '#221F1A';
       const placed = [];
       function overlaps(a,b){ return !(a.x+a.w<b.x || b.x+b.w<a.x || a.y+a.h<b.y || b.y+b.h<a.y); }
       rows.forEach((r,i)=>{
@@ -5401,11 +5472,11 @@ function makeQuadrantPlugin(avgX, avgY, cornerLabels){
       const W = 118, H = 34;
       function place(x,y,align,lines){
         const bx = align==='left' ? x : x-W;
-        ctx.fillStyle = '#F7F3E8'; ctx.strokeStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'); ctx.lineWidth = 1;
+        ctx.fillStyle = '#F7F3E8'; ctx.strokeStyle = '#221F1A'; ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.roundRect ? ctx.roundRect(bx,y,W,H,4) : ctx.rect(bx,y,W,H);
         ctx.fill(); ctx.stroke();
-        ctx.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'); ctx.textAlign = 'center';
+        ctx.fillStyle = '#221F1A'; ctx.textAlign = 'center';
         ctx.fillText(lines[0], bx+W/2, y+6);
         ctx.fillText(lines[1], bx+W/2, y+20);
       }
@@ -6055,7 +6126,7 @@ function renderScoringChart(type, year, years){
       type:'bar',
       data:{ labels: rows.map(r=>r.label), datasets:[{label:'Luck', data:rows.map(r=>r.val), backgroundColor: rows.map(r=>r.val>=0?'#3D7A4E':'#B23B3B')}] },
       options:{ indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false},
-          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>v>0?'+'+v:v, font:{size:10,weight:'700'}, color:(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A') } },
+          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>v>0?'+'+v:v, font:{size:10,weight:'700'}, color:'#221F1A' } },
         scales:{x:{title:{display:true,text:'Actual wins minus expected wins'}, min:-axisBound, max:axisBound, ticks:{stepSize:axisBound<=5?1:(axisBound<=10?2:5)}}} }
     });
   });
@@ -6098,7 +6169,7 @@ function renderPrimetimeChart(years){
       options:{ indexAxis:'y', maintainAspectRatio:false,
         plugins:{ legend:{display:false},
           tooltip:{callbacks:{label:c=>`${c.raw>=0?'+':''}${c.raw.toFixed(2)} PPG in primetime vs. other weeks`}},
-          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>(v>=0?'+':'')+v.toFixed(1), font:{size:10,weight:'700'}, color:(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A') }
+          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>(v>=0?'+':'')+v.toFixed(1), font:{size:10,weight:'700'}, color:'#221F1A' }
         },
         scales:{ x:{title:{display:true,text:'Primetime PPG minus non-primetime PPG'}, min:-axisBound, max:axisBound} }
       }
@@ -7867,6 +7938,808 @@ function pageTradeCalculator(){
     <div style="margin-bottom:12px">${renderPositionSurplusReportHtml()}</div>
     <p class="note" style="margin:-4px 0 24px">"Surplus" means real extra depth: more than one player priced above the 100.0 baseline at that position, with the extras' combined value at least 30 points above it. "Need" means not even one player there is priced above 100. Everything else is "Even."</p>
   `;
+}
+
+/* ============ PAGE: GAMES ============ */
+/* Mini-games built from the league's own data plus three arcade games.
+   Everything runs in the browser; scores and streaks are saved per device
+   in localStorage (wrapped in try/catch, so the page works without it). */
+const GM = {};
+GM.store = {
+  get(k, d){ try{ const v = localStorage.getItem('wl_games_'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('wl_games_'+k, JSON.stringify(v)); }catch(e){} }
+};
+GM.rnd = n=>Math.floor(Math.random()*n);
+GM.pick = a=>a[GM.rnd(a.length)];
+GM.shuffle = a=>{ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = GM.rnd(i+1); [a[i],a[j]] = [a[j],a[i]]; } return a; };
+GM.owners = ()=>allOwnerIdsSorted().filter(id=>id!=="rm2");
+GM.name = id=>currentTeamName(id);
+GM.esc = s=>String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+GM.f1 = v=>(Math.round(v*10)/10).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+GM.f2 = v=>(Math.round(v*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+GM.initials = id=>{
+  const n = GM.name(id).replace(/[^A-Za-z0-9 ]/g,'').trim().split(/\s+/);
+  return ((n[0]||'?')[0] + ((n[1]||'')[0]||(n[0]||'  ')[1]||'')).toUpperCase();
+};
+GM.stopFns = [];
+GM.stopAll = ()=>{ GM.stopFns.forEach(f=>{ try{ f(); }catch(e){} }); GM.stopFns = []; };
+
+/* ---------- data helpers ---------- */
+GM.seasonRows = ()=>{
+  const rows = [];
+  Object.keys(SEASONS).forEach(y=>SEASONS[y].forEach(t=>{
+    if(t.owner==="rm2") return;
+    rows.push({y:+y, owner:t.owner, team:t.team, w:t.w, l:t.l, pf:t.pf, pa:t.pa, rank:t.rank, games:t.w+t.l});
+  }));
+  return rows;
+};
+GM.careers = ()=>{
+  const c = {};
+  GM.seasonRows().forEach(r=>{
+    const o = c[r.owner] = c[r.owner] || {owner:r.owner, w:0, l:0, pf:0, pa:0, games:0, titles:0, seasons:0, best:99, worst:0, bestY:0, worstY:0};
+    o.w += r.w; o.l += r.l; o.pf += r.pf; o.pa += r.pa; o.games += r.games; o.seasons++;
+    if(r.rank===1) o.titles++;
+    if(r.rank<o.best){ o.best = r.rank; o.bestY = r.y; }
+    if(r.rank>o.worst){ o.worst = r.rank; o.worstY = r.y; }
+  });
+  return c;
+};
+// every regular-season and playoff game, owners resolved, Methot's games left out
+GM.allGames = ()=>{
+  const out = [];
+  Object.keys(MATCHUPS).forEach(y=>{
+    (MATCHUPS[y]||[]).forEach(wk=>wk.g.forEach(([tA,sA,tB,sB])=>{
+      const a = ownerForTeam(+y,tA), b = ownerForTeam(+y,tB);
+      if(!a || !b || a==="rm2" || b==="rm2") return;
+      out.push({y:+y, w:wk.w, playoff:!!wk.playoff, a, sa:sA, b, sb:sB});
+    }));
+  });
+  return out;
+};
+GM.weeklyScores = ()=>{
+  const out = [];
+  GM.allGames().forEach(g=>{ out.push({owner:g.a, s:g.sa, y:g.y, w:g.w}); out.push({owner:g.b, s:g.sb, y:g.y, w:g.w}); });
+  return out;
+};
+GM.curRows = ()=>computeCurrentStandings(2026).filter(r=>r.owner!=="rm2");
+
+/* ---------- shell: tiles + stage ---------- */
+const GM_LIST = [
+  {id:'hol',   title:'Higher or Lower', tag:'Seasons & careers', desc:'Guess whether the next team-season or career total is higher or lower. How long can you keep a streak?'},
+  {id:'trivia',title:'League Trivia',   tag:'10 questions',     desc:'Champions, last places, record scores and more, generated from the league history.'},
+  {id:'startsit',title:'Start/Sit Challenge', tag:'Real past weeks', desc:'Set the lineup for a real past week, then see how you did against the best possible lineup.'},
+  {id:'owner', title:'Guess the Owner', tag:'5 rounds',         desc:'Clues about a mystery team appear one at a time. Fewer clues means more points.'},
+  {id:'rank',  title:'Blind Ranking',   tag:'3 rounds',         desc:'Rank five teams from highest to lowest on a hidden stat.'},
+  {id:'bracket',title:'Bracket Challenge', tag:'Current playoff picture', desc:'Pick the playoff bracket from the current seeds, with the site model\'s win chances beside every game.'},
+  {id:'kicker',title:'Field Goal Kicker', tag:'Arcade',         desc:'Time the power and aim meters. Five kicks, longer each time, with a crosswind.'},
+  {id:'dash',  title:'Gridiron Dash',   tag:'Arcade',           desc:'Dodge the other eleven teams and grab footballs. Steer with arrows, swipes or taps.'},
+  {id:'passer',title:'Pocket Passer',   tag:'Arcade',           desc:'Lead your receivers and avoid the defenders. Eight throws to rack up yards.'}
+];
+let _gmSel = null;
+
+function pageGames(){
+  GM.stopAll();
+  return `
+    <div class="section-title">${iconSvg('star')}Games <span class="sub">league trivia and arcade games &mdash; scores are saved on this device</span></div>
+    <div class="gm-grid" id="gmGrid">
+      ${GM_LIST.map(g=>`<button type="button" class="gm-tile${_gmSel===g.id?' active':''}" data-game="${g.id}">
+        <span class="gm-tile-tag">${g.tag}</span><span class="gm-tile-title">${g.title}</span><span class="gm-tile-desc">${g.desc}</span>
+        <span class="gm-tile-best" data-best="${g.id}"></span></button>`).join('')}
+    </div>
+    <div class="gm-stage card" id="gmStage" ${_gmSel?'':'hidden'}></div>
+    <p class="note">Scores and streaks are stored in this browser only, so they do not carry to other devices or show up for other league members. History-based games leave out Team Methot, like the rest of the analytics.</p>`;
+}
+
+function gamesInit(){
+  const grid = document.getElementById('gmGrid');
+  if(!grid) return;
+  GM.refreshBest();
+  grid.querySelectorAll('.gm-tile').forEach(b=>b.addEventListener('click', ()=>gmOpen(b.dataset.game, true)));
+  if(_gmSel) gmOpen(_gmSel, false);
+}
+function gmOpen(id, scroll){
+  GM.stopAll();
+  _gmSel = id;
+  const stage = document.getElementById('gmStage');
+  document.querySelectorAll('.gm-tile').forEach(t=>t.classList.toggle('active', t.dataset.game===id));
+  stage.hidden = false;
+  stage.innerHTML = '';
+  const fn = {hol:gmHigherLower, trivia:gmTrivia, startsit:gmStartSit, owner:gmGuessOwner, rank:gmBlindRank, bracket:gmBracket, kicker:gmKicker, dash:gmDash, passer:gmPasser}[id];
+  try{ fn(stage); }catch(e){ stage.innerHTML = '<p class="note">This game hit an error: '+GM.esc(e.message)+'</p>'; }
+  if(scroll) stage.scrollIntoView({block:'start', behavior:'smooth'});
+}
+GM.refreshBest = ()=>{
+  const bests = {
+    hol: (()=>{ const a = GM.store.get('hol_best',{}); const m = Math.max(0, ...Object.values(a)); return m ? 'Best streak: '+m : ''; })(),
+    trivia: (()=>{ const v = GM.store.get('trivia_best',null); return v!=null ? 'Best: '+v+'/10' : ''; })(),
+    startsit: (()=>{ const v = GM.store.get('startsit_best',null); return v!=null ? 'Best: '+v+'% of optimal' : ''; })(),
+    owner: (()=>{ const v = GM.store.get('owner_best',null); return v!=null ? 'Best: '+v+'/30' : ''; })(),
+    rank: (()=>{ const v = GM.store.get('rank_best',null); return v!=null ? 'Best: '+v+'/30' : ''; })(),
+    bracket: '',
+    kicker: (()=>{ const v = GM.store.get('kicker_best',null); return v!=null ? 'High score: '+v : ''; })(),
+    dash: (()=>{ const v = GM.store.get('dash_best',null); return v!=null ? 'High score: '+v : ''; })(),
+    passer: (()=>{ const v = GM.store.get('passer_best',null); return v!=null ? 'High score: '+v+' yds' : ''; })()
+  };
+  document.querySelectorAll('[data-best]').forEach(el=>{ el.textContent = bests[el.dataset.best]||''; });
+};
+
+/* ============ 1. HIGHER OR LOWER ============ */
+function gmHigherLower(el){
+  const STATS = {
+    season: [
+      {k:'w',   label:'wins',                  f:r=>r.w,                   fmt:v=>String(v)},
+      {k:'pf',  label:'points scored',         f:r=>r.pf,                  fmt:GM.f1},
+      {k:'pa',  label:'points against',        f:r=>r.pa,                  fmt:GM.f1},
+      {k:'ppg', label:'points per game',       f:r=>r.pf/r.games,          fmt:GM.f1},
+      {k:'diff',label:'point differential',    f:r=>r.pf-r.pa,             fmt:v=>(v>0?'+':'')+GM.f1(v)},
+      {k:'pct', label:'win percentage',        f:r=>r.w/r.games,           fmt:v=>(v*100).toFixed(1)+'%'}
+    ],
+    career: [
+      {k:'w',   label:'career wins',           f:r=>r.w,                   fmt:v=>String(v)},
+      {k:'pf',  label:'career points scored',  f:r=>r.pf,                  fmt:v=>Math.round(v).toLocaleString()},
+      {k:'pa',  label:'career points against', f:r=>r.pa,                  fmt:v=>Math.round(v).toLocaleString()},
+      {k:'ppg', label:'career points per game',f:r=>r.pf/r.games,          fmt:GM.f1},
+      {k:'pct', label:'career win percentage', f:r=>r.w/r.games,           fmt:v=>(v*100).toFixed(1)+'%'},
+      {k:'diff',label:'career point differential', f:r=>r.pf-r.pa,         fmt:v=>(v>0?'+':'')+Math.round(v).toLocaleString()}
+    ]
+  };
+  let mode = 'season', statIdx = 0, streak = 0, left = null, right = null, over = false, locked = false, last = null;
+  const pool = ()=> mode==='season'
+    ? GM.seasonRows().map(r=>({label:r.team+' · '+r.y, r, key:r.owner+r.y}))
+    : Object.values(GM.careers()).map(c=>({label:GM.name(c.owner)+' (2022–2025)', r:c, key:c.owner}));
+  const val = it=>STATS[mode][statIdx].f(it.r);
+  const bestKey = ()=>mode+':'+STATS[mode][statIdx].k;
+  const draw = ()=>{
+    const p = pool(); let it;
+    for(let i=0;i<60;i++){ it = GM.pick(p); if(it.key!==(last&&last.key) && (!left || val(it)!==val(left))) break; }
+    return it;
+  };
+  const start = ()=>{ streak = 0; over = false; locked = false; left = draw(); last = left; right = draw(); render(); };
+  const render = (reveal)=>{
+    const s = STATS[mode][statIdx], best = (GM.store.get('hol_best',{})[bestKey()])||0;
+    el.innerHTML = `
+      <div class="gm-head"><h3>Higher or Lower</h3>
+        <div class="gm-controls">
+          <select id="holMode"><option value="season"${mode==='season'?' selected':''}>Team seasons</option><option value="career"${mode==='career'?' selected':''}>Careers</option></select>
+          <select id="holStat">${STATS[mode].map((x,i)=>`<option value="${i}"${i===statIdx?' selected':''}>${x.label}</option>`).join('')}</select>
+        </div></div>
+      <div class="gm-hud"><span>Streak <b>${streak}</b></span><span>Best <b>${best}</b></span></div>
+      <p class="gm-prompt">Which has more <b>${s.label}</b>?</p>
+      <div class="gm-duel">
+        <div class="gm-duel-card"><div class="gm-duel-name">${GM.esc(left.label)}</div><div class="gm-duel-val">${s.fmt(val(left))}</div></div>
+        <div class="gm-vs">vs</div>
+        <div class="gm-duel-card"><div class="gm-duel-name">${GM.esc(right.label)}</div><div class="gm-duel-val">${reveal||'?'}</div></div>
+      </div>
+      ${over ? `<p class="gm-result bad">Game over &mdash; final streak ${streak}. ${GM.esc(right.label)} had ${s.fmt(val(right))}.</p><button class="gm-btn" id="holAgain">Play again</button>`
+             : `<div class="gm-actions"><button class="gm-btn" id="holHi" ${locked?'disabled':''}>Higher &#9650;</button><button class="gm-btn" id="holLo" ${locked?'disabled':''}>Lower &#9660;</button></div>`}`;
+    el.querySelector('#holMode').onchange = e=>{ mode = e.target.value; statIdx = 0; start(); };
+    el.querySelector('#holStat').onchange = e=>{ statIdx = +e.target.value; start(); };
+    const ag = el.querySelector('#holAgain'); if(ag) ag.onclick = start;
+    const guess = hi=>{
+      if(locked) return; locked = true;
+      const ok = hi ? val(right) >= val(left) : val(right) <= val(left);
+      const bests = GM.store.get('hol_best',{});
+      if(ok){
+        streak++; if(streak > (bests[bestKey()]||0)){ bests[bestKey()] = streak; GM.store.set('hol_best', bests); GM.refreshBest(); }
+        render(s.fmt(val(right)));
+        el.querySelectorAll('.gm-actions button').forEach(b=>b.disabled = true);
+        el.querySelector('.gm-duel-card:last-child').classList.add('good');
+        setTimeout(()=>{ left = right; last = left; right = draw(); locked = false; render(); }, 1100);
+      } else { over = true; render(s.fmt(val(right))); el.querySelector('.gm-duel-card:last-child').classList.add('bad'); }
+    };
+    const hi = el.querySelector('#holHi'), lo = el.querySelector('#holLo');
+    if(hi) hi.onclick = ()=>guess(true);
+    if(lo) lo.onclick = ()=>guess(false);
+  };
+  start();
+}
+
+/* ============ 2. LEAGUE TRIVIA ============ */
+GM.triviaBank = ()=>{
+  const rows = GM.seasonRows(), careers = GM.careers(), years = Object.keys(SEASONS).map(Number).sort();
+  const qs = [];
+  const opts = (correct, pool, n)=>{
+    const d = GM.shuffle(pool.filter(x=>x!==correct)).slice(0, (n||4)-1);
+    const all = GM.shuffle([correct, ...d]);
+    return {options: all, answer: all.indexOf(correct)};
+  };
+  years.forEach(y=>{
+    const yr = rows.filter(r=>r.y===y), teamNames = yr.map(r=>r.team);
+    const champ = yr.find(r=>r.rank===1);
+    if(champ) qs.push({q:`Which team won the ${y} championship?`, ...opts(champ.team, teamNames), note:`${champ.team} finished ${champ.w}-${champ.l} and won the ${y} title.`});
+    const last = seasonLoser(y);
+    if(last && last.owner!=="rm2") qs.push({q:`Which team had the worst regular-season record in ${y}?`, ...opts(last.team, teamNames), note:`${last.team} went ${last.w}-${last.l}.`});
+    const topPf = yr.slice().sort((a,b)=>b.pf-a.pf)[0];
+    qs.push({q:`Which team scored the most points in the ${y} regular season?`, ...opts(topPf.team, teamNames), note:`${topPf.team} scored ${GM.f1(topPf.pf)}.`});
+    const topW = yr.slice().sort((a,b)=>(b.w-a.w)||(b.pf-a.pf))[0];
+    qs.push({q:`Which team had the best regular-season record in ${y}?`, ...opts(topW.team, teamNames), note:`${topW.team} went ${topW.w}-${topW.l}.`});
+    const lowPa = yr.slice().sort((a,b)=>a.pa-b.pa)[0];
+    qs.push({q:`Which team gave up the fewest points in ${y}?`, ...opts(lowPa.team, teamNames), note:`${lowPa.team} allowed ${GM.f1(lowPa.pa)}.`});
+  });
+  // titles
+  const champIds = [...new Set(rows.filter(r=>r.rank===1).map(r=>r.owner))];
+  const nonChamps = GM.owners().filter(id=>!champIds.includes(id));
+  if(champIds.length>=3 && nonChamps.length){
+    const nc = GM.pick(nonChamps);
+    const three = GM.shuffle(champIds).slice(0,3).map(GM.name);
+    const all = GM.shuffle([GM.name(nc), ...three]);
+    qs.push({q:'Which of these teams has never won a league title?', options:all, answer:all.indexOf(GM.name(nc)), note:`${GM.name(nc)} has not won a title (2022–2025).`});
+  }
+  rows.filter(r=>r.rank===1).forEach(r=>{
+    const yrs = years.map(String);
+    qs.push({q:`In which season did ${r.team} win the title?`, ...opts(String(r.y), yrs), note:`${r.team} won it all in ${r.y}.`});
+  });
+  // career leaders
+  const cs = Object.values(careers);
+  const best = (f)=>cs.slice().sort((a,b)=>f(b)-f(a));
+  const byPf = best(c=>c.pf), byW = best(c=>c.w), byPpg = best(c=>c.pf/c.games), byPa = best(c=>-c.pa);
+  const names = cs.map(c=>GM.name(c.owner));
+  qs.push({q:'Who has scored the most total points since 2022?', ...opts(GM.name(byPf[0].owner), names), note:`${GM.name(byPf[0].owner)} has ${Math.round(byPf[0].pf).toLocaleString()}.`});
+  if(byW[0].w > byW[1].w) qs.push({q:'Who has the most regular-season wins since 2022?', ...opts(GM.name(byW[0].owner), names), note:`${GM.name(byW[0].owner)} has ${byW[0].w}.`});
+  qs.push({q:'Who has the best points-per-game average since 2022?', ...opts(GM.name(byPpg[0].owner), names), note:`${GM.name(byPpg[0].owner)} averages ${GM.f1(byPpg[0].pf/byPpg[0].games)}.`});
+  qs.push({q:'Which team has allowed the fewest total points since 2022?', ...opts(GM.name(byPa[0].owner), names), note:`${GM.name(byPa[0].owner)} has allowed ${Math.round(byPa[0].pa).toLocaleString()}.`});
+  // single-game records
+  const all = GM.allGames();
+  const hi = all.flatMap(g=>[{o:g.a,s:g.sa,g},{o:g.b,s:g.sb,g}]).sort((a,b)=>b.s-a.s)[0];
+  const lo = all.flatMap(g=>[{o:g.a,s:g.sa,g},{o:g.b,s:g.sb,g}]).sort((a,b)=>a.s-b.s)[0];
+  const numOpts = (v, step)=>{ const set = new Set([v]); while(set.size<4){ set.add(Math.round((v + (GM.rnd(7)-3)*step)*100)/100); } const arr = GM.shuffle([...set]); return {options:arr.map(GM.f2), answer:arr.indexOf(v)}; };
+  qs.push({q:'What is the highest single-game score in league history (2022 onward)?', ...numOpts(hi.s, 4), note:`${GM.name(hi.o)} scored ${GM.f2(hi.s)} in Week ${hi.g.w}, ${hi.g.y}.`});
+  qs.push({q:`Who scored the highest single-game total of ${GM.f2(hi.s)}?`, ...opts(GM.name(hi.o), names), note:`${GM.name(hi.o)}, Week ${hi.g.w} of ${hi.g.y}.`});
+  qs.push({q:'What is the lowest single-game score in league history (2022 onward)?', ...numOpts(lo.s, 4), note:`${GM.name(lo.o)} scored ${GM.f2(lo.s)} in Week ${lo.g.w}, ${lo.g.y}.`});
+  const blow = all.slice().sort((a,b)=>Math.abs(b.sa-b.sb)-Math.abs(a.sa-a.sb))[0];
+  qs.push({q:'What is the biggest margin of victory in league history?', ...numOpts(Math.abs(blow.sa-blow.sb), 4), note:`Week ${blow.w} of ${blow.y}: ${GM.name(blow.sa>blow.sb?blow.a:blow.b)} won by ${GM.f2(Math.abs(blow.sa-blow.sb))}.`});
+  const close = all.slice().sort((a,b)=>Math.abs(a.sa-a.sb)-Math.abs(b.sa-b.sb))[0];
+  qs.push({q:'What is the closest game ever played, by points?', ...numOpts(Math.abs(close.sa-close.sb), 1.5), note:`Week ${close.w} of ${close.y}, decided by ${GM.f2(Math.abs(close.sa-close.sb))}.`});
+  // this season
+  try{
+    const cur = GM.curRows();
+    if(cur.length>5){
+      const topPpg = cur.slice().sort((a,b)=>b.pf/b.games-a.pf/a.games)[0];
+      qs.push({q:'Who leads the league in points per game so far in 2026?', ...opts(GM.name(topPpg.owner), cur.map(r=>GM.name(r.owner))), note:`${GM.name(topPpg.owner)} is averaging ${GM.f1(topPpg.pf/topPpg.games)}.`});
+      const topW = cur.slice().sort((a,b)=>(b.w-a.w)||(b.pf-a.pf))[0];
+      qs.push({q:'Who has the best record in the league so far in 2026?', ...opts(GM.name(topW.owner), cur.map(r=>GM.name(r.owner))), note:`${GM.name(topW.owner)} is ${topW.w}-${topW.l}.`});
+    }
+  }catch(e){}
+  return qs;
+};
+function gmTrivia(el){
+  let qs = GM.shuffle(GM.triviaBank()).slice(0,10), i = 0, score = 0, answered = false;
+  const render = ()=>{
+    if(i>=qs.length){
+      const best = GM.store.get('trivia_best', null);
+      if(best==null || score>best){ GM.store.set('trivia_best', score); GM.refreshBest(); }
+      el.innerHTML = `<div class="gm-head"><h3>League Trivia</h3></div>
+        <p class="gm-final">${score}<span>/10</span></p><p class="gm-prompt">${score>=9?'League historian.':score>=7?'You know this league.':score>=4?'Decent. Some gaps.':'Time to read the History tab.'}</p>
+        <button class="gm-btn" id="trAgain">Play again</button>`;
+      el.querySelector('#trAgain').onclick = ()=>gmTrivia(el); return;
+    }
+    const q = qs[i];
+    el.innerHTML = `<div class="gm-head"><h3>League Trivia</h3><span class="gm-hud-inline">Question ${i+1} of 10 &middot; Score ${score}</span></div>
+      <p class="gm-prompt big">${GM.esc(q.q)}</p>
+      <div class="gm-opts">${q.options.map((o,k)=>`<button class="gm-opt" data-k="${k}">${GM.esc(o)}</button>`).join('')}</div>
+      <div id="trFeedback"></div>`;
+    answered = false;
+    el.querySelectorAll('.gm-opt').forEach(b=>b.onclick = ()=>{
+      if(answered) return; answered = true;
+      const k = +b.dataset.k, ok = k===q.answer;
+      if(ok) score++;
+      el.querySelectorAll('.gm-opt').forEach(x=>{ x.disabled = true; if(+x.dataset.k===q.answer) x.classList.add('good'); });
+      if(!ok) b.classList.add('bad');
+      el.querySelector('#trFeedback').innerHTML = `<p class="gm-result ${ok?'good':'bad'}">${ok?'Correct.':'Not quite.'} ${GM.esc(q.note||'')}</p><button class="gm-btn" id="trNext">${i===qs.length-1?'See score':'Next'}</button>`;
+      el.querySelector('#trNext').onclick = ()=>{ i++; render(); };
+    });
+  };
+  render();
+}
+
+/* ============ 3. START/SIT CHALLENGE ============ */
+GM.slotDefs = [
+  {k:'QB', label:'QB', elig:['QB']}, {k:'RB1', label:'RB', elig:['RB']}, {k:'RB2', label:'RB', elig:['RB']},
+  {k:'WR1', label:'WR', elig:['WR']}, {k:'WR2', label:'WR', elig:['WR']}, {k:'TE', label:'TE', elig:['TE']},
+  {k:'FLEX', label:'FLEX', elig:['RB','WR','TE']}, {k:'K', label:'K', elig:['K']}, {k:'DST', label:'D/ST', elig:['D/ST']}
+];
+GM.optimalLineup = (players)=>{
+  const by = pos=>players.filter(p=>p.pos===pos).sort((a,b)=>b.pts-a.pts);
+  const picks = [by('QB')[0], ...by('RB').slice(0,2), ...by('WR').slice(0,2), by('TE')[0], by('K')[0], by('D/ST')[0]].filter(Boolean);
+  const rest = players.filter(p=>['RB','WR','TE'].includes(p.pos) && !picks.includes(p)).sort((a,b)=>b.pts-a.pts)[0];
+  if(rest) picks.push(rest);
+  return {picks, total: picks.reduce((s,p)=>s+p.pts,0)};
+};
+function gmStartSit(el){
+  // find a random team-week with a full roster and at least 2 weeks of history
+  const cands = [];
+  Object.keys(PLAYER_SCORES).forEach(y=>Object.keys(PLAYER_SCORES[y]).forEach(w=>{
+    if(+w<3 || +w>17) return;
+    Object.keys(PLAYER_SCORES[y][w]).forEach(t=>{
+      const o = ownerForTeam(+y, t);
+      if(!o || o==="rm2") return;
+      const pl = PLAYER_SCORES[y][w][t];
+      if(pl.length>=14) cands.push({y:+y, w:+w, t, o});
+    });
+  }));
+  if(!cands.length){ el.innerHTML = '<p class="note">No roster data available yet.</p>'; return; }
+  const c = GM.pick(cands);
+  const roster = PLAYER_SCORES[c.y][c.w][c.t].map((p,i)=>({...p, id:i}));
+  // hint: average of the player's previous three scored games that season (any team)
+  const hist = {};
+  for(let w=1; w<c.w; w++){
+    const wk = PLAYER_SCORES[c.y][w]; if(!wk) continue;
+    Object.values(wk).forEach(pl=>pl.forEach(p=>{ (hist[p.name] = hist[p.name]||[]).push([w, p.pts]); }));
+  }
+  const hint = p=>{ const h = (hist[p.name]||[]).sort((a,b)=>b[0]-a[0]).slice(0,3); if(!h.length) return '—'; return GM.f1(h.reduce((s,x)=>s+x[1],0)/h.length); };
+  const slotOptions = s=>roster.filter(p=>s.elig.includes(p.pos)).sort((a,b)=>(parseFloat(hint(b))||0)-(parseFloat(hint(a))||0));
+  el.innerHTML = `<div class="gm-head"><h3>Start/Sit Challenge</h3><button class="gm-btn small" id="ssNew">New week</button></div>
+    <p class="gm-prompt">Set the lineup for this roster. The number beside each name is the player's average over his previous three games this season. Points are hidden until you lock it in.</p>
+    <div class="gm-slots">${GM.slotDefs.map(s=>`<label class="gm-slot"><span>${s.label}</span>
+      <select data-slot="${s.k}"><option value="">Choose&hellip;</option>${slotOptions(s).map(p=>`<option value="${p.id}">${GM.esc(p.name)} (${p.pos}) • ${hint(p)}</option>`).join('')}</select></label>`).join('')}</div>
+    <div class="gm-actions"><button class="gm-btn" id="ssLock">Lock in lineup</button></div>
+    <p class="note">Flex can be any RB, WR or TE. Your roster has ${roster.length} players.</p>
+    <div id="ssResult"></div>`;
+  el.querySelector('#ssNew').onclick = ()=>gmStartSit(el);
+  el.querySelector('#ssLock').onclick = ()=>{
+    const sel = {}; let miss = false;
+    el.querySelectorAll('[data-slot]').forEach(s=>{ if(s.value==='') miss = true; sel[s.dataset.slot] = s.value===''?null:roster[+s.value]; });
+    const chosen = Object.values(sel).filter(Boolean);
+    const out = el.querySelector('#ssResult');
+    if(miss){ out.innerHTML = '<p class="gm-result bad">Fill every slot first.</p>'; return; }
+    if(new Set(chosen.map(p=>p.id)).size < chosen.length){ out.innerHTML = '<p class="gm-result bad">The same player is in two slots.</p>'; return; }
+    const total = chosen.reduce((s,p)=>s+p.pts,0);
+    const opt = GM.optimalLineup(roster);
+    const actual = roster.filter(p=>!p.bench).reduce((s,p)=>s+p.pts,0);
+    const pct = opt.total ? Math.round(total/opt.total*100) : 0;
+    const best = GM.store.get('startsit_best', null);
+    if(best==null || pct>best){ GM.store.set('startsit_best', pct); GM.refreshBest(); }
+    el.querySelectorAll('[data-slot]').forEach(s=>s.disabled = true);
+    el.querySelector('#ssLock').disabled = true;
+    const optSet = new Set(opt.picks.map(p=>p.id));
+    out.innerHTML = `<div class="gm-final-row">
+        <div><span>You</span><b>${GM.f2(total)}</b></div><div><span>${GM.esc(GM.name(c.o))}'s actual</span><b>${GM.f2(actual)}</b></div><div><span>Best possible</span><b>${GM.f2(opt.total)}</b></div></div>
+      <p class="gm-result ${pct>=95?'good':pct>=85?'':'bad'}">${pct}% of the best lineup. ${total>actual?'You beat the real manager.':total===actual?'You matched the real manager.':'The real manager did better.'}</p>
+      <p class="note">${GM.esc(GM.name(c.o))}, Week ${c.w} of ${c.y}.</p>
+      <table class="table-compact gm-table"><thead><tr><th>Player</th><th>Pos</th><th class="num-cell">Pts</th><th>Notes</th></tr></thead><tbody>
+      ${roster.slice().sort((a,b)=>b.pts-a.pts).map(p=>`<tr><td>${GM.esc(p.name)}</td><td>${p.pos}</td><td class="num-cell">${GM.f2(p.pts)}</td><td>${chosen.some(x=>x.id===p.id)?'<b>You started</b> ':''}${optSet.has(p.id)?'Optimal ':''}${!p.bench?'Real start':''}</td></tr>`).join('')}
+      </tbody></table>
+      <div class="gm-actions"><button class="gm-btn" id="ssAgain">Another week</button></div>`;
+    out.querySelector('#ssAgain').onclick = ()=>gmStartSit(el);
+  };
+}
+
+/* ============ 4. GUESS THE OWNER ============ */
+GM.ownerClues = id=>{
+  const c = GM.careers()[id], clues = [];
+  const rows = GM.seasonRows().filter(r=>r.owner===id);
+  const wk = GM.weeklyScores().filter(x=>x.owner===id).sort((a,b)=>b.s-a.s);
+  const names = [...new Set(rows.map(r=>r.team))];
+  clues.push(c.titles ? `Has won ${c.titles} league title${c.titles>1?'s':''} since 2022.` : 'Has not won a league title since 2022.');
+  clues.push(`Averages ${GM.f1(c.pf/c.games)} points per game across ${c.seasons} seasons (2022–2025).`);
+  clues.push(`Career regular-season record since 2022: ${c.w}-${c.l}.`);
+  clues.push(`Best finish: ${ordinal(c.best)} place in ${c.bestY}. Worst finish: ${ordinal(c.worst)} in ${c.worstY}.`);
+  clues.push(`Highest single-game score: ${GM.f2(wk[0].s)} (Week ${wk[0].w}, ${wk[0].y}). Lowest: ${GM.f2(wk[wk.length-1].s)}.`);
+  const cur = GM.curRows().find(r=>r.owner===id);
+  const last = names[names.length-1];
+  clues.push((cur?`Is ${cur.w}-${cur.l} in 2026. `:'')+`Current team name starts with "${last[0]}" and has ${last.replace(/[^A-Za-z0-9]/g,'').length} letters or digits.`);
+  return clues;
+};
+function ordinal(n){ const s = ['th','st','nd','rd'], v = n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function gmGuessOwner(el){
+  const ids = GM.shuffle(GM.owners().filter(id=>GM.careers()[id])).slice(0,5);
+  let round = 0, total = 0, shown = 1, wrong = new Set(), done = false;
+  const render = ()=>{
+    if(round>=ids.length){
+      const best = GM.store.get('owner_best', null);
+      if(best==null || total>best){ GM.store.set('owner_best', total); GM.refreshBest(); }
+      el.innerHTML = `<div class="gm-head"><h3>Guess the Owner</h3></div><p class="gm-final">${total}<span>/30</span></p>
+        <p class="gm-prompt">${total>=24?'You know these teams cold.':total>=14?'Solid.':'Study the standings.'}</p><button class="gm-btn" id="goAgain">Play again</button>`;
+      el.querySelector('#goAgain').onclick = ()=>gmGuessOwner(el); return;
+    }
+    const id = ids[round], clues = GM.ownerClues(id);
+    el.innerHTML = `<div class="gm-head"><h3>Guess the Owner</h3><span class="gm-hud-inline">Round ${round+1} of 5 &middot; Score ${total}</span></div>
+      <p class="gm-prompt">Worth <b>${7-shown}</b> point${7-shown===1?'':'s'} right now. A wrong guess reveals the next clue.</p>
+      <ol class="gm-clues">${clues.slice(0,shown).map(x=>`<li>${GM.esc(x)}</li>`).join('')}</ol>
+      <div class="gm-opts cols">${GM.owners().map(o=>`<button class="gm-opt" data-o="${o}" ${wrong.has(o)||done?'disabled':''}>${GM.esc(GM.name(o))}</button>`).join('')}</div>
+      <div id="goFeedback"></div>`;
+    el.querySelectorAll('.gm-opt').forEach(b=>b.onclick = ()=>{
+      const o = b.dataset.o;
+      if(o===id){
+        const pts = 7-shown; total += pts; done = true;
+        el.querySelectorAll('.gm-opt').forEach(x=>{ x.disabled = true; if(x.dataset.o===id) x.classList.add('good'); });
+        el.querySelector('#goFeedback').innerHTML = `<p class="gm-result good">Correct: ${GM.esc(GM.name(id))}. +${pts} points.</p><button class="gm-btn" id="goNext">Next</button>`;
+        el.querySelector('#goNext').onclick = ()=>{ round++; shown = 1; wrong = new Set(); done = false; render(); };
+      } else {
+        wrong.add(o);
+        if(shown>=clues.length){
+          done = true;
+          el.querySelectorAll('.gm-opt').forEach(x=>{ x.disabled = true; if(x.dataset.o===id) x.classList.add('good'); });
+          el.querySelector('#goFeedback').innerHTML = `<p class="gm-result bad">Out of clues. It was ${GM.esc(GM.name(id))}.</p><button class="gm-btn" id="goNext">Next</button>`;
+          el.querySelector('#goNext').onclick = ()=>{ round++; shown = 1; wrong = new Set(); done = false; render(); };
+        } else { shown++; render(); }
+      }
+    });
+  };
+  render();
+}
+
+/* ============ 5. BLIND RANKING ============ */
+GM.rankMetrics = ()=>{
+  const m = [], rows = GM.seasonRows(), careers = Object.values(GM.careers());
+  const years = [...new Set(rows.map(r=>r.y))];
+  years.forEach(y=>{
+    const yr = rows.filter(r=>r.y===y);
+    m.push({q:`points scored in the ${y} regular season`, items:yr.map(r=>({label:r.team, v:r.pf})), fmt:GM.f1});
+    m.push({q:`points against in ${y} (most first)`, items:yr.map(r=>({label:r.team, v:r.pa})), fmt:GM.f1});
+    m.push({q:`regular-season wins in ${y}`, items:yr.map(r=>({label:r.team, v:r.w+r.pf/1e5})), fmt:v=>String(Math.floor(v)), tieOk:true});
+  });
+  m.push({q:'career points scored since 2022', items:careers.map(c=>({label:GM.name(c.owner), v:c.pf})), fmt:v=>Math.round(v).toLocaleString()});
+  m.push({q:'career points per game since 2022', items:careers.map(c=>({label:GM.name(c.owner), v:c.pf/c.games})), fmt:GM.f1});
+  m.push({q:'career wins since 2022', items:careers.map(c=>({label:GM.name(c.owner), v:c.w+c.pf/1e6})), fmt:v=>String(Math.floor(v)), tieOk:true});
+  const best = {}; GM.weeklyScores().forEach(x=>{ if(!best[x.owner] || x.s>best[x.owner]) best[x.owner] = x.s; });
+  m.push({q:'highest single-game score ever', items:Object.keys(best).map(o=>({label:GM.name(o), v:best[o]})), fmt:GM.f2});
+  const cur = GM.curRows();
+  if(cur.length>=8) m.push({q:'points per game so far in 2026', items:cur.map(r=>({label:GM.name(r.owner), v:r.pf/r.games})), fmt:GM.f1});
+  return m;
+};
+function gmBlindRank(el){
+  const metrics = GM.shuffle(GM.rankMetrics()).slice(0,3);
+  let round = 0, total = 0;
+  const render = ()=>{
+    if(round>=metrics.length){
+      const best = GM.store.get('rank_best', null);
+      if(best==null || total>best){ GM.store.set('rank_best', total); GM.refreshBest(); }
+      el.innerHTML = `<div class="gm-head"><h3>Blind Ranking</h3></div><p class="gm-final">${total}<span>/30</span></p><p class="gm-prompt">${total>=26?'Nearly perfect.':total>=18?'Good read on the league.':'Rough day.'}</p><button class="gm-btn" id="brAgain">Play again</button>`;
+      el.querySelector('#brAgain').onclick = ()=>gmBlindRank(el); return;
+    }
+    const m = metrics[round];
+    const five = GM.shuffle(m.items).slice(0,5);
+    let order = [];
+    const paint = (revealed)=>{
+      el.innerHTML = `<div class="gm-head"><h3>Blind Ranking</h3><span class="gm-hud-inline">Round ${round+1} of 3 &middot; Score ${total}</span></div>
+        <p class="gm-prompt">Tap the teams in order from <b>most</b> to <b>least</b>: ${GM.esc(m.q)}.</p>
+        <div class="gm-opts">${five.map((t,i)=>{ const pos = order.indexOf(i); return `<button class="gm-opt${pos>=0?' picked':''}" data-i="${i}" ${revealed?'disabled':''}>${pos>=0?`<b class="gm-badge">${pos+1}</b>`:''}${GM.esc(t.label)}${revealed?`<span class="gm-val">${m.fmt(t.v)}</span>`:''}</button>`; }).join('')}</div>
+        <div id="brFeedback"></div>
+        ${revealed?'':`<div class="gm-actions"><button class="gm-btn small" id="brReset">Reset</button></div>`}`;
+      if(revealed) return;
+      el.querySelectorAll('.gm-opt').forEach(b=>b.onclick = ()=>{
+        const i = +b.dataset.i; if(order.includes(i)) return; order.push(i);
+        if(order.length<five.length){ paint(false); return; }
+        // score: 10 pairs; each correctly ordered pair is 1 point (ties count as correct)
+        let pts = 0; for(let a=0;a<5;a++) for(let b2=a+1;b2<5;b2++) if(five[order[a]].v >= five[order[b2]].v) pts++;
+        total += pts;
+        const truth = five.map((t,idx)=>idx).sort((a,b)=>five[b].v-five[a].v);
+        paint(true);
+        const exact = order.filter((o,p)=>o===truth[p]).length;
+        el.querySelector('#brFeedback').innerHTML = `<p class="gm-result ${pts>=9?'good':pts>=6?'':'bad'}">${pts}/10 pairs in the right order, ${exact} in the exact spot. Correct order: ${truth.map(i=>GM.esc(five[i].label)).join(' &gt; ')}.</p><button class="gm-btn" id="brNext">${round===metrics.length-1?'See score':'Next round'}</button>`;
+        el.querySelector('#brNext').onclick = ()=>{ round++; render(); };
+      });
+      const rs = el.querySelector('#brReset'); if(rs) rs.onclick = ()=>{ order = []; paint(false); };
+    };
+    paint(false);
+  };
+  render();
+}
+
+/* ============ 6. BRACKET CHALLENGE ============ */
+GM.phi = x=>{ const s = x<0?-1:1; x = Math.abs(x)/Math.SQRT2; const t = 1/(1+0.3275911*x); const y = 1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return 0.5*(1+s*y); };
+function gmBracket(el){
+  const rows = computeCurrentStandings(2026);
+  const pic = playoffPictureFor(rows);
+  const seeds = pic.field.slice();
+  const n = seeds.length;
+  if(n<4){ el.innerHTML = '<p class="note">The playoff field is not set yet.</p>'; return; }
+  const seedOf = {}; seeds.forEach((id,i)=>seedOf[id] = i+1);
+  const sd = leagueScoreStdDev(2026) || 22;
+  const mean = {}; seeds.forEach(id=>{ try{ mean[id] = teamBaseMean(id, 2026); }catch(e){ mean[id] = 110; } });
+  const prob = (a,b)=>{ const bonus = seedOf[a]<seedOf[b] ? 5 : -5; return GM.phi((mean[a]-mean[b]+bonus)/(sd*Math.SQRT2)); };
+  // fixed bracket: seed order for 8 slots, missing seeds are byes
+  const order = [1,8,4,5,2,7,3,6];
+  const slot = s=>s<=n ? seeds[s-1] : null;
+  const sig = seeds.join('-'); const saveKey = 'bracket_'+sig;
+  let picks = GM.store.get(saveKey, {});
+  // games: round 1 = four slots pairs; later rounds feed from winners
+  const games = [];
+  for(let g=0; g<4; g++) games.push({id:'r1g'+g, round:1, a:()=>slot(order[g*2]), b:()=>slot(order[g*2+1]), bye:false});
+  games.push({id:'r2g0', round:2, a:()=>win('r1g0'), b:()=>win('r1g1')});
+  games.push({id:'r2g1', round:2, a:()=>win('r1g2'), b:()=>win('r1g3')});
+  games.push({id:'r3g0', round:3, a:()=>win('r2g0'), b:()=>win('r2g1')});
+  function win(id){
+    const g = games.find(x=>x.id===id); const a = g.a(), b = g.b();
+    if(a && !b) return a; if(b && !a) return b; if(!a && !b) return null;
+    const p = picks[id]; return (p===a||p===b) ? p : null;
+  }
+  const clean = ()=>{ games.forEach(g=>{ const a = g.a(), b = g.b(); if(picks[g.id] && picks[g.id]!==a && picks[g.id]!==b) delete picks[g.id]; }); };
+  const label = id=>id ? `<span class="gm-seed">${seedOf[id]}</span>${GM.esc(GM.name(id))}` : '<span class="gm-tbd">TBD</span>';
+  const render = ()=>{
+    clean(); GM.store.set(saveKey, picks);
+    const roundTitle = {1:'Round 1', 2:'Semifinals', 3:'Championship'};
+    const champ = win('r3g0');
+    el.innerHTML = `<div class="gm-head"><h3>Bracket Challenge</h3>
+        <div class="gm-controls"><button class="gm-btn small" id="bkChalk">Pick favorites</button><button class="gm-btn small" id="bkRand">Simulate</button><button class="gm-btn small" id="bkClear">Clear</button></div></div>
+      <p class="gm-prompt">Seeds are the current playoff picture (if the season ended today). Higher seeds get +5 points. Percentages come from the site model.</p>
+      <div class="gm-bracket">${[1,2,3].map(r=>`<div class="gm-round"><h4>${roundTitle[r]}</h4>
+        ${games.filter(g=>g.round===r).map(g=>{
+          const a = g.a(), b = g.b();
+          const pa = (a&&b) ? prob(a,b) : null;
+          const pick = (x,px)=>`<button class="gm-team${picks[g.id]===x?' on':''}" data-g="${g.id}" data-t="${x||''}" ${(a&&b&&x)?'':'disabled'}>${label(x)}${(px!=null)?`<span class="gm-pct">${Math.round(px*100)}%</span>`:''}</button>`;
+          if((a&&!b)||(b&&!a)){ const x = a||b; return `<div class="gm-game bye"><button class="gm-team" disabled>${label(x)}<span class="gm-pct">first-round bye</span></button></div>`; }
+          return `<div class="gm-game">${pick(a, pa)}${pick(b, pa==null?null:1-pa)}</div>`;
+        }).join('')}
+      </div>`).join('')}</div>
+      <div class="gm-champ">${champ ? `Your champion: <b>${GM.esc(GM.name(champ))}</b> (${seedOf[champ]} seed)` : 'Pick every game to crown a champion.'}</div>
+      ${champ ? `<div class="gm-actions"><button class="gm-btn" id="bkCopy">Copy my bracket</button></div><div id="bkMsg" class="note"></div>` : ''}`;
+    el.querySelectorAll('.gm-team').forEach(b=>b.onclick = ()=>{ if(!b.dataset.t) return; picks[b.dataset.g] = b.dataset.t; render(); });
+    el.querySelector('#bkClear').onclick = ()=>{ picks = {}; render(); };
+    const fill = fn=>{ picks = {}; games.forEach(g=>{ const a = g.a(), b = g.b(); if(a && b) picks[g.id] = fn(a,b); }); /* later rounds depend on earlier picks */ games.forEach(g=>{ const a = g.a(), b = g.b(); if(a && b && !picks[g.id]) picks[g.id] = fn(a,b); }); games.forEach(g=>{ const a = g.a(), b = g.b(); if(a && b && !picks[g.id]) picks[g.id] = fn(a,b); }); };
+    el.querySelector('#bkChalk').onclick = ()=>{ fill((a,b)=>prob(a,b)>=0.5?a:b); render(); };
+    el.querySelector('#bkRand').onclick = ()=>{ fill((a,b)=>Math.random()<prob(a,b)?a:b); render(); };
+    const cp = el.querySelector('#bkCopy');
+    if(cp) cp.onclick = ()=>{
+      const lines = ['My Wofford League bracket:'];
+      [['r1g0','r1g1','r1g2','r1g3'],['r2g0','r2g1'],['r3g0']].forEach((rd,i)=>{ lines.push(['Round 1','Semifinals','Championship'][i]+': '+rd.map(id=>{ const w = win(id); return w?GM.name(w):'?'; }).join(', ')); });
+      lines.push('Champion: '+GM.name(champ));
+      const txt = lines.join('\n');
+      const done = ()=>{ el.querySelector('#bkMsg').textContent = 'Copied.'; };
+      try{ navigator.clipboard.writeText(txt).then(done, ()=>{ el.querySelector('#bkMsg').textContent = txt; }); }catch(e){ el.querySelector('#bkMsg').textContent = txt; }
+    };
+  };
+  render();
+}
+
+/* ============ ARCADE: shared canvas helpers ============ */
+GM.arcadeShell = (el, title, extraControls)=>{
+  const owners = GM.owners();
+  const me = GM.store.get('arcade_me', owners.includes('bc')?'bc':owners[0]);
+  el.innerHTML = `<div class="gm-head"><h3>${title}</h3>
+      <div class="gm-controls"><label class="gm-lab">Play as <select id="arcMe">${owners.map(o=>`<option value="${o}"${o===me?' selected':''}>${GM.esc(GM.name(o))}</option>`).join('')}</select></label>${extraControls||''}</div></div>
+    <div class="gm-hud" id="arcHud"></div>
+    <div class="gm-canvas-wrap"><canvas id="arcCanvas"></canvas><div class="gm-overlay" id="arcOverlay"></div></div>
+    <p class="note" id="arcHelp"></p>`;
+  const canvas = el.querySelector('#arcCanvas');
+  const wrap = el.querySelector('.gm-canvas-wrap');
+  const W = Math.min(520, Math.max(260, (el.clientWidth||520)-34)), H = Math.round(W*1.25);
+  const dpr = window.devicePixelRatio||1;
+  canvas.width = W*dpr; canvas.height = H*dpr; canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+  const api = {el, canvas, ctx, W, H, wrap, me, hud:el.querySelector('#arcHud'), overlay:el.querySelector('#arcOverlay'), help:el.querySelector('#arcHelp')};
+  el.querySelector('#arcMe').onchange = e=>{ GM.store.set('arcade_me', e.target.value); gmOpen(_gmSel, false); };
+  return api;
+};
+GM.field = (ctx, W, H, offset)=>{
+  ctx.fillStyle = '#2f6b3a'; ctx.fillRect(0,0,W,H);
+  for(let y=-40+((offset||0)%80); y<H; y+=80){ ctx.fillStyle = 'rgba(255,255,255,0.045)'; ctx.fillRect(0,y,W,40); }
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
+  for(let y=((offset||0)%80); y<H; y+=80){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+};
+GM.badge = (ctx, id, x, y, r)=>{
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle = ownerColor(id); ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(r*0.85)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(GM.initials(id), x, y+1);
+};
+GM.ball = (ctx, x, y, r, rot)=>{
+  ctx.save(); ctx.translate(x,y); ctx.rotate(rot||0);
+  ctx.beginPath(); ctx.ellipse(0,0,r*1.5,r,0,0,Math.PI*2); ctx.fillStyle = '#8a4b1f'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-r*0.5,0); ctx.lineTo(r*0.5,0); ctx.stroke(); ctx.restore();
+};
+GM.loop = (api, update, draw)=>{
+  let raf = 0, last = performance.now(), alive = true;
+  const tick = now=>{
+    if(!alive || !api.canvas.isConnected){ alive = false; return; }
+    const dt = Math.min(0.05, (now-last)/1000); last = now;
+    update(dt); draw();
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  const stop = ()=>{ alive = false; cancelAnimationFrame(raf); };
+  GM.stopFns.push(stop);
+  return stop;
+};
+GM.overlay = (api, html, onClick)=>{
+  api.overlay.innerHTML = html ? `<div class="gm-overlay-in">${html}</div>` : '';
+  api.overlay.style.display = html ? 'flex' : 'none';
+  const b = api.overlay.querySelector('button'); if(b && onClick) b.onclick = onClick;
+};
+
+/* ============ 7. FIELD GOAL KICKER ============ */
+function gmKicker(el){
+  const api = GM.arcadeShell(el, 'Field Goal Kicker');
+  const {ctx, W, H} = api;
+  api.help.textContent = 'Tap, click or press Space to stop the power meter, then again to stop the aim meter. Land the power in the green zone and the aim between the posts. Crosswind pushes the ball.';
+  let kick = 0, score = 0, streak = 0, phase = 'ready', t = 0, power = 0, aim = 0, wind = 0, target = 0.6, anim = null, msg = '';
+  const KICKS = 5;
+  const newKick = ()=>{ kick++; target = 0.45 + kick*0.09; wind = (Math.random()*2-1) * (0.05 + kick*0.025); phase = 'power'; t = 0; msg = ''; };
+  const hudUpdate = ()=>{ api.hud.innerHTML = `<span>Kick <b>${Math.min(kick,KICKS)}/${KICKS}</b></span><span>Score <b>${score}</b></span><span>Streak <b>${streak}</b></span>`; };
+  const begin = ()=>{ kick = 0; score = 0; streak = 0; GM.overlay(api, ''); newKick(); hudUpdate(); };
+  const press = ()=>{
+    if(phase==='ready'||phase==='over'){ begin(); return; }
+    if(phase==='power'){ power = (Math.sin(t*3.4)+1)/2; phase = 'aim'; t = 0; }
+    else if(phase==='aim'){
+      aim = Math.sin(t*4.2); phase = 'flight'; t = 0;
+      const zone = 0.07 + 0.03*(1-kick/KICKS);
+      const powerOk = Math.abs(power-target) < zone + 0.02;
+      const long = power > target + zone + 0.02;
+      const drift = aim + wind*2.2;
+      const ok = powerOk && Math.abs(drift) < 0.34;
+      anim = {ok, powerOk, long, drift};
+    }
+  };
+  const key = e=>{ if(e.code==='Space'){ e.preventDefault(); press(); } };
+  document.addEventListener('keydown', key);
+  GM.stopFns.push(()=>document.removeEventListener('keydown', key));
+  api.canvas.addEventListener('pointerdown', e=>{ e.preventDefault(); press(); });
+  GM.overlay(api, `<h4>Field Goal Kicker</h4><p>Five kicks, each longer than the last.</p><button class="gm-btn">Start</button>`, begin);
+  hudUpdate();
+  GM.loop(api, dt=>{
+    t += dt;
+    if(phase==='flight' && t>1.3){
+      if(anim.ok){ streak++; const pts = 3 + (streak>1?streak-1:0); score += pts; msg = `Good! +${pts}`; }
+      else { streak = 0; msg = !anim.powerOk ? (anim.long ? 'Too much leg — sailed over the uprights' : 'Short') : 'Wide'; }
+      phase = 'result'; t = 0; hudUpdate();
+    }
+    if(phase==='result' && t>1.4){
+      if(kick>=KICKS){
+        phase = 'over'; const best = GM.store.get('kicker_best', null);
+        if(best==null || score>best){ GM.store.set('kicker_best', score); GM.refreshBest(); }
+        GM.overlay(api, `<h4>Final score ${score}</h4><p>${score>=22?'All-pro leg.':score>=12?'Solid kicker.':'Needs more practice.'}</p><button class="gm-btn">Play again</button>`, begin);
+      } else newKick();
+    }
+  }, ()=>{
+    GM.field(ctx, W, H, 0);
+    // goalposts
+    const gx = W/2, gy = 70, half = W*0.12;
+    ctx.strokeStyle = '#f2c230'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(gx-half,gy); ctx.lineTo(gx-half,gy-45); ctx.moveTo(gx+half,gy); ctx.lineTo(gx+half,gy-45); ctx.moveTo(gx-half,gy); ctx.lineTo(gx+half,gy); ctx.moveTo(gx,gy); ctx.lineTo(gx,gy+55); ctx.stroke();
+    // wind
+    ctx.fillStyle = '#fff'; ctx.font = '600 13px sans-serif'; ctx.textAlign = 'left';
+    const wdir = wind>0?'→':'←'; ctx.fillText(`Wind ${wdir} ${Math.abs(wind*100).toFixed(0)}`, 12, 22);
+    ctx.textAlign = 'right'; ctx.fillText(`${Math.round(20+target*60)} yd attempt`, W-12, 22);
+    // ball position
+    let bx = W/2, by = H-110, br = 9;
+    if(phase==='flight'||phase==='result'){
+      const p = Math.min(1, t/1.1), ease = 1-(1-p)*(1-p);
+      const endx = gx + anim.drift*half*1.6, endy = gy + (anim.powerOk?0:(anim.long?-60:(120)));
+      bx = W/2 + (endx-W/2)*ease; by = (H-110) + (endy-(H-110))*ease - Math.sin(p*Math.PI)*60; br = 9 - 4*ease;
+    }
+    GM.ball(ctx, bx, by, br, phase==='flight'? t*14 : 0);
+    // meters
+    if(phase==='power'||phase==='aim'){
+      const mx = 20, mw = W-40, my = H-48;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(mx, my, mw, 18);
+      if(phase==='power'){
+        const zone = (0.07 + 0.03*(1-kick/KICKS)+0.02);
+        ctx.fillStyle = '#35c25a'; ctx.fillRect(mx+(target-zone)*mw, my, zone*2*mw, 18);
+        const v = (Math.sin(t*3.4)+1)/2; ctx.fillStyle = '#fff'; ctx.fillRect(mx+v*mw-2, my-5, 4, 28);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText('POWER', W/2, my-10);
+      } else {
+        ctx.fillStyle = '#35c25a'; ctx.fillRect(mx+mw*0.5-0.34*mw*0.5-wind*2.2*mw*0.5*(-1)*0 , my, 0, 0);
+        const zl = 0.5 - 0.34/2 - wind*2.2/2*0; // visual zone centered, shifted opposite to wind
+        const zc = 0.5 - wind*2.2/2, zw = 0.34;
+        ctx.fillStyle = '#35c25a'; ctx.fillRect(mx+(zc-zw/2)*mw, my, zw*mw, 18);
+        const v = (Math.sin(t*4.2)+1)/2; ctx.fillStyle = '#fff'; ctx.fillRect(mx+v*mw-2, my-5, 4, 28);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText('AIM', W/2, my-10);
+      }
+    }
+    if(phase==='result'){ ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, H/2-28, W, 56); ctx.fillStyle = '#fff'; ctx.font = '700 22px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(msg, W/2, H/2+2); }
+    GM.badge(ctx, api.me, W-34, H-86, 16);
+  });
+}
+
+/* ============ 8. GRIDIRON DASH ============ */
+function gmDash(el){
+  const api = GM.arcadeShell(el, 'Gridiron Dash');
+  const {ctx, W, H} = api;
+  api.help.textContent = 'Left/right arrow keys, swipe, or tap the left or right side of the field to change lanes. Dodge the other teams, grab footballs for bonus points.';
+  const LANES = 4, laneW = W/LANES;
+  const others = GM.owners().filter(id=>id!==api.me);
+  let lane = 1, px = laneW*1.5, items = [], dist = 0, speed = 230, spawnT = 0, score = 0, over = true, off = 0, ballsGot = 0;
+  const hudUpdate = ()=>{ api.hud.innerHTML = `<span>Score <b>${Math.floor(score)}</b></span><span>Footballs <b>${ballsGot}</b></span><span>Best <b>${GM.store.get('dash_best',0)}</b></span>`; };
+  const begin = ()=>{ lane = 1; px = laneW*1.5; items = []; dist = 0; speed = 230; spawnT = 0; score = 0; ballsGot = 0; over = false; GM.overlay(api,''); hudUpdate(); };
+  const move = d=>{ if(over) return; lane = Math.max(0, Math.min(LANES-1, lane+d)); };
+  const key = e=>{ if(e.key==='ArrowLeft'||e.key==='a'){ e.preventDefault(); move(-1); } else if(e.key==='ArrowRight'||e.key==='d'){ e.preventDefault(); move(1); } else if(e.key===' '&&over){ e.preventDefault(); begin(); } };
+  document.addEventListener('keydown', key); GM.stopFns.push(()=>document.removeEventListener('keydown', key));
+  let sx = null;
+  api.canvas.addEventListener('pointerdown', e=>{ e.preventDefault(); sx = e.clientX; });
+  api.canvas.addEventListener('pointerup', e=>{
+    e.preventDefault();
+    const dx = e.clientX - (sx==null?e.clientX:sx);
+    if(Math.abs(dx)>28) move(dx>0?1:-1);
+    else { const r = api.canvas.getBoundingClientRect(); move((e.clientX-r.left) > r.width/2 ? 1 : -1); }
+    sx = null;
+  });
+  GM.overlay(api, '<h4>Gridiron Dash</h4><p>Run upfield without getting tackled.</p><button class="gm-btn">Start</button>', begin);
+  hudUpdate();
+  GM.loop(api, dt=>{
+    if(over) return;
+    const tx = laneW*(lane+0.5); px += (tx-px)*Math.min(1, dt*14);
+    speed += dt*7; dist += speed*dt; score += speed*dt/40; off += speed*dt;
+    spawnT -= dt;
+    if(spawnT<=0){
+      spawnT = Math.max(0.32, 0.85 - dist/18000);
+      const l = GM.rnd(LANES);
+      if(Math.random()<0.2) items.push({type:'ball', lane:l, y:-30});
+      else items.push({type:'def', lane:l, y:-30, id:GM.pick(others)});
+      if(Math.random()<0.25 && dist>1500){ let l2 = (l+1+GM.rnd(LANES-1))%LANES; items.push({type:'def', lane:l2, y:-30, id:GM.pick(others)}); }
+    }
+    items.forEach(it=>it.y += speed*dt*0.95);
+    const py = H-90;
+    items = items.filter(it=>{
+      if(it.y>H+40) return false;
+      const ix = laneW*(it.lane+0.5);
+      if(Math.abs(it.y-py)<30 && Math.abs(ix-px)<laneW*0.36){
+        if(it.type==='ball'){ ballsGot++; score += 25; hudUpdate(); return false; }
+        over = true;
+      }
+      return true;
+    });
+    if(over){
+      const sc = Math.floor(score); const best = GM.store.get('dash_best', null);
+      if(best==null || sc>best){ GM.store.set('dash_best', sc); GM.refreshBest(); }
+      hudUpdate();
+      GM.overlay(api, `<h4>Tackled! ${sc} points</h4><p>${ballsGot} footballs collected.</p><button class="gm-btn">Run it back</button>`, begin);
+    } else if((Math.floor(score)%5)===0) hudUpdate();
+  }, ()=>{
+    GM.field(ctx, W, H, off);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.setLineDash([10,14]); for(let i=1;i<LANES;i++){ ctx.beginPath(); ctx.moveTo(laneW*i,0); ctx.lineTo(laneW*i,H); ctx.stroke(); } ctx.setLineDash([]);
+    items.forEach(it=>{ const x = laneW*(it.lane+0.5); if(it.type==='ball') GM.ball(ctx, x, it.y, 10, 0.6); else GM.badge(ctx, it.id, x, it.y, 22); });
+    GM.badge(ctx, api.me, px, H-90, 24);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,26); ctx.fillStyle = '#fff'; ctx.font = '600 13px sans-serif'; ctx.textAlign = 'left'; ctx.fillText(`${Math.floor(dist/9)} yds`, 10, 14);
+  });
+}
+
+/* ============ 9. POCKET PASSER ============ */
+function gmPasser(el){
+  const api = GM.arcadeShell(el, 'Pocket Passer');
+  const {ctx, W, H} = api;
+  api.help.textContent = 'Tap or click where you want the ball to land. It takes about half a second to arrive, so lead the receiver. Land it near a receiver for yards; land it near a defender and it is picked off.';
+  const THROWS = 8;
+  const others = GM.owners().filter(id=>id!==api.me);
+  let thrown = 0, yards = 0, comps = 0, ints = 0, ball = null, t = 0, flash = '', flashT = 0, over = true;
+  let recs = [], defs = [];
+  const qb = {x:W/2, y:H-60};
+  const setup = ()=>{
+    const ids = GM.shuffle(others);
+    recs = [0,1,2].map(i=>({id:ids[i], y:H*0.2+i*H*0.15, x:Math.random()*W, vx:(90+Math.random()*60)*(Math.random()<0.5?-1:1), r:20}));
+    defs = [0,1,2].map(i=>({id:ids[3+i], y:H*0.27+i*H*0.15, x:Math.random()*W, vx:(70+Math.random()*50)*(Math.random()<0.5?-1:1), r:19}));
+  };
+  const hudUpdate = ()=>{ api.hud.innerHTML = `<span>Throw <b>${Math.min(thrown+1,THROWS)}/${THROWS}</b></span><span>Yards <b>${yards}</b></span><span>Comp <b>${comps}</b> &middot; Int <b>${ints}</b></span>`; };
+  const begin = ()=>{ thrown = 0; yards = 0; comps = 0; ints = 0; ball = null; over = false; setup(); GM.overlay(api,''); hudUpdate(); };
+  api.canvas.addEventListener('pointerdown', e=>{
+    e.preventDefault(); if(over || ball) return;
+    const r = api.canvas.getBoundingClientRect();
+    const tx = (e.clientX-r.left)*(W/r.width), ty = (e.clientY-r.top)*(H/r.height);
+    ball = {sx:qb.x, sy:qb.y, tx, ty:Math.min(ty, H-120), t:0, dur:0.55};
+  });
+  GM.overlay(api, '<h4>Pocket Passer</h4><p>Eight throws. Lead your receivers.</p><button class="gm-btn">Start</button>', begin);
+  hudUpdate();
+  GM.loop(api, dt=>{
+    if(over) return;
+    [...recs, ...defs].forEach(p=>{ p.x += p.vx*dt; if(p.x<20){ p.x = 20; p.vx = Math.abs(p.vx); } if(p.x>W-20){ p.x = W-20; p.vx = -Math.abs(p.vx); } });
+    if(flashT>0) flashT -= dt;
+    if(ball){
+      ball.t += dt;
+      if(ball.t>=ball.dur){
+        const hitR = recs.find(r=>Math.hypot(r.x-ball.tx, r.y-ball.ty)<r.r+14);
+        const hitD = defs.find(d=>Math.hypot(d.x-ball.tx, d.y-ball.ty)<d.r+10);
+        thrown++;
+        if(hitD && (!hitR || Math.hypot(hitD.x-ball.tx,hitD.y-ball.ty) < Math.hypot(hitR.x-ball.tx,hitR.y-ball.ty))){ ints++; yards = Math.max(0, yards-10); flash = 'INTERCEPTED −10'; }
+        else if(hitR){ const gain = Math.round((qb.y-hitR.y)/(H-60)*70)+5; comps++; yards += gain; flash = 'Complete +'+gain+' yds'; }
+        else flash = 'Incomplete';
+        flashT = 1.0; ball = null; hudUpdate();
+        if(thrown>=THROWS){
+          over = true;
+          const best = GM.store.get('passer_best', null);
+          if(best==null || yards>best){ GM.store.set('passer_best', yards); GM.refreshBest(); }
+          setTimeout(()=>GM.overlay(api, `<h4>${yards} passing yards</h4><p>${comps} of ${THROWS} completed, ${ints} interception${ints===1?'':'s'}.</p><button class="gm-btn">Play again</button>`, begin), 700);
+        }
+      }
+    }
+  }, ()=>{
+    GM.field(ctx, W, H, 0);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.setLineDash([6,8]); ctx.beginPath(); ctx.moveTo(0,H-100); ctx.lineTo(W,H-100); ctx.stroke(); ctx.setLineDash([]);
+    defs.forEach(d=>{ GM.badge(ctx, d.id, d.x, d.y, d.r); ctx.strokeStyle = '#ff5a5a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(d.x,d.y,d.r+4,0,Math.PI*2); ctx.stroke(); });
+    recs.forEach(r=>{ GM.badge(ctx, r.id, r.x, r.y, r.r); ctx.strokeStyle = '#fff6b0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(r.x,r.y,r.r+4,0,Math.PI*2); ctx.stroke(); });
+    GM.badge(ctx, api.me, qb.x, qb.y, 22);
+    if(ball){ const p = ball.t/ball.dur, x = ball.sx+(ball.tx-ball.sx)*p, y = ball.sy+(ball.ty-ball.sy)*p - Math.sin(p*Math.PI)*45; ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.arc(ball.tx, ball.ty, 12, 0, Math.PI*2); ctx.fill(); GM.ball(ctx, x, y, 8, p*10); }
+    if(flashT>0){ ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, H/2-24, W, 48); ctx.fillStyle = flash.startsWith('INT')?'#ff8080':'#fff'; ctx.font = '700 20px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(flash, W/2, H/2+1); }
+    ctx.font = '600 12px sans-serif'; ctx.fillStyle = '#fff6b0'; ctx.textAlign = 'left'; ctx.fillText('Yellow ring = receiver', 10, H-10); ctx.fillStyle = '#ff9a9a'; ctx.textAlign = 'right'; ctx.fillText('Red ring = defender', W-10, H-10);
+  });
 }
 
 function pageTrades(){
@@ -16237,6 +17110,7 @@ const FEATURE_INDEX = [
   {label:"Draft Pick Value", page:"Analytics", keywords:["draft grade","steal rate","bust rate","diamonds in the rough","value curve","hit rate"]},
   {label:"Trades", page:"Transactions", subTab:"Trades", keywords:["trade","traded"]},
   {label:"Trade Leaderboard", page:"Transactions", subTab:"Trades", keywords:["best trade","worst trade","trade margin","trade winner"]},
+  {label:"Games", page:"Games", keywords:["games","trivia","higher or lower","start sit","guess the owner","blind ranking","bracket challenge","arcade","field goal","kicker","mini game"]},
   {label:"Trade Calculator", page:"Trade Calculator", keywords:["trade calculator","build a trade","trade value","fair trade","suggest a package"]},
   {label:"Franchise", page:"Franchise", keywords:["manager grade","team grade","draft grade","team report","career record","photo","blurb","bio","map","location","where teams are","franchise","rank over time","draft history","trade history"]},
   {label:"Odds: Spreads, Moneylines & Totals", page:"Odds", keywords:["odds","spread","moneyline","over under","total","betting","line","favorite","underdog"]},
@@ -16571,215 +17445,6 @@ function condenseNotes(root){
   let t = null;
   new MutationObserver(()=>{ clearTimeout(t); t = setTimeout(()=>{ try{ applyGlossaryTips(app); }catch(e){} }, 150); }).observe(app, {childList:true, subtree:true});
 })();
-</script>
-<style id="gridiron-theme">
-/* ===== gridiron: light, muted ===== */
-:root[data-theme="gridiron"]{
-  --bg:#F5F0E0; --panel:#FBF8EE; --panel2:#EEE7D1; --line:#E0D6B8; --text:#1F1D16; --muted:#6B6650;
-  --gold:#D9A520; --gold-deep:#8F6B0D; --black:#8F6B0D; --red:#B5503F; --red-muted:#C9958B; --green:#5C7F63;
-  --font-display:'Montserrat','Inter',sans-serif; --font-body:'Source Serif 4',Georgia,serif;
-  --card-radius:8px; --card-radius-lg:8px; --card-shadow:0 1px 2px rgba(40,40,30,.06); --card-shadow-hover:0 4px 12px rgba(40,40,30,.10);
-  --card-border-top:1px solid var(--line); --tipbg:#1F1D16;
-}
-:root[data-theme="gridiron"] body{background:var(--bg);color:var(--text);}
-:root[data-theme="gridiron"] header.top{background:var(--panel);border-bottom:1px solid var(--line);}
-:root[data-theme="gridiron"] .brand{color:var(--text);}
-:root[data-theme="gridiron"] .search-wrap input{background:var(--panel2);border:1px solid var(--line);color:var(--text);}
-:root[data-theme="gridiron"] .search-wrap input::placeholder{color:var(--muted);}
-:root[data-theme="gridiron"] .admin-bubble{background:var(--panel2);border-color:var(--line);color:var(--muted);}
-:root[data-theme="gridiron"] .admin-bubble:hover{background:var(--tint);}
-:root[data-theme="gridiron"] .admin-bubble.authed{background:var(--gold);color:#fff;}
-:root[data-theme="gridiron"] nav.tabs{background:var(--panel);border-top:1px solid var(--line);}
-:root[data-theme="gridiron"] nav.tabs button{background:transparent;color:var(--muted);border-right:none;border-bottom:2px solid transparent;font-family:var(--font-body);font-weight:600;letter-spacing:.03em;}
-:root[data-theme="gridiron"] nav.tabs button:hover{background:var(--panel2);color:var(--text);}
-:root[data-theme="gridiron"] nav.tabs button.active{background:transparent;color:var(--gold-deep);border-bottom-color:var(--gold);}
-:root[data-theme="gridiron"] h1,:root[data-theme="gridiron"] h2,:root[data-theme="gridiron"] .section-title{font-weight:600;letter-spacing:0;}
-:root[data-theme="gridiron"] .section-title{border-bottom:1px solid var(--line);box-shadow:none;font-size:20px;}
-:root[data-theme="gridiron"] .section-title svg{color:var(--gold-deep);}
-:root[data-theme="gridiron"] .card{box-shadow:var(--card-shadow);}
-:root[data-theme="gridiron"] .table-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius);}
-:root[data-theme="gridiron"] table th{background:var(--panel2);color:var(--muted);}
-:root[data-theme="gridiron"] tbody tr:nth-child(even){background:color-mix(in srgb,var(--panel2) 45%,transparent);}
-:root[data-theme="gridiron"] tbody tr:hover{background:var(--tint) !important;}
-:root[data-theme="gridiron"] .hero{background:var(--panel2);border-bottom:1px solid var(--line);}
-:root[data-theme="gridiron"] .hero h1,:root[data-theme="gridiron"] .hr-team,:root[data-theme="gridiron"] .hr-record{color:var(--text);}
-:root[data-theme="gridiron"] .hr-owner,:root[data-theme="gridiron"] .hr-pct{color:var(--muted);}
-:root[data-theme="gridiron"] .hero-edition,:root[data-theme="gridiron"] .hr-label{color:var(--gold-deep);}
-:root[data-theme="gridiron"] .hero-frame{border-color:var(--line);}
-:root[data-theme="gridiron"] .hero-frame::before,:root[data-theme="gridiron"] .hero-frame::after,:root[data-theme="gridiron"] .hero-frame .corner-bl,:root[data-theme="gridiron"] .hero-frame .corner-br{border-color:var(--gold);}
-:root[data-theme="gridiron"] .hero-rotate{border-left-color:var(--line);}
-:root[data-theme="gridiron"] .hr-dot{background:var(--line);} :root[data-theme="gridiron"] .hr-dot.active{background:var(--gold);}
-:root[data-theme="gridiron"] .banner{background:var(--gold-deep);}
-:root[data-theme="gridiron"] .banner .byear{color:#F3E7C8;}
-:root[data-theme="gridiron"] .jump-nav a.active{color:var(--gold-deep);border-bottom-color:var(--gold);}
-:root[data-theme="gridiron"] .dc-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius-lg);box-shadow:var(--card-shadow);}
-:root[data-theme="gridiron"] .dc-head{background:var(--tint);color:var(--gold-deep);border-bottom:1px solid var(--line);}
-:root[data-theme="gridiron"] .dc-trophy .award-icon{color:var(--sec);}
-:root[data-theme="gridiron"] .dc-latest{background:var(--tint);} :root[data-theme="gridiron"] .dc-latest .dc-year{background:var(--gold-deep);color:#fff;}
-:root[data-theme="gridiron"] .dc-crown{color:var(--sec);}
-:root[data-theme="gridiron"] .dc-foot{background:var(--panel2);color:var(--gold-deep);border-top:1px solid var(--line);}
-:root[data-theme="gridiron"] .odds-disclaimer{background:#F7EFD9;border-color:var(--sec);color:var(--text);}
-:root[data-theme="gridiron"] .chart-pill.active{background:var(--gold-deep);color:#fff;border-color:var(--gold-deep);}
-:root[data-theme="gridiron"] .mobile-tabbar{background:var(--panel);border-top:1px solid var(--line);}
-:root[data-theme="gridiron"] .mms-panel{background:var(--panel);}
-:root[data-theme="gridiron"] .mms-panel button.active{background:var(--gold-deep);color:#fff;}
-/* ticker */
-:root[data-theme="gridiron"] .ticker-wrap{background:var(--tint);border:1px solid var(--line);}
-:root[data-theme="gridiron"] .ticker-track,:root[data-theme="gridiron"] .ticker-track *{color:var(--text);border-color:var(--line);}
-:root[data-theme="gridiron"] .ticker-label{color:var(--gold-deep) !important;}
-/* shared grouped-nav parts */
-:root[data-theme="gridiron"] .gn-lab,:root[data-theme="gridiron"] .gn-pages button{font-family:var(--font-body);cursor:pointer;}
-:root[data-theme="gridiron"] .stack-part{margin-top:44px;padding-top:26px;border-top:2px solid var(--gold);position:relative;}
-:root[data-theme="gridiron"] .stack-tag{position:absolute;top:-13px;left:0;background:var(--bg);padding:0 12px 0 0;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);}
-
-/* Gridiron Light: brand + grouped nav share one slim row, page links sit in a thin sub-row.
-   Green = navigation and controls, gold = headings, trophies and banners, black = text, header cap and ticker. */
-:root[data-theme="gridiron"] header.top{border-bottom:1px solid var(--line);border-top:3px solid #1F1D16;}
-:root[data-theme="gridiron"] .brand{color:#1F1D16;}
-:root[data-theme="gridiron"] .hero{background:#EFE7CB;border-bottom:1px solid var(--line);}
-:root[data-theme="gridiron"] .hero-frame{border-color:#E3CF8C;}
-:root[data-theme="gridiron"] .hero-frame::before,:root[data-theme="gridiron"] .hero-frame::after,:root[data-theme="gridiron"] .hero-frame .corner-bl,:root[data-theme="gridiron"] .hero-frame .corner-br{border-color:#DBA514;}
-:root[data-theme="gridiron"] .hero-edition,:root[data-theme="gridiron"] .hr-label{color:#9A700A;}
-:root[data-theme="gridiron"] .hero-rotate{border-left-color:#E3CF8C;} :root[data-theme="gridiron"] .hr-dot.active{background:#DBA514;}
-:root[data-theme="gridiron"] .podium-bar.p1{background:#DBA514;}
-/* Banners: cream cloth hung from a black rod, gold header band and gold swallowtail */
-:root[data-theme="gridiron"] .banner-row{gap:34px;padding-top:14px;}
-:root[data-theme="gridiron"] .banner{background:transparent;clip-path:none;overflow:visible;aspect-ratio:1/1.6;filter:drop-shadow(0 0 .6px #BFAE7A) drop-shadow(0 3px 4px rgba(60,50,10,.22));}
-:root[data-theme="gridiron"] .banner::before{content:"";position:absolute;z-index:3;top:-10px;left:-9px;right:-9px;height:9px;background:#1F1D16;border-radius:5px;}
-:root[data-theme="gridiron"] .banner::after{content:"";position:absolute;z-index:0;inset:0;clip-path:polygon(0 0,100% 0,100% 100%,50% 89%,0 100%);background:linear-gradient(#DBA514,#DBA514) top/100% 9% no-repeat,linear-gradient(#DBA514,#DBA514) bottom/100% 11% no-repeat,#FBF8EE;}
-:root[data-theme="gridiron"] .banner>*{z-index:1;}
-:root[data-theme="gridiron"] .banner-pin,:root[data-theme="gridiron"] .banner-edge{display:none;}
-:root[data-theme="gridiron"] .banner .byear{top:16%;color:#1F1D16;font-size:26px;}
-:root[data-theme="gridiron"] .banner-laurels{top:34%;}
-:root[data-theme="gridiron"] .banner-laurels svg,:root[data-theme="gridiron"] .banner-laurels svg *{color:#8F6B0D;fill:#F2D77A;stroke:#8F6B0D;stroke-width:1.1;}
-:root[data-theme="gridiron"] .banner .bteam{top:60%;left:12px;right:12px;color:#1F1D16;font-weight:800;font-size:11.5px;}
-:root[data-theme="gridiron"] .ticker-wrap{background:#27251D;border-color:#27251D;}
-:root[data-theme="gridiron"] .ticker-track,:root[data-theme="gridiron"] .ticker-track *{color:#F3EEDC;border-color:#4A4636;}
-:root[data-theme="gridiron"] .ticker-label{color:#E8B923 !important;}
-:root[data-theme="gridiron"] table th{background:#F1EBD6;color:#4A4636;}
-:root[data-theme="gridiron"] tbody tr:nth-child(even){background:#F8F3E3;}
-:root[data-theme="gridiron"] tbody tr:hover{background:#F3E9C6 !important;}
-:root[data-theme="gridiron"] .topbar{padding:7px 20px;gap:18px;}
-:root[data-theme="gridiron"] .brand{font-size:17px;letter-spacing:.01em;}
-:root[data-theme="gridiron"] .brand .crest{width:26px;height:26px;}
-:root[data-theme="gridiron"] .gn-primary{display:flex;gap:2px;align-items:center;margin-left:8px;}
-:root[data-theme="gridiron"] .gn-primary button{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:10px 14px;cursor:pointer;}
-:root[data-theme="gridiron"] .gn-primary button:hover{color:var(--text);background:var(--panel2);}
-:root[data-theme="gridiron"] .gn-primary button.active{color:var(--gold-deep);border-bottom-color:var(--gold);}
-:root[data-theme="gridiron"] .search-wrap{flex:0 1 190px;}
-@media (min-width:641px){
-  :root[data-theme="gridiron"] nav.tabs{display:block;max-width:none;padding:0;background:var(--tint);border-top:none;border-bottom:1px solid var(--line);}
-  :root[data-theme="gridiron"] nav.tabs.empty{display:none;}
-}
-@media (max-width:640px){ :root[data-theme="gridiron"] .gn-primary{display:none;} }
-:root[data-theme="gridiron"] .gn-sub-in{display:flex;justify-content:center;gap:4px;max-width:1120px;margin:0 auto;padding:4px 20px;}
-:root[data-theme="gridiron"] .gn-sub-in button{padding:4px 15px;border-radius:14px;font-size:11px;background:transparent;border:1px solid transparent;color:var(--muted);font-family:var(--font-display);font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;}
-:root[data-theme="gridiron"] .gn-sub-in button:hover{background:var(--panel);}
-:root[data-theme="gridiron"] .gn-sub-in button.active{background:var(--panel);color:var(--gold-deep);border-color:var(--gold);}
-:root[data-theme="gridiron"] .section-title{font-family:var(--font-display);font-weight:800;border-bottom:2px solid #DBA514;}
-:root[data-theme="gridiron"] .section-title svg{color:#8F6B0D;}
-:root[data-theme="gridiron"] .shame-card{background:#B5503F;color:#FBF3E4;border-top:3px solid #7E2F23;}
-:root[data-theme="gridiron"] .shame-year{color:#F3D7A6;} :root[data-theme="gridiron"] .shame-rec{color:#F0CDBF;}
-:root[data-theme="gridiron"] .gn-primary button.active{color:#8F6B0D;}
-:root[data-theme="gridiron"] .chart-pill.active,:root[data-theme="gridiron"] .toggle-btn.active{background:#D9A520;color:#1F1D16;}
-:root[data-theme="gridiron"] .gn-sub-in button.active{border-color:#D9A520;}
-:root[data-theme="gridiron"] nav.tabs{background:#F6EDCF !important;}
-:root[data-theme="gridiron"] .dc-card{border-top:3px solid #DBA514;}
-:root[data-theme="gridiron"] .dc-head{background:#FAF1CE;color:#7A5A06;}
-:root[data-theme="gridiron"] .dc-latest .dc-year{background:#8F6B0D;}
-
-</style>
-<script>
-(function(){
-  var theme=document.documentElement.getAttribute('data-theme');
-  if(['sage','linen','dusty','plum','stone','gridiron'].indexOf(theme)<0) return;
-  function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
-  function icon(p){ return '<svg class="nav-icon" viewBox="0 0 24 24">'+((typeof NAV_ICONS!=='undefined'&&NAV_ICONS[p])||'')+'</svg>'; }
-  function label(p){ return NAV_LABELS[p]||p; }
-  var GROUPS=[{l:'Home',p:['Home']},{l:'Season',p:['Current Season','Dashboard','Odds']},{l:'Teams',p:['Franchise','Transactions','Trade Calculator']},{l:'Analysis',p:['Analytics','History','Rivalries']}];
-  GROUPS.forEach(function(g){ g.p=g.p.filter(function(p){ return PAGES.indexOf(p)>=0; }); });
-  var DESC={'Home':'Trophies, banners and podiums','Current Season':'Standings, power rankings, rosters, schedule','Dashboard':'League KPIs, featured game, charts','Odds':'Lines, props and futures (display only)','Franchise':'One-team deep dives','Transactions':'Draft history and trades','Trade Calculator':'Value any trade','Analytics':'Charts, stats lab, finder, draft value','History':'Timeline, records and awards','Rivalries':'Head-to-head records and network'};
-  function gIdx(p){ for(var i=0;i<GROUPS.length;i++) if(GROUPS[i].p.indexOf(p)>=0) return i; return -1; }
-  function go(p){ currentPage=p; renderNav(); renderPage(); window.scrollTo(0,0); }
-  function wire(root){ root.querySelectorAll('button[data-page]').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); go(b.dataset.page); }); }); }
-
-  /* ---------- grouped navs: sage (sub-row), linen (side menu), stone (dropdowns) ---------- */
-  function navSage(){
-    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage), g=GROUPS[gi]||null;
-    tabs.innerHTML='<div class="gn-primary">'+GROUPS.map(function(x,i){ return '<button class="gn-lab'+(i===gi?' active':'')+'" data-page="'+x.p[0]+'">'+x.l+'</button>'; }).join('')+'</div>'+
-      '<div class="gn-sub'+((!g||g.p.length<2)?' empty':'')+'"><div class="gn-sub-in">'+(g&&g.p.length>1?g.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+label(p)+'</button>'; }).join(''):'')+'</div></div>';
-    wire(tabs); renderMobileTabbar();
-  }
-  function navGridiron(){
-    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage), g=GROUPS[gi]||null, tb=document.querySelector('.topbar');
-    var pr=document.getElementById('gnPrimary');
-    if(!pr){ pr=document.createElement('div'); pr.id='gnPrimary'; pr.className='gn-primary'; var br=tb.querySelector('.brand'); br.insertAdjacentElement('afterend',pr); }
-    pr.innerHTML=GROUPS.map(function(x,i){ return '<button data-page="'+x.p[0]+'" class="'+(i===gi?'active':'')+'">'+x.l+'</button>'; }).join('');
-    var multi=g&&g.p.length>1;
-    tabs.className='tabs'+(multi?'':' empty');
-    tabs.innerHTML='<div class="gn-sub-in">'+(multi?g.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+label(p)+'</button>'; }).join(''):'')+'</div>';
-    wire(pr); wire(tabs); renderMobileTabbar();
-  }
-  function navLinen(){
-    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage);
-    tabs.innerHTML=GROUPS.map(function(x){ return '<div class="gn-grp"><div class="gn-lab">'+(x.p.length>1?x.l:'Overview')+'</div><div class="gn-pages">'+x.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+icon(p)+label(p)+'</button>'; }).join('')+'</div></div>'; }).join('');
-    wire(tabs); renderMobileTabbar();
-  }
-  function navStone(){
-    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage);
-    tabs.innerHTML=GROUPS.map(function(x,i){
-      var single=x.p.length<2;
-      return '<div class="gn-grp'+(i===gi?' cur':'')+(single?' single':'')+'"><button class="gn-lab" '+(single?'data-page="'+x.p[0]+'"':'data-grp="1"')+'>'+x.l+'</button>'+(single?'':'<div class="gn-menu">'+x.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+icon(p)+'<span><b>'+label(p)+'</b><small>'+DESC[p]+'</small></span></button>'; }).join('')+'</div>')+'</div>';
-    }).join('');
-    wire(tabs);
-    tabs.querySelectorAll('.gn-lab[data-grp]').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); var gp=b.parentNode, was=gp.classList.contains('open'); tabs.querySelectorAll('.gn-grp.open').forEach(function(o){o.classList.remove('open');}); if(!was) gp.classList.add('open'); }); });
-    renderMobileTabbar();
-  }
-  if(!window.__stoneClose){ window.__stoneClose=1; document.addEventListener('click',function(){ document.querySelectorAll('.gn-grp.open').forEach(function(o){o.classList.remove('open');}); }); }
-
-  /* ---------- dusty: merged views, pages stacked into one scroll ---------- */
-  var STACKS={'Home':['Dashboard'],'Current Season':['Odds'],'Transactions':['Trade Calculator'],'Analytics':['Rivalries']};
-  var TAG={'Dashboard':'Dashboard','Odds':'Odds & Lines','Trade Calculator':'Trade Calculator','Rivalries':'Rivalries'};
-  var SECOND={}; Object.keys(STACKS).forEach(function(l){ STACKS[l].forEach(function(p){ SECOND[p]=l; }); });
-  function setupDusty(){
-    var O={'Home':pageHome,'Dashboard':pageDashboard,'Current Season':pageLiveSeason,'Odds':pageOdds,'Analytics':pageAnalytics,'Rivalries':pageRecords,'Transactions':pageTransactions,'Trade Calculator':pageTradeCalculator};
-    function stacked(lead){ return function(){ var h=O[lead](); STACKS[lead].forEach(function(p){ h+='<section class="stack-part" id="stack-'+slug(p)+'" data-tag="'+TAG[p]+'"><div class="stack-tag">'+TAG[p]+'</div>'+O[p]()+'</section>'; }); return h; }; }
-    pageHome=stacked('Home'); pageLiveSeason=stacked('Current Season'); pageTransactions=stacked('Transactions'); pageAnalytics=stacked('Analytics');
-    PAGES.splice(0,PAGES.length,'Home','Current Season','Franchise','Transactions','Analytics','History');
-    NAV_LABELS['Home']='Overview'; NAV_LABELS['Current Season']='Season'; NAV_LABELS['Transactions']='Deals'; NAV_LABELS['Analytics']='Insights'; NAV_LABELS['History']='Archive';
-    MOBILE_PRIMARY_PAGES.splice(0,MOBILE_PRIMARY_PAGES.length,'Home','Current Season','Franchise','Analytics');
-    var _rp=renderPage, pending=null;
-    renderPage=function(){
-      if(SECOND[currentPage]){ pending='stack-'+slug(currentPage); currentPage=SECOND[currentPage]; }
-      _rp();
-      var app=document.getElementById('app'), nav=app.querySelector('.jump-nav'), parts=app.querySelectorAll('.stack-part');
-      app.querySelectorAll('.stack-part .jump-nav').forEach(function(n){ n.remove(); });
-      parts.forEach(function(sp){ if(nav) nav.insertAdjacentHTML('beforeend','<a href="#'+sp.id+'">'+sp.getAttribute('data-tag')+' ▸</a>'); });
-      try{ if(app.querySelector('#stack-odds')&&typeof fillOddsSims==='function'){ var cp=currentPage; currentPage='Odds'; fillOddsSims(); setTimeout(function(){ currentPage=cp; },120); } }catch(e){}
-      try{ if(app.querySelector('#stack-rivalries')&&typeof setupRivalryNetworkClicks==='function') setupRivalryNetworkClicks(); }catch(e){}
-      if(pending){ var t=document.getElementById(pending); pending=null; if(t) setTimeout(function(){ t.scrollIntoView({block:'start'}); },60); }
-    };
-  }
-
-  /* ---------- plum: matchday-first ordering and landing page ---------- */
-  function setupPlum(){
-    PAGES.splice(0,PAGES.length,'Current Season','Odds','Dashboard','Franchise','Transactions','Trade Calculator','Analytics','Rivalries','History','Home');
-    NAV_LABELS['Current Season']='Season'; NAV_LABELS['Odds']='Lines'; NAV_LABELS['Dashboard']='Scoreboard'; NAV_LABELS['Franchise']='Teams'; NAV_LABELS['Transactions']='Trades'; NAV_LABELS['Analytics']='Insights'; NAV_LABELS['Home']='Trophy Room';
-    MOBILE_PRIMARY_PAGES.splice(0,MOBILE_PRIMARY_PAGES.length,'Current Season','Odds','Franchise','Analytics');
-  }
-
-  if(theme==='sage') renderNav=navSage;
-  if(theme==='gridiron') renderNav=navGridiron;
-  if(theme==='linen') renderNav=navLinen;
-  if(theme==='stone') renderNav=navStone;
-  if(theme==='dusty') setupDusty();
-  if(theme==='plum') setupPlum();
-  var ih=window.__initHash||''; 
-  if(theme==='plum' && (ih===''||ih==='#/home'||ih==='#')) currentPage='Current Season';
-  if(theme==='dusty' && SECOND[currentPage]) currentPage=SECOND[currentPage];
-  renderNav(); renderPage();
-})();
-
 </script>
 </body>
 </html>
