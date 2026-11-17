@@ -961,6 +961,35 @@ if(typeof MATCHUPS==="undefined"){
 .gm-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
 .gm-me-row td{font-weight:700;background:rgba(217,165,32,.15)}
 .gm-today{margin-top:8px}
+.gm-team-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:10px 0}
+.gm-pick{display:flex;align-items:center;gap:6px;text-align:left;padding:10px 12px;border:1px solid var(--line,#ccc);border-radius:6px;background:var(--panel2,#fff);color:var(--text,#222);font:inherit;cursor:pointer}
+.gm-pick:hover{border-color:var(--gold,#c90)}.gm-pick.last{border-color:var(--gold,#c90);box-shadow:0 0 0 1px var(--gold,#c90) inset}
+.pl-chart{display:flex;align-items:flex-end;gap:3px;height:150px;padding:8px 4px 0;margin:10px 0;border-bottom:1px solid var(--line,#ccc)}
+.pl-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:9px;color:var(--muted,#777)}
+.pl-bar{width:100%;background:var(--gold,#d9a520);border-radius:3px 3px 0 0;min-height:2px}
+.pl-bar.miss{height:3px;background:var(--line,#ccc)}
+.dd-card{border:1px solid var(--line,#ccc);border-radius:8px;padding:16px;margin:10px 0;text-align:center;background:var(--panel2,#f4f4f4)}
+.dd-year{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#777)}.dd-pick{font-size:26px;font-weight:800;margin:4px 0}.dd-sub{font-size:14px}
+.gm-hints{margin:8px 0;padding-left:20px;line-height:1.5}
+.gm-guesslist{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.gm-chip{padding:4px 10px;border-radius:14px;font-size:12.5px;color:#fff}.gm-chip.x{background:#a5524a}.gm-chip.g{background:#4d8f5b}
+.up-list{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.up-card{border:1px solid var(--line,#ccc);border-radius:8px;padding:10px 12px;background:var(--panel2,#f4f4f4)}
+.up-meta{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#777);margin-bottom:6px}
+.up-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch}
+.up-row .up-team:only-child{grid-column:1/-1}
+.tv-sides+.up-row{grid-template-columns:1fr 1fr}
+.up-team{display:flex;flex-direction:column;gap:2px;padding:10px;border:1px solid var(--line,#ccc);border-radius:6px;background:var(--panel,#fff);color:var(--text,#222);font:inherit;cursor:pointer;text-align:left}
+.up-team small{color:var(--muted,#777)}.up-team:hover:not(:disabled){border-color:var(--gold,#c90)}
+.up-team.on{border-color:var(--gold,#c90);background:rgba(217,165,32,.2)}
+.up-team.good{border-color:#4d8f5b;background:rgba(80,160,100,.2)}.up-team.bad{border-color:#b44;background:rgba(190,70,60,.16)}
+.up-team:disabled{cursor:default}
+.up-score{font-size:12.5px;margin-top:6px;color:var(--muted,#777)}
+.tv-sides{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:8px}.tv-sides span{display:block;font-weight:700;margin-bottom:2px}
+@media(max-width:640px){.up-row{grid-template-columns:1fr}.tv-sides{grid-template-columns:1fr}.tv-sides+.up-row{grid-template-columns:1fr}.up-row .gm-vs{display:none}}
+
+.gm-pick small{margin-left:auto;font-size:10.5px;color:var(--muted,#777);text-transform:uppercase;letter-spacing:.04em}
+.gm-link{background:none;border:0;padding:0;margin:0 6px;color:var(--gold-deep,#8a6d0b);text-decoration:underline;font:inherit;font-size:12.5px;cursor:pointer}
 
 </style>
 </head>
@@ -7979,7 +8008,9 @@ GM.store = {
   get(k, d){ try{ const v = localStorage.getItem('wl_games_'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('wl_games_'+k, JSON.stringify(v)); }catch(e){} }
 };
-GM.rnd = n=>Math.floor(Math.random()*n);
+GM._r = null; // when set, GM.rnd draws from this seeded generator so every player gets the same content
+GM.rnd = n=>Math.floor((GM._r?GM._r():Math.random())*n);
+GM.withSeed = (key, fn)=>{ GM._r = GM.mkrng(key+'-'+GM.dayKey()); try{ return fn(); } finally{ GM._r = null; } };
 GM.pick = a=>a[GM.rnd(a.length)];
 GM.shuffle = a=>{ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = GM.rnd(i+1); [a[i],a[j]] = [a[j],a[i]]; } return a; };
 GM.owners = ()=>allOwnerIdsSorted().filter(id=>id!=="rm2");
@@ -8035,17 +8066,20 @@ GM.curRows = ()=>computeCurrentStandings(2026).filter(r=>r.owner!=="rm2");
 
 /* ---------- shell: tiles + stage ---------- */
 const GM_LIST = [
-  {id:'wordle',title:'Owner Wordle', tag:'Daily', daily:true, desc:'Find the mystery team in five guesses. Tiles compare titles, wins, scoring, best finish and 2026 wins.'},
+  {id:'wordle', title:'Owner Wordle', tag:'Daily', daily:true, desc:'Find the mystery team in five guesses. Tiles compare this season’s rank, wins, scoring and best week.'},
   {id:'orderit',title:'Order It', tag:'Daily', daily:true, desc:'Put five teams in order on a hidden stat. Three tries, and green squares show what you got right.'},
-  {id:'grid',  title:'Immaculate Grid', tag:'Daily', daily:true, desc:'Name a player who fits both the team and the clue for each of nine squares. Nine guesses.'},
-  {id:'hol',   title:'Higher or Lower', tag:'Seasons & careers', desc:'Guess whether the next team-season or career total is higher or lower. How long can you keep a streak?'},
-  {id:'trivia',title:'League Trivia',   tag:'10 questions',     desc:'Champions, last places, record scores and more, generated from the league history.'},
-  {id:'owner', title:'Guess the Owner', tag:'5 rounds',         desc:'Clues about a mystery team appear one at a time. Fewer clues means more points.'},
-  {id:'rank',  title:'Blind Ranking',   tag:'3 rounds',         desc:'Rank five teams from highest to lowest on a hidden stat.'},
-  {id:'bracket',title:'Bracket Challenge', tag:'Current playoff picture', desc:'Pick the playoff bracket from the current seeds, with the site model\'s win chances beside every game.'},
-  {id:'kicker',title:'Field Goal Kicker', tag:'Arcade',         desc:'Time the power and aim meters. Five kicks, longer each time, with a crosswind.'},
-  {id:'dash',  title:'Gridiron Dash',   tag:'Arcade',           desc:'Dodge the other eleven teams and grab footballs. Steer with arrows, swipes or taps.'},
-  {id:'passer',title:'Pocket Passer',   tag:'Arcade',           desc:'Lead your receivers and avoid the defenders. Eight throws to rack up yards.'}
+  {id:'grid',   title:'Immaculate Grid', tag:'Daily', daily:true, desc:'Name a player who fits both the team and the clue for each of nine squares. Nine guesses.'},
+  {id:'pulse',  title:'Pulse Check', tag:'Daily', daily:true, desc:'A player\u2019s weekly scoring shows as a bar chart. Name him in five guesses.'},
+  {id:'draft',  title:'Draft Day Time Machine', tag:'Daily', daily:true, desc:'You get a round, a pick and the drafting team. Name the player who went there.'},
+  {id:'upset',  title:'Call the Upset', tag:'Daily', daily:true, desc:'Pick the winner of five real past matchups, using each team\u2019s record and scoring going in.'},
+  {id:'trade',  title:'Trade Verdict', tag:'Daily', daily:true, desc:'Three real league trades. Say who came out ahead, then see who actually did.'},
+  {id:'dhol',   title:'Daily Higher or Lower', tag:'Daily', daily:true, desc:'The same chain of team seasons for everyone. Ten guesses, and one miss ends it.'},
+  {id:'kicker', title:'Field Goal Kicker', tag:'Arcade', arcade:true, desc:'Time the power and aim meters. Five kicks, longer each time, with a crosswind.'},
+  {id:'dash',   title:'Gridiron Dash',   tag:'Arcade', arcade:true, desc:'Dodge the other eleven teams and grab footballs. Steer with arrows, swipes or taps.'},
+  {id:'passer', title:'Pocket Passer',   tag:'Arcade', arcade:true, desc:'Lead your receivers and avoid the defenders. Eight throws to rack up yards.'},
+  {id:'trivia', title:'League Trivia',   tag:'10 questions',     desc:'Champions, last places, record scores and more, generated from the league history.'},
+  {id:'owner',  title:'Guess the Owner', tag:'5 rounds',         desc:'Clues about a mystery team appear one at a time. Fewer clues means more points.'},
+  {id:'rank',   title:'Blind Ranking',   tag:'3 rounds',         desc:'Rank five teams from highest to lowest on a hidden stat.'}
 ];
 let _gmSel = null;
 
@@ -8055,125 +8089,68 @@ function pageGames(){
         <span class="gm-tile-tag">${g.tag}</span><span class="gm-tile-title">${g.title}</span><span class="gm-tile-desc">${g.desc}</span>
         <span class="gm-tile-best" data-best="${g.id}"></span></button>`;
   return `
-    <div class="section-title">${iconSvg('star')}Games <span class="sub">league trivia and arcade games &mdash; scores are saved on this device</span></div>
-    <div class="gm-me"><label class="gm-lab">You are <select id="gmMe"><option value="">Choose your team&hellip;</option>${GM.owners().map(o=>`<option value="${o}"${GM.me()===o?' selected':''}>${GM.esc(GM.name(o))}</option>`).join('')}</select></label><span class="gm-status" id="gmStatus">${GM.api?'':'Leaderboard not connected yet.'}</span></div>
-    <h4 class="gm-sub">Daily puzzles <span>new puzzle every day &middot; same for everyone</span></h4>
+    <div class="section-title">${iconSvg('star')}Games <span class="sub">daily puzzles, arcade games and league trivia</span></div>
+    <p class="gm-status"><span id="gmWho">${GM.whoText()}</span> <button type="button" class="gm-link" id="gmLogout" ${GM.identity()?'':'hidden'}>Log out</button> <span id="gmStatus"></span></p>
+    <h4 class="gm-sub">Daily puzzles <span>one attempt per day &middot; same puzzle for everyone</span></h4>
     <div class="gm-grid" id="gmGrid">
       ${GM_LIST.filter(g=>g.daily).map(tileHtml).join('')}
     </div>
-    <h4 class="gm-sub">Practice games</h4>
+    <h4 class="gm-sub">Arcade <span>one run per day &middot; same course for everyone</span></h4>
+    <div class="gm-grid" id="gmGrid3">
+      ${GM_LIST.filter(g=>g.arcade).map(tileHtml).join('')}
+    </div>
+    <h4 class="gm-sub">Trivia and rankings <span>one attempt per day &middot; same questions for everyone</span></h4>
     <div class="gm-grid" id="gmGrid2">
-      ${GM_LIST.filter(g=>!g.daily).map(tileHtml).join('')}
+      ${GM_LIST.filter(g=>!g.daily && !g.arcade).map(tileHtml).join('')}
     </div>
     <div class="gm-stage card" id="gmStage" ${_gmSel?'':'hidden'}></div>
     <div class="gm-stage card" id="gmBoard"></div>
-    <p class="note">${GM.api?'Scores post to the shared league leaderboard once you choose your team above. Streaks stay in this browser.':'Scores and streaks are stored in this browser only.'} History-based games leave out Team Methot, like the rest of the analytics.</p>`;
+    <p class="note">${GM.api?'Scores post to the shared league leaderboard under the team tied to your login. Streaks stay in this browser.':'Scores and streaks are stored in this browser only.'} History-based games leave out Team Methot, like the rest of the analytics.</p>`;
 }
 
 function gamesInit(){
   const grid = document.getElementById('gmGrid');
   if(!grid) return;
+  { const idn = GM.identity(); if(idn) GM.cur = idn.owner; const lo = document.getElementById('gmLogout'); if(lo) lo.onclick = ()=>{ GM.store.set('identity', null); GM.cur = null; GM.stopAll(); _gmSel = null; const st = document.getElementById('gmStage'); if(st){ st.hidden = true; st.innerHTML = ''; } GM.refreshWho(); GM.refreshBest(); }; }
   GM.refreshBest();
   GM.initBoard();
   document.querySelectorAll('.gm-tile').forEach(b=>b.addEventListener('click', ()=>gmOpen(b.dataset.game, true)));
-  if(_gmSel) gmOpen(_gmSel, false);
+  if(_gmSel && GM.cur) gmOpen(_gmSel, false, true); else _gmSel = null;
 }
-function gmOpen(id, scroll){
+GM.cur = null; // the team playing right now, chosen at the start of every game
+function gmRun(id, stage){
+  const g = GM_LIST.find(x=>x.id===id);
+  if(!g.daily){
+    const a = GM.attempt(id);
+    if(a){ GM.usedPanel(stage, id, a); return; }
+  }
+  const fn = {trivia:gmTrivia, wordle:gmWordle, orderit:gmOrderIt, grid:gmImmaculate, pulse:gmPulse, draft:gmDraftDay, upset:gmUpset, trade:gmTradeVerdict, dhol:gmDailyHol, owner:gmGuessOwner, rank:gmBlindRank, kicker:gmKicker, dash:gmDash, passer:gmPasser}[id];
+  stage.innerHTML = '';
+  try{ fn(stage); }catch(e){ stage.innerHTML = '<p class="note">This game hit an error: '+GM.esc(e.message)+'</p>'; }
+}
+function gmOpen(id, scroll, skipPrompt){
   GM.stopAll();
   _gmSel = id;
   const stage = document.getElementById('gmStage');
   document.querySelectorAll('.gm-tile').forEach(t=>t.classList.toggle('active', t.dataset.game===id));
   stage.hidden = false;
-  stage.innerHTML = '';
-  const fn = {hol:gmHigherLower, trivia:gmTrivia, wordle:gmWordle, orderit:gmOrderIt, grid:gmImmaculate, owner:gmGuessOwner, rank:gmBlindRank, bracket:gmBracket, kicker:gmKicker, dash:gmDash, passer:gmPasser}[id];
-  try{ fn(stage); }catch(e){ stage.innerHTML = '<p class="note">This game hit an error: '+GM.esc(e.message)+'</p>'; }
+  if(skipPrompt && GM.cur) gmRun(id, stage);
+  else gmPrompt(id, stage);
   if(scroll) stage.scrollIntoView({block:'start', behavior:'smooth'});
 }
-GM.refreshBest = ()=>{
-  const bests = {
-    hol: (()=>{ const a = GM.store.get('hol_best',{}); const m = Math.max(0, ...Object.values(a)); return m ? 'Best streak: '+m : ''; })(),
-    trivia: (()=>{ const v = GM.store.get('trivia_best',null); return v!=null ? 'Best: '+v+'/10' : ''; })(),
-    owner: (()=>{ const v = GM.store.get('owner_best',null); return v!=null ? 'Best: '+v+'/30' : ''; })(),
-    rank: (()=>{ const v = GM.store.get('rank_best',null); return v!=null ? 'Best: '+v+'/30' : ''; })(),
-    bracket: '',
-    wordle: GM.dailyBadge('wordle'), orderit: GM.dailyBadge('orderit'), grid: GM.dailyBadge('grid'),
-    kicker: (()=>{ const v = GM.store.get('kicker_best',null); return v!=null ? 'High score: '+v : ''; })(),
-    dash: (()=>{ const v = GM.store.get('dash_best',null); return v!=null ? 'High score: '+v : ''; })(),
-    passer: (()=>{ const v = GM.store.get('passer_best',null); return v!=null ? 'High score: '+v+' yds' : ''; })()
-  };
-  document.querySelectorAll('[data-best]').forEach(el=>{ el.textContent = bests[el.dataset.best]||''; });
-};
-
-/* ============ 1. HIGHER OR LOWER ============ */
-function gmHigherLower(el){
-  const STATS = {
-    season: [
-      {k:'w',   label:'wins',                  f:r=>r.w,                   fmt:v=>String(v)},
-      {k:'pf',  label:'points scored',         f:r=>r.pf,                  fmt:GM.f1},
-      {k:'pa',  label:'points against',        f:r=>r.pa,                  fmt:GM.f1},
-      {k:'ppg', label:'points per game',       f:r=>r.pf/r.games,          fmt:GM.f1},
-      {k:'diff',label:'point differential',    f:r=>r.pf-r.pa,             fmt:v=>(v>0?'+':'')+GM.f1(v)},
-      {k:'pct', label:'win percentage',        f:r=>r.w/r.games,           fmt:v=>(v*100).toFixed(1)+'%'}
-    ],
-    career: [
-      {k:'w',   label:'career wins',           f:r=>r.w,                   fmt:v=>String(v)},
-      {k:'pf',  label:'career points scored',  f:r=>r.pf,                  fmt:v=>Math.round(v).toLocaleString()},
-      {k:'pa',  label:'career points against', f:r=>r.pa,                  fmt:v=>Math.round(v).toLocaleString()},
-      {k:'ppg', label:'career points per game',f:r=>r.pf/r.games,          fmt:GM.f1},
-      {k:'pct', label:'career win percentage', f:r=>r.w/r.games,           fmt:v=>(v*100).toFixed(1)+'%'},
-      {k:'diff',label:'career point differential', f:r=>r.pf-r.pa,         fmt:v=>(v>0?'+':'')+Math.round(v).toLocaleString()}
-    ]
-  };
-  let mode = 'season', statIdx = 0, streak = 0, left = null, right = null, over = false, locked = false, last = null;
-  const pool = ()=> mode==='season'
-    ? GM.seasonRows().map(r=>({label:r.team+' · '+r.y, r, key:r.owner+r.y}))
-    : Object.values(GM.careers()).map(c=>({label:GM.name(c.owner)+' (2022–2025)', r:c, key:c.owner}));
-  const val = it=>STATS[mode][statIdx].f(it.r);
-  const bestKey = ()=>mode+':'+STATS[mode][statIdx].k;
-  const draw = ()=>{
-    const p = pool(); let it;
-    for(let i=0;i<60;i++){ it = GM.pick(p); if(it.key!==(last&&last.key) && (!left || val(it)!==val(left))) break; }
-    return it;
-  };
-  const start = ()=>{ streak = 0; over = false; locked = false; left = draw(); last = left; right = draw(); render(); };
-  const render = (reveal)=>{
-    const s = STATS[mode][statIdx], best = (GM.store.get('hol_best',{})[bestKey()])||0;
-    el.innerHTML = `
-      <div class="gm-head"><h3>Higher or Lower</h3>
-        <div class="gm-controls">
-          <select id="holMode"><option value="season"${mode==='season'?' selected':''}>Team seasons</option><option value="career"${mode==='career'?' selected':''}>Careers</option></select>
-          <select id="holStat">${STATS[mode].map((x,i)=>`<option value="${i}"${i===statIdx?' selected':''}>${x.label}</option>`).join('')}</select>
-        </div></div>
-      <div class="gm-hud"><span>Streak <b>${streak}</b></span><span>Best <b>${best}</b></span></div>
-      <p class="gm-prompt">Which has more <b>${s.label}</b>?</p>
-      <div class="gm-duel">
-        <div class="gm-duel-card"><div class="gm-duel-name">${GM.esc(left.label)}</div><div class="gm-duel-val">${s.fmt(val(left))}</div></div>
-        <div class="gm-vs">vs</div>
-        <div class="gm-duel-card"><div class="gm-duel-name">${GM.esc(right.label)}</div><div class="gm-duel-val">${reveal||'?'}</div></div>
-      </div>
-      ${over ? `<p class="gm-result bad">Game over &mdash; final streak ${streak}. ${GM.esc(right.label)} had ${s.fmt(val(right))}.</p><button class="gm-btn" id="holAgain">Play again</button>`
-             : `<div class="gm-actions"><button class="gm-btn" id="holHi" ${locked?'disabled':''}>Higher &#9650;</button><button class="gm-btn" id="holLo" ${locked?'disabled':''}>Lower &#9660;</button></div>`}`;
-    el.querySelector('#holMode').onchange = e=>{ mode = e.target.value; statIdx = 0; start(); };
-    el.querySelector('#holStat').onchange = e=>{ statIdx = +e.target.value; start(); };
-    const ag = el.querySelector('#holAgain'); if(ag) ag.onclick = start;
-    const guess = hi=>{
-      if(locked) return; locked = true;
-      const ok = hi ? val(right) >= val(left) : val(right) <= val(left);
-      const bests = GM.store.get('hol_best',{});
-      if(ok){
-        streak++; if(streak > (bests[bestKey()]||0)){ bests[bestKey()] = streak; GM.store.set('hol_best', bests); GM.refreshBest(); }
-        render(s.fmt(val(right)));
-        el.querySelectorAll('.gm-actions button').forEach(b=>b.disabled = true);
-        el.querySelector('.gm-duel-card:last-child').classList.add('good');
-        setTimeout(()=>{ left = right; last = left; right = draw(); locked = false; render(); }, 1100);
-      } else { over = true; GM.submit('hol', streak); render(s.fmt(val(right))); el.querySelector('.gm-duel-card:last-child').classList.add('bad'); }
-    };
-    const hi = el.querySelector('#holHi'), lo = el.querySelector('#holLo');
-    if(hi) hi.onclick = ()=>guess(true);
-    if(lo) lo.onclick = ()=>guess(false);
-  };
-  start();
+function gmPrompt(id, stage){
+  const g = GM_LIST.find(x=>x.id===id), idn = GM.identity();
+  if(idn){ GM.cur = idn.owner; gmRun(id, stage); return; }   // team is locked once claimed
+  GM.loginFlow(stage, g, ()=>{ GM.refreshBest(); GM.refreshWho(); gmRun(id, stage); });
 }
+GM.refreshBest = ()=>{
+  document.querySelectorAll('[data-best]').forEach(el=>{
+    const g = GM_LIST.find(x=>x.id===el.dataset.best); if(!g) return;
+    if(g.daily){ el.textContent = GM.dailyBadge(g.id); return; }
+    const a = GM.attempt(g.id);
+    el.textContent = a ? 'Played today: '+a.score : (GM.prog(g.id) ? 'In progress \u2013 pick up where you left off' : 'Play today');
+  });
+};
 
 /* ============ 2. LEAGUE TRIVIA ============ */
 GM.triviaBank = ()=>{
@@ -8244,16 +8221,18 @@ GM.triviaBank = ()=>{
   return qs;
 };
 function gmTrivia(el){
-  let qs = GM.shuffle(GM.triviaBank()).slice(0,10), i = 0, score = 0, answered = false;
+  let qs = GM.withSeed('trivia', ()=>GM.shuffle(GM.triviaBank()).slice(0,10)), i = 0, score = 0, answered = false;
+  const prog = GM.prog('trivia') || {a:[]};
+  i = prog.a.length; score = prog.a.filter((k,x)=>qs[x] && k===qs[x].answer).length;
   const render = ()=>{
     if(i>=qs.length){
       const best = GM.store.get('trivia_best', null);
       if(best==null || score>best){ GM.store.set('trivia_best', score); GM.refreshBest(); }
-      GM.submit('trivia', score);
+      GM.finishAttempt('trivia', score);
       el.innerHTML = `<div class="gm-head"><h3>League Trivia</h3></div>
         <p class="gm-final">${score}<span>/10</span></p><p class="gm-prompt">${score>=9?'League historian.':score>=7?'You know this league.':score>=4?'Decent. Some gaps.':'Time to read the History tab.'}</p>
-        <button class="gm-btn" id="trAgain">Play again</button>`;
-      el.querySelector('#trAgain').onclick = ()=>gmTrivia(el); return;
+        <p class="note">That was today\u2019s attempt. A new set of questions unlocks tomorrow.</p>`;
+      return;
     }
     const q = qs[i];
     el.innerHTML = `<div class="gm-head"><h3>League Trivia</h3><span class="gm-hud-inline">Question ${i+1} of 10 &middot; Score ${score}</span></div>
@@ -8265,6 +8244,7 @@ function gmTrivia(el){
       if(answered) return; answered = true;
       const k = +b.dataset.k, ok = k===q.answer;
       if(ok) score++;
+      prog.a.push(k); GM.setProg('trivia', prog);
       el.querySelectorAll('.gm-opt').forEach(x=>{ x.disabled = true; if(+x.dataset.k===q.answer) x.classList.add('good'); });
       if(!ok) b.classList.add('bad');
       el.querySelector('#trFeedback').innerHTML = `<p class="gm-result ${ok?'good':'bad'}">${ok?'Correct.':'Not quite.'} ${GM.esc(q.note||'')}</p><button class="gm-btn" id="trNext">${i===qs.length-1?'See score':'Next'}</button>`;
@@ -8292,16 +8272,19 @@ GM.ownerClues = id=>{
 };
 function ordinal(n){ const s = ['th','st','nd','rd'], v = n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
 function gmGuessOwner(el){
-  const ids = GM.shuffle(GM.owners().filter(id=>GM.careers()[id])).slice(0,5);
+  const ids = GM.withSeed('owner', ()=>GM.shuffle(GM.owners().filter(id=>GM.careers()[id])).slice(0,5));
   let round = 0, total = 0, shown = 1, wrong = new Set(), done = false;
+  { const pr = GM.prog('owner'); if(pr){ round = pr.round; total = pr.total; shown = pr.shown; wrong = new Set(pr.wrong); done = pr.done; } }
+  const save = ()=>GM.setProg('owner', {round, total, shown, wrong:[...wrong], done});
   const render = ()=>{
+    save();
     if(round>=ids.length){
       const best = GM.store.get('owner_best', null);
       if(best==null || total>best){ GM.store.set('owner_best', total); GM.refreshBest(); }
-      GM.submit('owner', total);
+      GM.finishAttempt('owner', total);
       el.innerHTML = `<div class="gm-head"><h3>Guess the Owner</h3></div><p class="gm-final">${total}<span>/30</span></p>
-        <p class="gm-prompt">${total>=24?'You know these teams cold.':total>=14?'Solid.':'Study the standings.'}</p><button class="gm-btn" id="goAgain">Play again</button>`;
-      el.querySelector('#goAgain').onclick = ()=>gmGuessOwner(el); return;
+        <p class="gm-prompt">${total>=24?'You know these teams cold.':total>=14?'Solid.':'Study the standings.'}</p><p class="note">That was today\u2019s attempt. New mystery teams unlock tomorrow.</p>`;
+      return;
     }
     const id = ids[round], clues = GM.ownerClues(id);
     el.innerHTML = `<div class="gm-head"><h3>Guess the Owner</h3><span class="gm-hud-inline">Round ${round+1} of 5 &middot; Score ${total}</span></div>
@@ -8312,14 +8295,14 @@ function gmGuessOwner(el){
     el.querySelectorAll('.gm-opt').forEach(b=>b.onclick = ()=>{
       const o = b.dataset.o;
       if(o===id){
-        const pts = 7-shown; total += pts; done = true;
+        const pts = 7-shown; total += pts; done = true; save();
         el.querySelectorAll('.gm-opt').forEach(x=>{ x.disabled = true; if(x.dataset.o===id) x.classList.add('good'); });
         el.querySelector('#goFeedback').innerHTML = `<p class="gm-result good">Correct: ${GM.esc(GM.name(id))}. +${pts} points.</p><button class="gm-btn" id="goNext">Next</button>`;
         el.querySelector('#goNext').onclick = ()=>{ round++; shown = 1; wrong = new Set(); done = false; render(); };
       } else {
         wrong.add(o);
         if(shown>=clues.length){
-          done = true;
+          done = true; save();
           el.querySelectorAll('.gm-opt').forEach(x=>{ x.disabled = true; if(x.dataset.o===id) x.classList.add('good'); });
           el.querySelector('#goFeedback').innerHTML = `<p class="gm-result bad">Out of clues. It was ${GM.esc(GM.name(id))}.</p><button class="gm-btn" id="goNext">Next</button>`;
           el.querySelector('#goNext').onclick = ()=>{ round++; shown = 1; wrong = new Set(); done = false; render(); };
@@ -8350,20 +8333,23 @@ GM.rankMetrics = ()=>{
   return m;
 };
 function gmBlindRank(el){
-  const metrics = GM.shuffle(GM.rankMetrics()).slice(0,3);
-  let round = 0, total = 0;
+  const metrics = GM.withSeed('rank', ()=>{ const ms = GM.shuffle(GM.rankMetrics()).slice(0,3); ms.forEach(m=>{ m.five = GM.shuffle(m.items).slice(0,5); }); return ms; });
+  let round = 0, total = 0, restoredOrder = null;
+  { const pr = GM.prog('rank'); if(pr){ total = pr.total; const ord = pr.order||[]; round = ord.length>=5 ? pr.round+1 : pr.round; restoredOrder = ord.length>=5 ? null : ord; } }
   const render = ()=>{
     if(round>=metrics.length){
       const best = GM.store.get('rank_best', null);
       if(best==null || total>best){ GM.store.set('rank_best', total); GM.refreshBest(); }
-      GM.submit('rank', total);
-      el.innerHTML = `<div class="gm-head"><h3>Blind Ranking</h3></div><p class="gm-final">${total}<span>/30</span></p><p class="gm-prompt">${total>=26?'Nearly perfect.':total>=18?'Good read on the league.':'Rough day.'}</p><button class="gm-btn" id="brAgain">Play again</button>`;
-      el.querySelector('#brAgain').onclick = ()=>gmBlindRank(el); return;
+      GM.finishAttempt('rank', total);
+      el.innerHTML = `<div class="gm-head"><h3>Blind Ranking</h3></div><p class="gm-final">${total}<span>/30</span></p><p class="gm-prompt">${total>=26?'Nearly perfect.':total>=18?'Good read on the league.':'Rough day.'}</p><p class="note">That was today\u2019s attempt. New rounds unlock tomorrow.</p>`;
+      return;
     }
     const m = metrics[round];
-    const five = GM.shuffle(m.items).slice(0,5);
-    let order = [];
+    const five = m.five;
+    let order = restoredOrder ? restoredOrder.slice() : [];
+    restoredOrder = null;
     const paint = (revealed)=>{
+      GM.setProg('rank', {round, total, order:order.slice()});
       el.innerHTML = `<div class="gm-head"><h3>Blind Ranking</h3><span class="gm-hud-inline">Round ${round+1} of 3 &middot; Score ${total}</span></div>
         <p class="gm-prompt">Tap the teams in order from <b>most</b> to <b>least</b>: ${GM.esc(m.q)}.</p>
         <div class="gm-opts">${five.map((t,i)=>{ const pos = order.indexOf(i); return `<button class="gm-opt${pos>=0?' picked':''}" data-i="${i}" ${revealed?'disabled':''}>${pos>=0?`<b class="gm-badge">${pos+1}</b>`:''}${GM.esc(t.label)}${revealed?`<span class="gm-val">${m.fmt(t.v)}</span>`:''}</button>`; }).join('')}</div>
@@ -8389,78 +8375,12 @@ function gmBlindRank(el){
   render();
 }
 
-/* ============ 6. BRACKET CHALLENGE ============ */
-GM.phi = x=>{ const s = x<0?-1:1; x = Math.abs(x)/Math.SQRT2; const t = 1/(1+0.3275911*x); const y = 1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return 0.5*(1+s*y); };
-function gmBracket(el){
-  const rows = computeCurrentStandings(2026);
-  const pic = playoffPictureFor(rows);
-  const seeds = pic.field.slice();
-  const n = seeds.length;
-  if(n<4){ el.innerHTML = '<p class="note">The playoff field is not set yet.</p>'; return; }
-  const seedOf = {}; seeds.forEach((id,i)=>seedOf[id] = i+1);
-  const sd = leagueScoreStdDev(2026) || 22;
-  const mean = {}; seeds.forEach(id=>{ try{ mean[id] = teamBaseMean(id, 2026); }catch(e){ mean[id] = 110; } });
-  const prob = (a,b)=>{ const bonus = seedOf[a]<seedOf[b] ? 5 : -5; return GM.phi((mean[a]-mean[b]+bonus)/(sd*Math.SQRT2)); };
-  // fixed bracket: seed order for 8 slots, missing seeds are byes
-  const order = [1,8,4,5,2,7,3,6];
-  const slot = s=>s<=n ? seeds[s-1] : null;
-  const sig = seeds.join('-'); const saveKey = 'bracket_'+sig;
-  let picks = GM.store.get(saveKey, {});
-  // games: round 1 = four slots pairs; later rounds feed from winners
-  const games = [];
-  for(let g=0; g<4; g++) games.push({id:'r1g'+g, round:1, a:()=>slot(order[g*2]), b:()=>slot(order[g*2+1]), bye:false});
-  games.push({id:'r2g0', round:2, a:()=>win('r1g0'), b:()=>win('r1g1')});
-  games.push({id:'r2g1', round:2, a:()=>win('r1g2'), b:()=>win('r1g3')});
-  games.push({id:'r3g0', round:3, a:()=>win('r2g0'), b:()=>win('r2g1')});
-  function win(id){
-    const g = games.find(x=>x.id===id); const a = g.a(), b = g.b();
-    if(a && !b) return a; if(b && !a) return b; if(!a && !b) return null;
-    const p = picks[id]; return (p===a||p===b) ? p : null;
-  }
-  const clean = ()=>{ games.forEach(g=>{ const a = g.a(), b = g.b(); if(picks[g.id] && picks[g.id]!==a && picks[g.id]!==b) delete picks[g.id]; }); };
-  const label = id=>id ? `<span class="gm-seed">${seedOf[id]}</span>${GM.esc(GM.name(id))}` : '<span class="gm-tbd">TBD</span>';
-  const render = ()=>{
-    clean(); GM.store.set(saveKey, picks);
-    const roundTitle = {1:'Round 1', 2:'Semifinals', 3:'Championship'};
-    const champ = win('r3g0');
-    el.innerHTML = `<div class="gm-head"><h3>Bracket Challenge</h3>
-        <div class="gm-controls"><button class="gm-btn small" id="bkChalk">Pick favorites</button><button class="gm-btn small" id="bkRand">Simulate</button><button class="gm-btn small" id="bkClear">Clear</button></div></div>
-      <p class="gm-prompt">Seeds are the current playoff picture (if the season ended today). Higher seeds get +5 points. Percentages come from the site model.</p>
-      <div class="gm-bracket">${[1,2,3].map(r=>`<div class="gm-round"><h4>${roundTitle[r]}</h4>
-        ${games.filter(g=>g.round===r).map(g=>{
-          const a = g.a(), b = g.b();
-          const pa = (a&&b) ? prob(a,b) : null;
-          const pick = (x,px)=>`<button class="gm-team${picks[g.id]===x?' on':''}" data-g="${g.id}" data-t="${x||''}" ${(a&&b&&x)?'':'disabled'}>${label(x)}${(px!=null)?`<span class="gm-pct">${Math.round(px*100)}%</span>`:''}</button>`;
-          if((a&&!b)||(b&&!a)){ const x = a||b; return `<div class="gm-game bye"><button class="gm-team" disabled>${label(x)}<span class="gm-pct">first-round bye</span></button></div>`; }
-          return `<div class="gm-game">${pick(a, pa)}${pick(b, pa==null?null:1-pa)}</div>`;
-        }).join('')}
-      </div>`).join('')}</div>
-      <div class="gm-champ">${champ ? `Your champion: <b>${GM.esc(GM.name(champ))}</b> (${seedOf[champ]} seed)` : 'Pick every game to crown a champion.'}</div>
-      ${champ ? `<div class="gm-actions"><button class="gm-btn" id="bkCopy">Copy my bracket</button></div><div id="bkMsg" class="note"></div>` : ''}`;
-    el.querySelectorAll('.gm-team').forEach(b=>b.onclick = ()=>{ if(!b.dataset.t) return; picks[b.dataset.g] = b.dataset.t; render(); });
-    el.querySelector('#bkClear').onclick = ()=>{ picks = {}; render(); };
-    const fill = fn=>{ picks = {}; games.forEach(g=>{ const a = g.a(), b = g.b(); if(a && b) picks[g.id] = fn(a,b); }); /* later rounds depend on earlier picks */ games.forEach(g=>{ const a = g.a(), b = g.b(); if(a && b && !picks[g.id]) picks[g.id] = fn(a,b); }); games.forEach(g=>{ const a = g.a(), b = g.b(); if(a && b && !picks[g.id]) picks[g.id] = fn(a,b); }); };
-    el.querySelector('#bkChalk').onclick = ()=>{ fill((a,b)=>prob(a,b)>=0.5?a:b); render(); };
-    el.querySelector('#bkRand').onclick = ()=>{ fill((a,b)=>Math.random()<prob(a,b)?a:b); render(); };
-    const cp = el.querySelector('#bkCopy');
-    if(cp) cp.onclick = ()=>{
-      const lines = ['My Wofford League bracket:'];
-      [['r1g0','r1g1','r1g2','r1g3'],['r2g0','r2g1'],['r3g0']].forEach((rd,i)=>{ lines.push(['Round 1','Semifinals','Championship'][i]+': '+rd.map(id=>{ const w = win(id); return w?GM.name(w):'?'; }).join(', ')); });
-      lines.push('Champion: '+GM.name(champ));
-      const txt = lines.join('\n');
-      const done = ()=>{ el.querySelector('#bkMsg').textContent = 'Copied.'; };
-      try{ navigator.clipboard.writeText(txt).then(done, ()=>{ el.querySelector('#bkMsg').textContent = txt; }); }catch(e){ el.querySelector('#bkMsg').textContent = txt; }
-    };
-  };
-  render();
-}
-
 /* ============ ARCADE: shared canvas helpers ============ */
 GM.arcadeShell = (el, title, extraControls)=>{
   const owners = GM.owners();
-  const me = GM.me() || GM.store.get('arcade_me', owners.includes('bc')?'bc':owners[0]);
+  const me = GM.cur || GM.me() || owners[0];
   el.innerHTML = `<div class="gm-head"><h3>${title}</h3>
-      <div class="gm-controls"><label class="gm-lab">Play as <select id="arcMe">${owners.map(o=>`<option value="${o}"${o===me?' selected':''}>${GM.esc(GM.name(o))}</option>`).join('')}</select></label>${extraControls||''}</div></div>
+      <div class="gm-controls"><span class="gm-lab">Playing as ${GM.esc(GM.name(me))}</span>${extraControls||''}</div></div>
     <div class="gm-hud" id="arcHud"></div>
     <div class="gm-canvas-wrap"><canvas id="arcCanvas"></canvas><div class="gm-overlay" id="arcOverlay"></div></div>
     <p class="note" id="arcHelp"></p>`;
@@ -8471,7 +8391,6 @@ GM.arcadeShell = (el, title, extraControls)=>{
   canvas.width = W*dpr; canvas.height = H*dpr; canvas.style.width = W+'px'; canvas.style.height = H+'px';
   const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
   const api = {el, canvas, ctx, W, H, wrap, me, hud:el.querySelector('#arcHud'), overlay:el.querySelector('#arcOverlay'), help:el.querySelector('#arcHelp')};
-  el.querySelector('#arcMe').onchange = e=>{ GM.store.set('arcade_me', e.target.value); GM.store.set('me', e.target.value); gmOpen(_gmSel, false); };
   return api;
 };
 GM.field = (ctx, W, H, offset)=>{
@@ -8517,11 +8436,12 @@ function gmKicker(el){
   api.help.textContent = 'Tap, click or press Space to stop the power meter, then again to stop the aim meter. Land the power in the green zone and the aim between the posts. Crosswind pushes the ball.';
   let kick = 0, score = 0, streak = 0, phase = 'ready', t = 0, power = 0, aim = 0, wind = 0, target = 0.6, anim = null, msg = '';
   const KICKS = 5;
-  const newKick = ()=>{ kick++; target = 0.45 + kick*0.09; wind = (Math.random()*2-1) * (0.05 + kick*0.025); phase = 'power'; t = 0; msg = ''; };
+  const rr = GM.mkrng('kicker-'+GM.dayKey());
+  const newKick = ()=>{ kick++; target = 0.45 + kick*0.09; wind = (rr()*2-1) * (0.05 + kick*0.025); phase = 'power'; t = 0; msg = ''; };
   const hudUpdate = ()=>{ api.hud.innerHTML = `<span>Kick <b>${Math.min(kick,KICKS)}/${KICKS}</b></span><span>Score <b>${score}</b></span><span>Streak <b>${streak}</b></span>`; };
-  const begin = ()=>{ kick = 0; score = 0; streak = 0; GM.overlay(api, ''); newKick(); hudUpdate(); };
+  const begin = ()=>{ const pr = GM.prog('kicker'); kick = pr?pr.kick:0; score = pr?pr.score:0; streak = pr?pr.streak:0; for(let q=0;q<kick;q++) rr(); GM.overlay(api, ''); newKick(); hudUpdate(); };
   const press = ()=>{
-    if(phase==='ready'||phase==='over'){ begin(); return; }
+    if(phase==='ready'){ begin(); return; } if(phase==='over') return;
     if(phase==='power'){ power = (Math.sin(t*3.4)+1)/2; phase = 'aim'; t = 0; }
     else if(phase==='aim'){
       aim = Math.sin(t*4.2); phase = 'flight'; t = 0;
@@ -8537,7 +8457,7 @@ function gmKicker(el){
   document.addEventListener('keydown', key);
   GM.stopFns.push(()=>document.removeEventListener('keydown', key));
   api.canvas.addEventListener('pointerdown', e=>{ e.preventDefault(); press(); });
-  GM.overlay(api, `<h4>Field Goal Kicker</h4><p>Five kicks, each longer than the last.</p><button class="gm-btn">Start</button>`, begin);
+  GM.overlay(api, `<h4>Field Goal Kicker</h4><p>${GM.prog('kicker')?'Pick up where you left off.':'Five kicks, each longer than the last.'}</p><button class="gm-btn">${GM.prog('kicker')?'Resume':'Start'}</button>`, begin);
   hudUpdate();
   GM.loop(api, dt=>{
     t += dt;
@@ -8550,9 +8470,9 @@ function gmKicker(el){
       if(kick>=KICKS){
         phase = 'over'; const best = GM.store.get('kicker_best', null);
         if(best==null || score>best){ GM.store.set('kicker_best', score); GM.refreshBest(); }
-        GM.submit('kicker', score);
-        GM.overlay(api, `<h4>Final score ${score}</h4><p>${score>=22?'All-pro leg.':score>=12?'Solid kicker.':'Needs more practice.'}</p><button class="gm-btn">Play again</button>`, begin);
-      } else newKick();
+        GM.finishAttempt('kicker', score);
+        GM.overlay(api, `<h4>Final score ${score}</h4><p>${score>=22?'All-pro leg.':score>=12?'Solid kicker.':'Needs more practice.'} Come back tomorrow for another round.</p>`);
+      } else { GM.setProg('kicker', {kick, score, streak}); newKick(); }
     }
   }, ()=>{
     GM.field(ctx, W, H, 0);
@@ -8601,9 +8521,12 @@ function gmDash(el){
   api.help.textContent = 'Left/right arrow keys, swipe, or tap the left or right side of the field to change lanes. Dodge the other teams, grab footballs for bonus points.';
   const LANES = 4, laneW = W/LANES;
   const others = GM.owners().filter(id=>id!==api.me);
+  const rr0 = GM.mkrng('dash-'+GM.dayKey());
+  let rrN = 0; const rr = ()=>{ rrN++; return rr0(); };
+  let snapT = 0, finished = false;
   let lane = 1, px = laneW*1.5, items = [], dist = 0, speed = 230, spawnT = 0, score = 0, over = true, off = 0, ballsGot = 0;
   const hudUpdate = ()=>{ api.hud.innerHTML = `<span>Score <b>${Math.floor(score)}</b></span><span>Footballs <b>${ballsGot}</b></span><span>Best <b>${GM.store.get('dash_best',0)}</b></span>`; };
-  const begin = ()=>{ lane = 1; px = laneW*1.5; items = []; dist = 0; speed = 230; spawnT = 0; score = 0; ballsGot = 0; over = false; GM.overlay(api,''); hudUpdate(); };
+  const begin = ()=>{ if(finished) return; const pr = GM.prog('dash'); if(pr){ lane = pr.lane; px = laneW*(lane+0.5); items = pr.items; dist = pr.dist; speed = pr.speed; spawnT = pr.spawnT; score = pr.score; ballsGot = pr.ballsGot; off = pr.off; for(let q=0;q<pr.rrN;q++) rr(); } else { lane = 1; px = laneW*1.5; items = []; dist = 0; speed = 230; spawnT = 0; score = 0; ballsGot = 0; } over = false; GM.overlay(api,''); hudUpdate(); };
   const move = d=>{ if(over) return; lane = Math.max(0, Math.min(LANES-1, lane+d)); };
   const key = e=>{ if(e.key==='ArrowLeft'||e.key==='a'){ e.preventDefault(); move(-1); } else if(e.key==='ArrowRight'||e.key==='d'){ e.preventDefault(); move(1); } else if(e.key===' '&&over){ e.preventDefault(); begin(); } };
   document.addEventListener('keydown', key); GM.stopFns.push(()=>document.removeEventListener('keydown', key));
@@ -8616,7 +8539,7 @@ function gmDash(el){
     else { const r = api.canvas.getBoundingClientRect(); move((e.clientX-r.left) > r.width/2 ? 1 : -1); }
     sx = null;
   });
-  GM.overlay(api, '<h4>Gridiron Dash</h4><p>Run upfield without getting tackled.</p><button class="gm-btn">Start</button>', begin);
+  GM.overlay(api, `<h4>Gridiron Dash</h4><p>${GM.prog('dash')?'Pick up where you left off.':'Run upfield without getting tackled.'}</p><button class="gm-btn">${GM.prog('dash')?'Resume':'Start'}</button>`, begin);
   hudUpdate();
   GM.loop(api, dt=>{
     if(over) return;
@@ -8625,10 +8548,10 @@ function gmDash(el){
     spawnT -= dt;
     if(spawnT<=0){
       spawnT = Math.max(0.32, 0.85 - dist/18000);
-      const l = GM.rnd(LANES);
-      if(Math.random()<0.2) items.push({type:'ball', lane:l, y:-30});
-      else items.push({type:'def', lane:l, y:-30, id:GM.pick(others)});
-      if(Math.random()<0.25 && dist>1500){ let l2 = (l+1+GM.rnd(LANES-1))%LANES; items.push({type:'def', lane:l2, y:-30, id:GM.pick(others)}); }
+      const l = Math.floor(rr()*LANES);
+      if(rr()<0.2) items.push({type:'ball', lane:l, y:-30});
+      else items.push({type:'def', lane:l, y:-30, id:others[Math.floor(rr()*others.length)]});
+      if(rr()<0.25 && dist>1500){ let l2 = (l+1+Math.floor(rr()*(LANES-1)))%LANES; items.push({type:'def', lane:l2, y:-30, id:others[Math.floor(rr()*others.length)]}); }
     }
     items.forEach(it=>it.y += speed*dt*0.95);
     const py = H-90;
@@ -8641,12 +8564,14 @@ function gmDash(el){
       }
       return true;
     });
+    if(!over){ snapT += dt; if(snapT>0.5){ snapT = 0; GM.setProg('dash', {lane, items:items.map(i=>({...i})), dist, speed, spawnT, score, ballsGot, off, rrN}); } }
     if(over){
+      finished = true;
       const sc = Math.floor(score); const best = GM.store.get('dash_best', null);
       if(best==null || sc>best){ GM.store.set('dash_best', sc); GM.refreshBest(); }
-      GM.submit('dash', sc);
+      GM.finishAttempt('dash', sc);
       hudUpdate();
-      GM.overlay(api, `<h4>Tackled! ${sc} points</h4><p>${ballsGot} footballs collected.</p><button class="gm-btn">Run it back</button>`, begin);
+      GM.overlay(api, `<h4>Tackled! ${sc} points</h4><p>${ballsGot} footballs collected. Come back tomorrow for another run.</p>`);
     } else if((Math.floor(score)%5)===0) hudUpdate();
   }, ()=>{
     GM.field(ctx, W, H, off);
@@ -8664,23 +8589,24 @@ function gmPasser(el){
   api.help.textContent = 'Tap or click where you want the ball to land. It takes about half a second to arrive, so lead the receiver. Land it near a receiver for yards; land it near a defender and it is picked off.';
   const THROWS = 8;
   const others = GM.owners().filter(id=>id!==api.me);
-  let thrown = 0, yards = 0, comps = 0, ints = 0, ball = null, t = 0, flash = '', flashT = 0, over = true;
+  let thrown = 0, yards = 0, comps = 0, ints = 0, ball = null, t = 0, flash = '', flashT = 0, over = true, finished = false;
   let recs = [], defs = [];
   const qb = {x:W/2, y:H-60};
+  const rr = GM.mkrng('passer-'+GM.dayKey());
   const setup = ()=>{
-    const ids = GM.shuffle(others);
-    recs = [0,1,2].map(i=>({id:ids[i], y:H*0.2+i*H*0.15, x:Math.random()*W, vx:(90+Math.random()*60)*(Math.random()<0.5?-1:1), r:20}));
-    defs = [0,1,2].map(i=>({id:ids[3+i], y:H*0.27+i*H*0.15, x:Math.random()*W, vx:(70+Math.random()*50)*(Math.random()<0.5?-1:1), r:19}));
+    const ids = GM.rshuffle(others, rr);
+    recs = [0,1,2].map(i=>({id:ids[i], y:H*0.2+i*H*0.15, x:rr()*W, vx:(90+rr()*60)*(rr()<0.5?-1:1), r:20}));
+    defs = [0,1,2].map(i=>({id:ids[3+i], y:H*0.27+i*H*0.15, x:rr()*W, vx:(70+rr()*50)*(rr()<0.5?-1:1), r:19}));
   };
   const hudUpdate = ()=>{ api.hud.innerHTML = `<span>Throw <b>${Math.min(thrown+1,THROWS)}/${THROWS}</b></span><span>Yards <b>${yards}</b></span><span>Comp <b>${comps}</b> &middot; Int <b>${ints}</b></span>`; };
-  const begin = ()=>{ thrown = 0; yards = 0; comps = 0; ints = 0; ball = null; over = false; setup(); GM.overlay(api,''); hudUpdate(); };
+  const begin = ()=>{ if(finished) return; const pr = GM.prog('passer'); thrown = pr?pr.thrown:0; yards = pr?pr.yards:0; comps = pr?pr.comps:0; ints = pr?pr.ints:0; ball = null; over = false; setup(); GM.overlay(api,''); hudUpdate(); };
   api.canvas.addEventListener('pointerdown', e=>{
     e.preventDefault(); if(over || ball) return;
     const r = api.canvas.getBoundingClientRect();
     const tx = (e.clientX-r.left)*(W/r.width), ty = (e.clientY-r.top)*(H/r.height);
     ball = {sx:qb.x, sy:qb.y, tx, ty:Math.min(ty, H-120), t:0, dur:0.55};
   });
-  GM.overlay(api, '<h4>Pocket Passer</h4><p>Eight throws. Lead your receivers.</p><button class="gm-btn">Start</button>', begin);
+  GM.overlay(api, `<h4>Pocket Passer</h4><p>${GM.prog('passer')?'Pick up where you left off.':'Eight throws. Lead your receivers.'}</p><button class="gm-btn">${GM.prog('passer')?'Resume':'Start'}</button>`, begin);
   hudUpdate();
   GM.loop(api, dt=>{
     if(over) return;
@@ -8696,12 +8622,13 @@ function gmPasser(el){
         else if(hitR){ const gain = Math.round((qb.y-hitR.y)/(H-60)*70)+5; comps++; yards += gain; flash = 'Complete +'+gain+' yds'; }
         else flash = 'Incomplete';
         flashT = 1.0; ball = null; hudUpdate();
+        if(thrown<THROWS) GM.setProg('passer', {thrown, yards, comps, ints});
         if(thrown>=THROWS){
-          over = true;
+          over = true; finished = true;
           const best = GM.store.get('passer_best', null);
           if(best==null || yards>best){ GM.store.set('passer_best', yards); GM.refreshBest(); }
-          GM.submit('passer', yards);
-          setTimeout(()=>GM.overlay(api, `<h4>${yards} passing yards</h4><p>${comps} of ${THROWS} completed, ${ints} interception${ints===1?'':'s'}.</p><button class="gm-btn">Play again</button>`, begin), 700);
+          GM.finishAttempt('passer', yards);
+          setTimeout(()=>GM.overlay(api, `<h4>${yards} passing yards</h4><p>${comps} of ${THROWS} completed, ${ints} interception${ints===1?'':'s'}. Come back tomorrow for another round.</p>`), 700);
         }
       }
     }
@@ -8727,9 +8654,10 @@ GM.mkrng = str=>{
   return ()=>{ a |= 0; a = (a + 0x6D2B79F5)|0; let t = Math.imul(a ^ (a>>>15), 1|a); t = (t + Math.imul(t ^ (t>>>7), 61|t)) ^ t; return ((t ^ (t>>>14))>>>0)/4294967296; };
 };
 GM.rshuffle = (arr, rng)=>{ arr = arr.slice(); for(let i=arr.length-1;i>0;i--){ const j = Math.floor(rng()*(i+1)); [arr[i],arr[j]] = [arr[j],arr[i]]; } return arr; };
-GM.dget = g=>GM.store.get('daily_'+g+'_'+GM.dayKey(), null);
-GM.dset = (g,v)=>GM.store.set('daily_'+g+'_'+GM.dayKey(), v);
-GM.dstat = g=>GM.store.get('dstat_'+g, {last:'', count:0, max:0, played:0, wins:0});
+GM.who = ()=>GM.cur||GM.me()||'x';
+GM.dget = g=>GM.store.get('daily_'+g+'_'+GM.dayKey()+'_'+GM.who(), null);
+GM.dset = (g,v)=>GM.store.set('daily_'+g+'_'+GM.dayKey()+'_'+GM.who(), v);
+GM.dstat = g=>GM.store.get('dstat_'+g+'_'+GM.who(), {last:'', count:0, max:0, played:0, wins:0});
 GM.dfinish = (g, won)=>{
   const st = GM.dstat(g), today = GM.dayKey();
   if(st.last===today) return st;
@@ -8737,7 +8665,7 @@ GM.dfinish = (g, won)=>{
   const yk = y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
   st.count = (st.last===yk) ? st.count+1 : 1;
   st.max = Math.max(st.max, st.count); st.played++; if(won) st.wins++; st.last = today;
-  GM.store.set('dstat_'+g, st); GM.refreshBest();
+  GM.store.set('dstat_'+g+'_'+GM.who(), st); GM.refreshBest();
   return st;
 };
 GM.dailyBadge = g=>{
@@ -8754,7 +8682,7 @@ GM.dailyFooter = (el, g, shareText, score)=>{
     <div class="gm-final-row"><div><span>Streak</span><b>${st.count}</b></div><div><span>Best streak</span><b>${st.max}</b></div><div><span>Played</span><b>${st.played}</b></div><div><span>Solved</span><b>${st.wins}</b></div></div>
     <p class="note">A new puzzle unlocks at midnight in your time zone.</p>`;
   el.appendChild(box);
-  if(score!=null){ GM.postOnce(g, score, shareText.split('\n')[0]); GM.todayPanel(box, g); }
+  if(score!=null){ (async()=>{ await GM.postOnce(g, score, shareText.split('\n')[0]); GM.todayPanel(box, g); })(); }
   box.querySelector('[data-share]').onclick = ()=>{
     const m = box.querySelector('[data-sharemsg]');
     const fallback = ()=>{ m.textContent = 'Copy from the box above.'; };
@@ -8764,13 +8692,16 @@ GM.dailyFooter = (el, g, shareText, score)=>{
 
 /* ============ DAILY 1: OWNER WORDLE ============ */
 GM.wordleAttrs = id=>{
-  const c = GM.careers()[id]; const cur = GM.curRows().find(r=>r.owner===id);
+  const cur = GM.curRows().slice().sort((x,y)=>(y.w-x.w)||(y.pf-x.pf));
+  const r = cur.find(x=>x.owner===id), rank = cur.findIndex(x=>x.owner===id)+1;
+  const g = r ? Math.max(1, r.games) : 1;
+  const wk = GM.weeklyScores().filter(x=>x.owner===id && x.y===2026).map(x=>x.s);
   return [
-    {k:'Titles', v:c.titles, fmt:v=>String(v), tol:0, near:1},
-    {k:'Career W', v:c.w, fmt:v=>String(v), tol:0, near:6},
-    {k:'PPG', v:c.pf/c.games, fmt:GM.f1, tol:1.5, near:5},
-    {k:'Best finish', v:c.best, fmt:v=>ordinal(v), tol:0, near:1},
-    {k:'2026 W', v:cur?cur.w:0, fmt:v=>String(v), tol:0, near:1}
+    {k:'Rank',    v:r?rank:0,                    fmt:v=>ordinal(v), tol:0,   near:1},
+    {k:'Wins',    v:r?r.w:0,                     fmt:v=>String(v),  tol:0,   near:1},
+    {k:'PPG',     v:r?r.pf/g:0,                  fmt:GM.f1,         tol:1.5, near:5},
+    {k:'PA/G',    v:r?r.pa/g:0,                  fmt:GM.f1,         tol:1.5, near:5},
+    {k:'Best wk', v:wk.length?Math.max(...wk):0, fmt:GM.f1,         tol:3,   near:10}
   ];
 };
 function gmWordle(el){
@@ -8792,7 +8723,7 @@ function gmWordle(el){
   const render = ()=>{
     const left = ids.filter(i=>!state.guesses.includes(i));
     el.innerHTML = `<div class="gm-head"><h3>Owner Wordle <span class="gm-hud-inline">#${GM.puzNum()}</span></h3><span class="gm-hud-inline">${state.guesses.length}/${MAX} guesses</span></div>
-      <p class="gm-prompt">Find the mystery owner. Green is a match. Yellow is close. The arrow points toward the answer. Stats cover 2022–2025 unless marked 2026.</p>
+      <p class="gm-prompt">Find the mystery owner using this season’s numbers (2026 standings rank, wins, points for and against per game, and best week). Green is a match, yellow is close, and the arrow points toward the answer.</p>
       <div class="wd-grid"><div class="wd-row wd-head"><span class="wd-name"></span>${tAttrs.map(a=>`<span>${a.k}</span>`).join('')}</div>
       ${state.guesses.map(g=>`<div class="wd-row"><span class="wd-name">${GM.esc(GM.name(g))}</span>${rowFor(g).map(t=>`<span class="wd-tile ${t.cls}">${t.txt}${t.arrow?`<i>${t.arrow}</i>`:''}</span>`).join('')}</div>`).join('')}
       </div>
@@ -8949,11 +8880,342 @@ function gmImmaculate(el){
 }
 
 
-/* ============ LEADERBOARD (Google Sheets via Apps Script) ============ */
+/* ============ SHARED: player-name helpers ============ */
+GM.norm = s=>String(s).toLowerCase().replace(/[.'’]/g,'').replace(/\b(jr|sr|ii|iii|iv|v)\b/g,'').replace(/\s+/g,' ').trim();
+GM.allNames = ()=>{
+  if(GM._names) return GM._names;
+  const set = new Set(Object.keys(GM.playerIndex()));
+  try{ Object.keys(DRAFTS).forEach(y=>(DRAFTS[y].picks||[]).forEach(p=>set.add(p.player))); }catch(e){}
+  return GM._names = [...set].sort();
+};
+GM.seasonTotals = year=>{
+  GM._st = GM._st || {};
+  if(GM._st[year]) return GM._st[year];
+  const m = {};
+  const yr = PLAYER_SCORES[year] || {};
+  Object.keys(yr).forEach(w=>Object.values(yr[w]).forEach(rows=>rows.forEach(p=>{
+    const k = GM.norm(p.name); const e = m[k] = m[k] || {name:p.name, pos:p.pos, total:0, games:0};
+    e.total += p.pts; e.games++;
+  })));
+  ['QB','RB','WR','TE','K','D/ST'].forEach(pos=>{
+    Object.values(m).filter(e=>e.pos===pos).sort((a,b)=>b.total-a.total).forEach((e,i)=>e.rank = i+1);
+  });
+  return GM._st[year] = m;
+};
+
+/* generic "name the player" daily engine, used by Pulse Check and Draft Day */
+GM.guessPlayer = (el, cfg)=>{
+  const MAX = 5, names = GM.allNames();
+  let state = GM.dget(cfg.key) || {guesses:[], done:false, won:false};
+  let msg = '';
+  const wrong = ()=>state.guesses.filter(g=>GM.norm(g)!==GM.norm(cfg.answer)).length;
+  const render = ()=>{
+    const hints = cfg.hints().slice(0, wrong());
+    el.innerHTML = `<div class="gm-head"><h3>${cfg.title} <span class="gm-hud-inline">#${GM.puzNum()}</span></h3><span class="gm-hud-inline">${state.guesses.length}/${MAX} guesses</span></div>
+      <p class="gm-prompt">${cfg.intro}</p>${cfg.visual}
+      ${hints.length?`<ul class="gm-hints">${hints.map(h=>`<li>${h}</li>`).join('')}</ul>`:''}
+      ${state.guesses.length?`<div class="gm-guesslist">${state.guesses.map(g=>`<span class="gm-chip ${GM.norm(g)===GM.norm(cfg.answer)?'g':'x'}">${GM.esc(g)}</span>`).join('')}</div>`:''}
+      ${state.done?'':`<div class="ig-input"><input id="gpName" list="gpNames" placeholder="Type a player name" autocomplete="off"><datalist id="gpNames">${names.map(n=>`<option value="${GM.esc(n)}">`).join('')}</datalist><button class="gm-btn" id="gpGo">Guess</button></div>`}
+      <p class="gm-result ${msg?'bad':''}">${GM.esc(msg)}</p><div id="gpEnd"></div>`;
+    if(state.done){
+      const end = el.querySelector('#gpEnd');
+      end.innerHTML = `<p class="gm-result ${state.won?'good':'bad'}">${state.won?'Solved in '+state.guesses.length+'.':'Out of guesses.'} ${cfg.reveal}</p>`;
+      const sq = state.guesses.map(g=>GM.norm(g)===GM.norm(cfg.answer)?'🟩':'🟥').join('');
+      GM.dailyFooter(end, cfg.key, `${cfg.title} #${GM.puzNum()} ${state.won?state.guesses.length:'X'}/${MAX}\n${sq}`, state.won?6-state.guesses.length:0);
+      return;
+    }
+    const go = ()=>{
+      const raw = el.querySelector('#gpName').value.trim(); if(!raw) return;
+      const hit = names.find(n=>n.toLowerCase()===raw.toLowerCase());
+      if(!hit){ msg = 'That name is not in the player list.'; render(); return; }
+      if(state.guesses.includes(hit)){ msg = 'You already guessed '+hit+'.'; render(); return; }
+      msg = ''; state.guesses.push(hit);
+      if(GM.norm(hit)===GM.norm(cfg.answer)){ state.done = true; state.won = true; }
+      else if(state.guesses.length>=MAX) state.done = true;
+      GM.dset(cfg.key, state);
+      if(state.done) GM.dfinish(cfg.key, state.won);
+      render();
+    };
+    el.querySelector('#gpGo').onclick = go;
+    el.querySelector('#gpName').addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+  };
+  render();
+};
+
+/* ============ DAILY: PULSE CHECK ============ */
+GM.pulsePool = ()=>{
+  if(GM._pulse) return GM._pulse;
+  const out = [];
+  ['2022','2023','2024','2025'].forEach(y=>{
+    if(!PLAYER_SCORES[y]) return;
+    const weeks = Object.keys(PLAYER_SCORES[y]).map(Number).sort((a,b)=>a-b), m = {};
+    weeks.forEach(w=>{ const wk = PLAYER_SCORES[y][w]; Object.keys(wk).forEach(team=>wk[team].forEach(p=>{
+      const e = m[p.name] = m[p.name] || {name:p.name, pos:p.pos, year:y, pts:{}, owners:{}};
+      e.pts[w] = p.pts; const o = ownerForTeam(+y, team); if(o && o!=='rm2') e.owners[o] = (e.owners[o]||0)+1;
+    })); });
+    Object.values(m).forEach(e=>{
+      const ws = Object.keys(e.pts); const tot = ws.reduce((s,w)=>s+e.pts[w],0);
+      if(ws.length>=12 && tot/ws.length>=8 && e.pos!=='K' && e.pos!=='D/ST'){ e.total = tot; e.n = ws.length; e.weeks = weeks; out.push(e); }
+    });
+  });
+  out.sort((a,b)=>(a.name+a.year<b.name+b.year?-1:1));
+  return GM._pulse = out;
+};
+function gmPulse(el){
+  const rng = GM.mkrng('pulse-'+GM.dayKey());
+  const pool = GM.pulsePool(); const a = pool[Math.floor(rng()*pool.length)];
+  const vals = a.weeks.map(w=>a.pts[w]); const mx = Math.max(1, ...vals.filter(v=>v!=null));
+  const visual = `<div class="pl-chart">${a.weeks.map(w=>{ const v = a.pts[w]; return v==null ? `<div class="pl-col"><div class="pl-bar miss"></div><span>${w}</span></div>` : `<div class="pl-col"><div class="pl-bar" style="height:${Math.max(3, Math.round(Math.max(0,v)/mx*100))}%"></div><span>${w}</span></div>`; }).join('')}</div>`;
+  const top = Object.keys(a.owners).sort((x,y)=>a.owners[y]-a.owners[x])[0];
+  const parts = a.name.split(' ');
+  GM.guessPlayer(el, {
+    key:'pulse', title:'Pulse Check', answer:a.name, visual,
+    intro:`This is one player’s week-by-week scoring in <b>${a.year}</b>. Each bar is a week, and the bar for a week he was on no roster is empty. Name him.`,
+    hints:()=>[
+      `Position: <b>${a.pos}</b>`,
+      `Season total: <b>${GM.f1(a.total)}</b> points over ${a.n} weeks`,
+      top ? `Rostered most often by <b>${GM.esc(GM.name(top))}</b>` : 'He spent almost no time on a league roster.',
+      `Initials: <b>${parts.map(p=>p[0]).join('. ')}.</b>`
+    ],
+    reveal:`It was ${GM.esc(a.name)} in ${a.year}: ${GM.f1(a.total)} points, best week ${GM.f1(Math.max(...vals.filter(v=>v!=null)))}.`
+  });
+}
+
+/* ============ DAILY: DRAFT DAY TIME MACHINE ============ */
+function gmDraftDay(el){
+  const rng = GM.mkrng('draft-'+GM.dayKey());
+  const pool = [];
+  Object.keys(DRAFTS).sort().forEach(y=>DRAFTS[y].picks.forEach(p=>{ if(p.round<=10) pool.push({y, ...p}); }));
+  pool.sort((a,b)=>(a.y+String(a.round).padStart(2,'0')+String(a.pick).padStart(2,'0')<b.y+String(b.round).padStart(2,'0')+String(b.pick).padStart(2,'0'))?-1:1);
+  const p = pool[Math.floor(rng()*pool.length)];
+  const overall = (p.round-1)*12 + p.pick;
+  const tot = GM.seasonTotals(p.y)[GM.norm(p.player)];
+  const parts = p.player.split(' '), last = parts[parts.length-1].replace(/[^A-Za-z]/g,'') || parts[parts.length-1];
+  const visual = `<div class="dd-card"><div class="dd-year">${p.y} draft</div><div class="dd-pick">Round ${p.round}, Pick ${p.pick}</div><div class="dd-sub">#${overall} overall &middot; taken by <b>${GM.esc(GM.name(p.teamOwner))}</b></div></div>`;
+  GM.guessPlayer(el, {
+    key:'draft', title:'Draft Day Time Machine', answer:p.player, visual,
+    intro:'Which player did this team take with this pick?',
+    hints:()=>[
+      `Position: <b>${p.position}</b>`,
+      tot ? `He finished as <b>${p.position}${tot.rank}</b> in this league’s scoring${p.y==='2026'?' so far in 2026':''}, with <b>${GM.f1(tot.total)}</b> points.` : 'No scoring is on file for him.',
+      `His first name starts with <b>${parts[0][0]}</b> and his last name has <b>${last.length}</b> letters.`,
+      `His last name starts with <b>${last[0]}</b>.`
+    ],
+    reveal:`${GM.esc(p.player)} (${p.position})${tot?`, ${GM.f1(tot.total)} points`:''}.`
+  });
+}
+
+/* ============ DAILY: CALL THE UPSET ============ */
+GM.upsetPool = ()=>{
+  if(GM._ups) return GM._ups;
+  const out = [];
+  ['2022','2023','2024','2025'].forEach(y=>{
+    const st = {}; const get = o=>st[o] = st[o] || {w:0,l:0,pf:0,g:0};
+    (MATCHUPS[y]||[]).slice().sort((a,b)=>a.w-b.w).forEach(wk=>{
+      const snap = {}; Object.keys(st).forEach(o=>snap[o] = {...st[o]});
+      const rows = wk.g.map(([tA,sA,tB,sB])=>({a:ownerForTeam(+y,tA), sa:sA, b:ownerForTeam(+y,tB), sb:sB}));
+      rows.forEach(r=>{
+        if(wk.playoff || wk.w<4 || !r.a || !r.b || r.a==='rm2' || r.b==='rm2' || r.sa===r.sb) return;
+        const A = snap[r.a], B = snap[r.b]; if(!A || !B || A.g<3 || B.g<3) return;
+        const pa = A.pf/A.g, pb = B.pf/B.g; if(Math.abs(pa-pb)<3) return;
+        const winner = r.sa>r.sb ? r.a : r.b, fav = pa>pb ? r.a : r.b;
+        out.push({y, w:wk.w, a:r.a, b:r.b, sa:r.sa, sb:r.sb, A:{...A, ppg:pa}, B:{...B, ppg:pb}, winner, upset:winner!==fav});
+      });
+      if(!wk.playoff) rows.forEach(r=>{ if(!r.a||!r.b) return; const A = get(r.a), B = get(r.b); A.pf += r.sa; A.g++; B.pf += r.sb; B.g++; if(r.sa>r.sb){ A.w++; B.l++; } else if(r.sb>r.sa){ B.w++; A.l++; } });
+    });
+  });
+  return GM._ups = out;
+};
+function gmUpset(el){
+  const rng = GM.mkrng('upset-'+GM.dayKey());
+  const pool = GM.upsetPool();
+  const ups = GM.rshuffle(pool.filter(g=>g.upset), rng).slice(0,2), favs = GM.rshuffle(pool.filter(g=>!g.upset), rng).slice(0,3);
+  const games = GM.rshuffle([...ups, ...favs], rng).map(g=>({...g, flip:rng()<0.5}));
+  let state = GM.dget('upset') || {picks:[], done:false};
+  const side = (g, who)=>{ const S = who===g.a ? g.A : g.B; return {id:who, rec:`${S.w}-${S.l}`, ppg:S.ppg}; };
+  const render = ()=>{
+    el.innerHTML = `<div class="gm-head"><h3>Call the Upset <span class="gm-hud-inline">#${GM.puzNum()}</span></h3><span class="gm-hud-inline">${state.picks.length}/5 picked</span></div>
+      <p class="gm-prompt">Five real past matchups. Records and scoring averages are what each team had going into that week. Pick the winner of each.</p>
+      <div class="up-list">${games.map((g,i)=>{
+        const first = g.flip?g.b:g.a, second = g.flip?g.a:g.b, p = state.picks[i];
+        const btn = who=>{ const s = side(g, who); const cls = state.done ? (who===g.winner?'good':(p===who?'bad':'')) : (p===who?'on':''); return `<button class="up-team ${cls}" data-i="${i}" data-w="${who}" ${(state.done||i>state.picks.length)?'disabled':''}><b>${GM.esc(GM.name(who))}</b><small>${s.rec} &middot; ${GM.f1(s.ppg)} PPG</small></button>`; };
+        return `<div class="up-card"><div class="up-meta">Week ${g.w}, ${g.y}${state.done&&g.upset?' &middot; <b>upset</b>':''}</div><div class="up-row">${btn(first)}<span class="gm-vs">vs</span>${btn(second)}</div>${state.done?`<div class="up-score">${GM.esc(GM.name(g.a))} ${GM.f2(g.sa)} – ${GM.f2(g.sb)} ${GM.esc(GM.name(g.b))}</div>`:''}</div>`;
+      }).join('')}</div><div id="upEnd"></div>`;
+    if(state.done){
+      const n = games.filter((g,i)=>state.picks[i]===g.winner).length;
+      const end = el.querySelector('#upEnd');
+      end.innerHTML = `<p class="gm-result ${n>=4?'good':n>=3?'':'bad'}">${n} of 5 correct. ${games.filter(g=>g.upset).length} of the five were upsets.</p>`;
+      GM.dailyFooter(end, 'upset', `Call the Upset #${GM.puzNum()} ${n}/5\n`+games.map((g,i)=>state.picks[i]===g.winner?'🟩':'🟥').join(''), n);
+      return;
+    }
+    el.querySelectorAll('.up-team').forEach(b=>b.onclick = ()=>{
+      const i = +b.dataset.i; if(i!==state.picks.length) return;
+      state.picks.push(b.dataset.w);
+      if(state.picks.length===5){ state.done = true; }
+      GM.dset('upset', state);
+      if(state.done) GM.dfinish('upset', games.filter((g,k)=>state.picks[k]===g.winner).length>=3);
+      render();
+    });
+  };
+  render();
+}
+
+/* ============ DAILY: TRADE VERDICT ============ */
+GM.tradePool = ()=>{
+  if(GM._trp) return GM._trp;
+  const out = [];
+  TRADES.forEach((t,i)=>{
+    if(t.teamA==='rm2' || t.teamB==='rm2') return;
+    let g = null; try{ g = gradeTrade(t); }catch(e){}
+    if(g && g.aGainedGames>0 && g.bGainedGames>0 && Math.abs(g.aDiff)>=1) out.push({t, i, g});
+  });
+  return GM._trp = out;
+};
+function gmTradeVerdict(el){
+  const rng = GM.mkrng('trade-'+GM.dayKey());
+  const picks3 = GM.rshuffle(GM.tradePool(), rng).slice(0,3);
+  let state = GM.dget('trade') || {picks:[], done:false};
+  const winnerOf = x=>x.g.aDiff>0 ? x.t.teamA : x.t.teamB;
+  const render = ()=>{
+    el.innerHTML = `<div class="gm-head"><h3>Trade Verdict <span class="gm-hud-inline">#${GM.puzNum()}</span></h3><span class="gm-hud-inline">${state.picks.length}/3 called</span></div>
+      <p class="gm-prompt">Three real league trades. Say which team came out ahead. The answer is based on how many points per started game each side’s incoming players actually scored after the deal.</p>
+      <div class="up-list">${picks3.map((x,i)=>{
+        const t = x.t, p = state.picks[i], w = winnerOf(x);
+        const btn = who=>{ const cls = state.done ? (who===w?'good':(p===who?'bad':'')) : (p===who?'on':''); return `<button class="up-team ${cls}" data-i="${i}" data-w="${who}" ${(state.done||i>state.picks.length)?'disabled':''}><b>${GM.esc(GM.name(who))} came out ahead</b></button>`; };
+        return `<div class="up-card"><div class="up-meta">${t.year}</div>
+          <div class="tv-sides"><div><span>${GM.esc(GM.name(t.teamA))} sent</span>${t.sentA.map(n=>`<div>${GM.esc(n)}</div>`).join('')}</div><div><span>${GM.esc(GM.name(t.teamB))} sent</span>${t.sentB.map(n=>`<div>${GM.esc(n)}</div>`).join('')}</div></div>
+          <div class="up-row">${btn(t.teamA)}${btn(t.teamB)}</div>
+          ${state.done?`<div class="up-score">${GM.esc(GM.name(t.teamA))}: ${GM.f1(x.g.aValuePerGame)} per started game (${x.g.aGainedGames} games) &middot; ${GM.esc(GM.name(t.teamB))}: ${GM.f1(x.g.bValuePerGame)} (${x.g.bGainedGames} games)</div>`:''}</div>`;
+      }).join('')}</div><div id="tvEnd"></div>`;
+    if(state.done){
+      const n = picks3.filter((x,i)=>state.picks[i]===winnerOf(x)).length;
+      const end = el.querySelector('#tvEnd');
+      end.innerHTML = `<p class="gm-result ${n>=2?'good':'bad'}">${n} of 3 correct.</p>`;
+      GM.dailyFooter(end, 'trade', `Trade Verdict #${GM.puzNum()} ${n}/3\n`+picks3.map((x,i)=>state.picks[i]===winnerOf(x)?'🟩':'🟥').join(''), n);
+      return;
+    }
+    el.querySelectorAll('.up-team').forEach(b=>b.onclick = ()=>{
+      const i = +b.dataset.i; if(i!==state.picks.length) return;
+      state.picks.push(b.dataset.w);
+      if(state.picks.length===3) state.done = true;
+      GM.dset('trade', state);
+      if(state.done) GM.dfinish('trade', picks3.filter((x,k)=>state.picks[k]===winnerOf(x)).length>=2);
+      render();
+    });
+  };
+  render();
+}
+
+/* ============ DAILY: HIGHER OR LOWER ============ */
+GM.holDaily = [
+  {label:'wins', f:r=>r.w, fmt:v=>String(v)},
+  {label:'points scored', f:r=>r.pf, fmt:GM.f1},
+  {label:'points against', f:r=>r.pa, fmt:GM.f1},
+  {label:'points per game', f:r=>r.pf/r.games, fmt:GM.f1},
+  {label:'point differential', f:r=>r.pf-r.pa, fmt:v=>(v>0?'+':'')+GM.f1(v)},
+  {label:'win percentage', f:r=>r.w/r.games, fmt:v=>(v*100).toFixed(1)+'%'}
+];
+function gmDailyHol(el){
+  const rng = GM.mkrng('dhol-'+GM.dayKey());
+  const stat = GM.holDaily[Math.floor(rng()*GM.holDaily.length)];
+  const rows = GM.seasonRows().sort((a,b)=>(a.y+a.owner<b.y+b.owner?-1:1));
+  const chain = [];
+  GM.rshuffle(rows, rng).forEach(r=>{ if(chain.length<11 && (!chain.length || stat.f(r)!==stat.f(chain[chain.length-1]))) chain.push(r); });
+  const label = r=>GM.name(r.owner)+' · '+r.y;
+  let state = GM.dget('dhol') || {answers:[], done:false};
+  const streak = ()=>state.answers.filter(x=>x).length;
+  const render = ()=>{
+    const i = state.answers.length, left = chain[Math.min(i, 9)], right = chain[Math.min(i+1, 10)];
+    el.innerHTML = `<div class="gm-head"><h3>Daily Higher or Lower <span class="gm-hud-inline">#${GM.puzNum()}</span></h3><span class="gm-hud-inline">Streak ${streak()} of 10</span></div>
+      <p class="gm-prompt">Which team season has more <b>${stat.label}</b>? A miss ends the run. Everyone gets the same chain today.</p>
+      ${state.done ? `<div class="up-list">${chain.slice(0, Math.min(11, state.answers.length+2)).map((r,k)=>`<div class="up-card"><div class="up-row"><b>${GM.esc(label(r))}</b><span class="gm-vs"></span><b>${stat.fmt(stat.f(r))}</b></div></div>`).join('')}</div>` :
+      `<div class="gm-duel"><div class="gm-duel-card"><div class="gm-duel-name">${GM.esc(label(left))}</div><div class="gm-duel-val">${stat.fmt(stat.f(left))}</div></div><div class="gm-vs">vs</div><div class="gm-duel-card"><div class="gm-duel-name">${GM.esc(label(right))}</div><div class="gm-duel-val">?</div></div></div>
+      <div class="gm-actions"><button class="gm-btn" id="dhHi">Higher &#9650;</button><button class="gm-btn" id="dhLo">Lower &#9660;</button></div>`}
+      <div id="dhEnd"></div>`;
+    if(state.done){
+      const n = streak(), end = el.querySelector('#dhEnd');
+      end.innerHTML = `<p class="gm-result ${n>=7?'good':n>=4?'':'bad'}">Final streak: ${n} of 10.</p>`;
+      GM.dailyFooter(end, 'dhol', `Daily Higher or Lower #${GM.puzNum()} ${n}/10\n`+state.answers.map(x=>x?'🟩':'🟥').join(''), Math.round(n/2));
+      return;
+    }
+    const guess = hi=>{
+      const ok = hi ? stat.f(right)>stat.f(left) : stat.f(right)<stat.f(left);
+      state.answers.push(ok);
+      if(!ok || state.answers.length>=10) state.done = true;
+      GM.dset('dhol', state);
+      if(state.done) GM.dfinish('dhol', streak()>=7);
+      render();
+    };
+    el.querySelector('#dhHi').onclick = ()=>guess(true);
+    el.querySelector('#dhLo').onclick = ()=>guess(false);
+  };
+  render();
+}
+
+/* ============ LOGIN + DAILY LEADERBOARD (Google Sheets via Apps Script) ============ */
 GM.api = 'https://script.google.com/macros/s/AKfycbzd57phRA_NqO9sg5pVe-D3TeuQRjj70_WtL1eKilasqCRGx5_fasQ7-IOVnQbljvUc/exec'; // paste the Apps Script Web app URL between the quotes
-GM.me = ()=>{ const v = GM.store.get('me', null); return (v && GM.owners().includes(v)) ? v : null; };
-GM.DAILY = ['wordle','orderit','grid'];
+GM.identity = ()=>{ const v = GM.store.get('identity', null); return (v && v.token && GM.owners().includes(v.owner)) ? v : null; };
+GM.me = ()=>{ const v = GM.identity(); return v ? v.owner : null; };
+GM.whoText = ()=>{ const i = GM.identity(); return i ? 'Signed in as '+i.email+' · playing as '+GM.name(i.owner)+'.' : 'Sign in with your league email to play.'; };
+GM.refreshWho = ()=>{ const w = document.getElementById('gmWho'); if(w) w.textContent = GM.whoText(); const l = document.getElementById('gmLogout'); if(l) l.hidden = !GM.identity(); };
+GM.DAILY = ['wordle','orderit','grid','pulse','draft','upset','trade','dhol'];
+GM.COLS = [['wordle','Wordle'],['orderit','Order It'],['grid','Grid'],['pulse','Pulse'],['draft','Draft'],['upset','Upset'],['trade','Trade'],['dhol','H/L'],['kicker','Kicker'],['dash','Dash'],['passer','Passer'],['trivia','Trivia'],['owner','Owner'],['rank','Ranking']];
 GM.status = msg=>{ const el = document.getElementById('gmStatus'); if(el) el.textContent = msg; };
+GM.attKey = g=>'att_'+g+'_'+GM.dayKey()+'_'+GM.who();
+GM.attempt = g=>{ const a = GM.store.get(GM.attKey(g), null); return (a && a.state==='done') ? a : null; };
+GM.progKey = g=>'prog_'+g+'_'+GM.dayKey()+'_'+GM.who();
+GM.prog = g=>GM.store.get(GM.progKey(g), null);
+GM.setProg = (g,v)=>{ GM.store.set(GM.progKey(g), v); if(typeof GM.refreshBest==='function') GM.refreshBest(); };
+GM.finishAttempt = (g, score)=>{ GM.store.set(GM.attKey(g), {state:'done', score}); GM.store.set(GM.progKey(g), null); GM.refreshBest(); GM.submit(g, score); };
+GM.usedPanel = (stage, id, a)=>{
+  const g = GM_LIST.find(x=>x.id===id);
+  stage.innerHTML = `<div class="gm-head"><h3>${g.title}</h3></div><p class="gm-result good">You already played today and scored ${a.score}.</p><p class="note">Everyone gets one attempt per game per day. A new one unlocks at midnight in your time zone.</p>`;
+  GM.todayPanel(stage, id);
+};
+GM.loginFlow = (stage, g, done)=>{
+  if(!GM.api){ stage.innerHTML = `<div class="gm-head"><h3>${g.title}</h3></div><p class="gm-result bad">Sign-in is not set up yet, so the games are closed for now.</p>`; return; }
+  let email = '';
+  const post = body=>fetch(GM.api, {method:'POST', body:JSON.stringify(body)}).then(r=>r.json());
+  const step1 = (msg)=>{
+    stage.innerHTML = `<div class="gm-head"><h3>${g.title}</h3></div>
+      <p class="gm-prompt big">Sign in to play</p>
+      <p class="note">Use the email address the commissioner has on file for your team. We will email you a 6-digit code. Your email decides which team you play as.</p>
+      <div class="ig-input"><input id="lgEmail" type="email" placeholder="you@example.com" autocomplete="email" value="${GM.esc(email)}"><button class="gm-btn" id="lgSend">Email me a code</button></div>
+      <p class="gm-result bad" id="lgMsg">${GM.esc(msg||'')}</p>`;
+    const send = async ()=>{
+      email = stage.querySelector('#lgEmail').value.trim().toLowerCase(); const m = stage.querySelector('#lgMsg');
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ m.textContent = 'Enter a valid email address.'; return; }
+      m.textContent = 'Sending…';
+      try{
+        const j = await post({action:'requestCode', email});
+        if(j.ok) step2(); else m.textContent = j.error==='not on list' ? 'That email is not on the league list. Ask the commissioner to add it.' : j.error==='too many requests' ? 'Too many code requests. Wait a bit and try again.' : 'Could not send a code ('+(j.error||'error')+').';
+      }catch(e){ m.textContent = 'Could not reach the server. Check your connection and try again.'; }
+    };
+    stage.querySelector('#lgSend').onclick = send;
+    stage.querySelector('#lgEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') send(); });
+  };
+  const step2 = ()=>{
+    stage.innerHTML = `<div class="gm-head"><h3>${g.title}</h3></div>
+      <p class="gm-prompt big">Check your email</p>
+      <p class="note">We sent a 6-digit code to ${GM.esc(email)}. It expires in 10 minutes. Check spam if it does not show up.</p>
+      <div class="ig-input"><input id="lgCode" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code"><button class="gm-btn" id="lgGo">Sign in</button><button class="gm-btn small" id="lgBack">Use a different email</button></div>
+      <p class="gm-result bad" id="lgMsg"></p>`;
+    stage.querySelector('#lgBack').onclick = ()=>step1('');
+    const go = async ()=>{
+      const code = stage.querySelector('#lgCode').value.trim(), m = stage.querySelector('#lgMsg');
+      if(!/^\d{6}$/.test(code)){ m.textContent = 'The code is 6 digits.'; return; }
+      m.textContent = 'Checking…';
+      try{
+        const j = await post({action:'verify', email, code});
+        if(j.ok && GM.owners().includes(j.owner)){ GM.store.set('identity', {email, owner:j.owner, token:j.token}); GM.cur = j.owner; GM._cache = null; done(); }
+        else m.textContent = j.error==='bad code' ? 'That code is wrong or expired.' : j.error==='too many tries' ? 'Too many wrong codes. Request a new code.' : 'Could not sign in ('+(j.error||'error')+').';
+      }catch(e){ m.textContent = 'Could not reach the server. Check your connection and try again.'; }
+    };
+    stage.querySelector('#lgGo').onclick = go;
+    stage.querySelector('#lgCode').addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+  };
+  step1('');
+};
 GM._cache = null;
 GM.fetchBoard = async force=>{
   if(!GM.api) throw new Error('not connected');
@@ -8963,36 +9225,37 @@ GM.fetchBoard = async force=>{
   const rows = j.rows.map(r=>({day:String(r[0]), game:r[1], owner:r[2], score:Number(r[3]), detail:r[4]}));
   GM._cache = {t:Date.now(), rows}; return rows;
 };
-GM.post = async (game, score, detail)=>{
-  const me = GM.me(); if(!GM.api || !me) return {skipped:true};
-  const res = await fetch(GM.api, {method:'POST', body:JSON.stringify({game, owner:me, score, detail:detail||'', day:GM.dayKey()})});
-  const j = await res.json(); GM._cache = null; return j;
+GM.post = async (game, score, detail, day)=>{
+  const idn = GM.identity(); if(!GM.api || !idn) return {skipped:true};
+  const res = await fetch(GM.api, {method:'POST', body:JSON.stringify({game, token:idn.token, score, detail:detail||'', day:day||GM.dayKey()})});
+  const j = await res.json(); GM._cache = null;
+  if(!j.ok && j.error==='login required'){ GM.store.set('identity', null); GM.cur = null; GM.refreshWho(); GM.status('Your sign-in expired. Sign in again the next time you start a game.'); }
+  return j;
 };
 GM.flushPending = async ()=>{
-  const q = GM.store.get('pending', []); if(!q.length || !GM.api || !GM.me()) return;
+  const q = GM.store.get('pending', []); if(!q.length || !GM.api || !GM.identity()) return;
   const keep = [];
-  for(const it of q){ try{ const j = await fetch(GM.api,{method:'POST', body:JSON.stringify({...it, owner:GM.me()})}).then(r=>r.json()); if(!j.ok && j.error!=='bad day') keep.push(it); }catch(e){ keep.push(it); } }
+  for(const it of q){ try{ const j = await GM.post(it.game, it.score, it.detail, it.day); if(j && !j.ok && /network|fetch/i.test(j.error||'')) keep.push(it); }catch(e){ keep.push(it); } }
   GM.store.set('pending', keep);
 };
 GM.submit = async (game, score, detail)=>{
-  if(!GM.api || !(score>0)) return;
-  if(!GM.me()){ GM.status('Choose your team at the top of the page to post scores to the leaderboard.'); return; }
+  if(!GM.api || !(score>0) || !GM.identity()) return;
   try{
     const j = await GM.post(game, score, detail);
-    if(j.ok){ GM.status(j.saved ? 'Score posted to the leaderboard.' : 'Score received. It was not a new best.'); GM.renderBoard(); }
-    else GM.status('Leaderboard rejected the score ('+(j.error||'error')+').');
+    if(j.ok){ GM.status(j.saved ? 'Score posted to the leaderboard.' : 'Score received.'); GM.renderBoard(); }
+    else if(j.error!=='login required') GM.status('Leaderboard rejected the score ('+(j.error||'error')+').');
   }catch(e){
     const q = GM.store.get('pending', []); q.push({game, score, detail:detail||'', day:GM.dayKey()}); GM.store.set('pending', q.slice(-20));
     GM.status('Could not reach the leaderboard. The score will retry next time.');
   }
 };
 GM.postOnce = async (game, score, detail)=>{
-  const flag = 'posted_'+game+'_'+GM.dayKey();
-  if(!GM.api || GM.store.get(flag, false)) return;
-  if(!GM.me()){ GM.status('Choose your team at the top of the page to post today’s result.'); return; }
+  const flag = 'posted_'+game+'_'+GM.dayKey()+'_'+GM.who();
+  if(!GM.api || !GM.identity() || GM.store.get(flag, false)) return;
   try{
     const j = await GM.post(game, score, detail);
     if(j.ok){ GM.store.set(flag, true); GM.status('Result posted to the leaderboard.'); GM.renderBoard(); }
+    else if(j.error!=='login required') GM.status('Leaderboard rejected the result ('+(j.error||'error')+').');
   }catch(e){ GM.status('Could not reach the leaderboard.'); }
 };
 GM.todayPanel = async (box, game)=>{
@@ -9003,46 +9266,35 @@ GM.todayPanel = async (box, game)=>{
     div.innerHTML = '<h4 class="gm-sub">Today’s results</h4>' + (rows.length ? `<table class="table-compact gm-table"><tbody>${rows.map(r=>`<tr><td>${GM.esc(GM.name(r.owner))}</td><td class="num-cell">${r.score}</td><td>${GM.esc(r.detail||'')}</td></tr>`).join('')}</tbody></table>` : '<p class="note">No results posted yet.</p>');
   }catch(e){ div.innerHTML = '<h4 class="gm-sub">Today’s results</h4><p class="note">Could not load results.</p>'; }
 };
-GM.boardViews = [
-  {id:'points', label:'Daily points (all time)'}, {id:'today', label:'Today’s dailies'},
-  {id:'trivia', label:'Trivia best'}, {id:'owner', label:'Guess the Owner best'}, {id:'rank', label:'Blind Ranking best'},
-  {id:'hol', label:'Higher or Lower streak'}, {id:'kicker', label:'Field Goal Kicker'}, {id:'dash', label:'Gridiron Dash'}, {id:'passer', label:'Pocket Passer (yards)'}
-];
-GM._view = 'points';
-GM.initBoard = ()=>{
-  const me = document.getElementById('gmMe');
-  if(me) me.onchange = e=>{ GM.store.set('me', e.target.value); GM.store.set('arcade_me', e.target.value); GM.status(e.target.value?'Playing as '+GM.name(e.target.value)+'.':''); GM.flushPending(); GM.renderBoard(); };
-  GM.flushPending();
-  GM.renderBoard();
-};
+GM.initBoard = ()=>{ GM.flushPending(); GM.renderBoard(); };
 GM.renderBoard = async ()=>{
   const el = document.getElementById('gmBoard'); if(!el) return;
   if(!GM.api){ el.hidden = true; return; }
   el.hidden = false;
   if(!el.dataset.ready){
     el.dataset.ready = '1';
-    el.innerHTML = `<div class="gm-head"><h3>League Leaderboard</h3><div class="gm-controls"><select id="gmBoardView">${GM.boardViews.map(v=>`<option value="${v.id}"${v.id===GM._view?' selected':''}>${v.label}</option>`).join('')}</select><button class="gm-btn small" id="gmBoardRefresh">Refresh</button></div></div><div id="gmBoardBody"><p class="note">Loading&hellip;</p></div>`;
-    el.querySelector('#gmBoardView').onchange = e=>{ GM._view = e.target.value; GM.renderBoard(); };
+    el.innerHTML = `<div class="gm-head"><h3>Today’s Leaderboard</h3><button class="gm-btn small" id="gmBoardRefresh">Refresh</button></div><div id="gmBoardBody"><p class="note">Loading&hellip;</p></div>`;
     el.querySelector('#gmBoardRefresh').onclick = ()=>{ GM._cache = null; GM.renderBoard(); };
   }
   const body = el.querySelector('#gmBoardBody');
   let rows; try{ rows = await GM.fetchBoard(); }catch(e){ body.innerHTML = '<p class="note">Could not load the leaderboard right now.</p>'; return; }
-  const me = GM.me(), v = GM._view, today = GM.dayKey();
+  const me = GM.me(), today = GM.dayKey();
+  const todays = rows.filter(r=>r.day===today);
+  // daily puzzles count at face value (0-5). Every other game turns into rank points among today's players:
+  // 1st = 5, 2nd = 4, 3rd = 3, 4th = 2, everyone else who played = 1. Ties share the higher spot.
+  const pts = {}; const add = (o,p)=>{ pts[o] = (pts[o]||0)+p; };
+  const cell = {};
+  todays.forEach(r=>{ (cell[r.owner] = cell[r.owner]||{})[r.game] = r.score; });
+  todays.filter(r=>GM.DAILY.includes(r.game)).forEach(r=>add(r.owner, r.score));
+  GM.COLS.filter(([g])=>!GM.DAILY.includes(g)).forEach(([g])=>{
+    const rs = todays.filter(r=>r.game===g).sort((a,b)=>b.score-a.score);
+    rs.forEach(r=>{ const rank = rs.filter(x=>x.score>r.score).length; add(r.owner, Math.max(1, 5-rank)); });
+  });
+  const owners = Object.keys(cell).sort((a,b)=>(pts[b]||0)-(pts[a]||0));
+  if(!owners.length){ body.innerHTML = '<p class="note">Nobody has posted a score today. Be the first.</p>'; return; }
   const nameCell = o=>`<span class="gm-dot" style="background:${ownerColor(o)}"></span>${GM.esc(GM.name(o))}`;
-  const table = (head, data)=>data.length ? `<table class="table-compact gm-table"><thead><tr>${head.map((h,i)=>`<th${i>1?' class="num-cell"':''}>${h}</th>`).join('')}</tr></thead><tbody>${data.map((r,i)=>`<tr${r.o===me?' class="gm-me-row"':''}><td>${i+1}</td><td>${nameCell(r.o)}</td>${r.cells.map(c=>`<td class="num-cell">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '<p class="note">No scores yet. Be the first.</p>';
-  if(v==='points'){
-    const by = {};
-    rows.filter(r=>GM.DAILY.includes(r.game)).forEach(r=>{ const o = by[r.owner] = by[r.owner]||{o:r.owner, pts:0, n:0}; o.pts += r.score; o.n++; });
-    const data = Object.values(by).sort((a,b)=>b.pts-a.pts||b.n-a.n).map(x=>({o:x.o, cells:[x.pts, x.n, (x.pts/x.n).toFixed(1)]}));
-    body.innerHTML = table(['#','Team','Points','Puzzles','Avg'], data) + '<p class="note">Points per puzzle: Owner Wordle 5 for a first-guess solve down to 1 for the last guess. Order It 5, 3 or 1 for a solve on try 1, 2 or 3. Immaculate Grid up to 5 by squares filled.</p>';
-  } else if(v==='today'){
-    const by = {};
-    rows.filter(r=>GM.DAILY.includes(r.game) && r.day===today).forEach(r=>{ const o = by[r.owner] = by[r.owner]||{o:r.owner, t:0, w:'—', od:'—', g:'—'}; o.t += r.score; if(r.game==='wordle')o.w=r.score; if(r.game==='orderit')o.od=r.score; if(r.game==='grid')o.g=r.score; });
-    body.innerHTML = table(['#','Team','Total','Wordle','Order It','Grid'], Object.values(by).sort((a,b)=>b.t-a.t).map(x=>({o:x.o, cells:[x.t,x.w,x.od,x.g]})));
-  } else {
-    const data = rows.filter(r=>r.game===v).sort((a,b)=>b.score-a.score).map(r=>({o:r.owner, cells:[r.score]}));
-    body.innerHTML = table(['#','Team','Best'], data);
-  }
+  body.innerHTML = `<div class="table-wrap no-collapse"><table class="table-compact gm-table"><thead><tr><th>#</th><th>Team</th><th class="num-cell">Points</th>${GM.COLS.map(c=>`<th class="num-cell">${c[1]}</th>`).join('')}</tr></thead><tbody>${owners.map((o,i)=>`<tr${o===me?' class="gm-me-row"':''}><td>${i+1}</td><td>${nameCell(o)}</td><td class="num-cell">${pts[o]||0}</td>${GM.COLS.map(([g])=>`<td class="num-cell">${cell[o][g]!=null?cell[o][g]:'—'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    <p class="note">${owners.length} of ${GM.owners().length} teams have played today. Daily puzzles score 0 to 5 points (Trade Verdict 0 to 3). Arcade, trivia and ranking games pay 5, 4, 3 and 2 points to the top four scores and 1 point for everyone else who played. The board resets each day.</p>`;
 };
 
 function pageTrades(){
@@ -13647,7 +13899,12 @@ function scenarioFinish(ctx, engine){
       const c = T[k], tot = c[0]+c[1]+c[2];
       if(tot) byK.push({k, pct: Math.round((c[0]+c[1]/2)/tot*100), amb: c[1]>0});
     }
-    return {id, R, w:baseW[t], l:(base[id]?base[id].l:0), clinchK, elimK, status, lo, hi, ambMid, byK};
+    const ladder = T.map((c,k)=>{
+      const tot = c[0]+c[1]+c[2];
+      const kind = (!c[1] && !c[2]) ? 'in' : ((!c[0] && !c[1]) ? 'out' : 'mix');
+      return {k, kind, pct: tot ? (c[0]+c[1]/2)/tot*100 : 0};
+    });
+    return {id, R, w:baseW[t], l:(base[id]?base[id].l:0), clinchK, elimK, status, lo, hi, ambMid, byK, ladder};
   });
   return {available:true, weeksLeft:remainingWeeks.length, games:G, rows};
 }
@@ -13675,7 +13932,7 @@ function computePlayoffScenariosAsync(year, onProgress){
   });
 }
 
-function scenarioSentence(r){
+function scenarioSentence(r, noLadder){
   const plural = k=>k===1?'win':'wins';
   if(r.status==='in') return 'Clinched a playoff spot.';
   if(r.status==='out') return 'Eliminated from the 7-team field.';
@@ -13689,12 +13946,71 @@ function scenarioSentence(r){
     const need = r.elimK+1;
     parts.push(`Needs at least ${need} ${plural(need)} to have any chance.`);
   }
-  if(r.byK.length){
+  if(r.byK.length && !noLadder){
     const bits = r.byK.map((x,i)=>`${x.k} ${plural(x.k)} is in ${x.pct}%${i===0?' of the possible results':''}`);
     parts.push(`${parts.length?'Otherwise it':'It'} depends on other results: ${bits.join(', ')}.`);
   }
   return parts.join(' ');
 }
+
+// Monte Carlo pass over the rest of the season that also records how each of
+// the NEXT week's games moves every team's playoff odds. Same scoring model as
+// the Standings odds (team base mean + own volatility). Used for the per-team
+// "next game" swing, the rooting guide, and the biggest-games-of-the-week panel.
+function scenarioSwings(year, sims){
+  sims = sims || 6000;
+  const owners = allOwnerIdsSorted().filter(id=>id!=="rm2");
+  const nO = owners.length, ix = {}; owners.forEach((id,i)=>{ ix[id]=i; });
+  const played = new Set((MATCHUPS[year]||[]).filter(w=>!w.playoff).map(w=>w.w));
+  const remaining = (FULL_SCHEDULE[year]||[]).filter(w=>!w.playoff && !played.has(w.w));
+  if(!remaining.length) return null;
+  const sd = leagueScoreStdDev(year);
+  const mean = {}, sdo = {};
+  owners.forEach(id=>{ mean[id] = teamBaseMean(id, year); sdo[id] = teamScoreStdDev(id, year); });
+  const baseRec = {};
+  computeCurrentStandings(year).forEach(r=>{ baseRec[r.owner] = {w:r.w, l:r.l, pf:r.pf}; });
+  owners.forEach(id=>{ if(!baseRec[id]) baseRec[id] = {w:0,l:0,pf:0}; });
+  const spots = Math.min(CURRENT_SEASON_PLAYOFF_SPOTS, nO);
+  const nextGames = [];
+  remaining[0].g.forEach(([tA,tB])=>{
+    const a = ownerForTeam(year,tA), b = ownerForTeam(year,tB);
+    if(a in ix && b in ix) nextGames.push({a, b});
+  });
+  const nG = nextGames.length;
+  const inC = nextGames.map(()=>[new Int32Array(nO), new Int32Array(nO)]);
+  const nC = nextGames.map(()=>[0,0]);
+  const allIn = new Int32Array(nO);
+  const res = new Array(nG);
+  for(let s=0;s<sims;s++){
+    const rec = {};
+    owners.forEach(id=>{ const r = baseRec[id]; rec[id] = {w:r.w, l:r.l, pf:r.pf}; });
+    remaining.forEach((fw, wi)=>{
+      let gi = 0;
+      fw.g.forEach(([tA,tB])=>{
+        const oA = ownerForTeam(year,tA), oB = ownerForTeam(year,tB);
+        if(!(oA in ix) || !(oB in ix)) return;
+        const sA = Math.max(30, randNormal(mean[oA]!=null?mean[oA]:110, sdo[oA]||sd));
+        const sB = Math.max(30, randNormal(mean[oB]!=null?mean[oB]:110, sdo[oB]||sd));
+        rec[oA].pf += sA; rec[oB].pf += sB;
+        const aw = sA>sB;
+        if(aw){ rec[oA].w++; rec[oB].l++; } else { rec[oB].w++; rec[oA].l++; }
+        if(wi===0){ res[gi] = aw ? 0 : 1; gi++; }
+      });
+    });
+    const q = selectPlayoffQualifiers(rec, spots);
+    q.forEach(id=>{ allIn[ix[id]]++; });
+    for(let g=0; g<nG; g++){
+      const o = res[g]; nC[g][o]++;
+      q.forEach(id=>{ inC[g][o][ix[id]]++; });
+    }
+  }
+  const pIn = {}; owners.forEach(id=>{ pIn[id] = allIn[ix[id]]/sims; });
+  // cond(g, o, id): chance `id` makes the field when game g goes to side o (0 = first team wins)
+  const cond = (g,o,id)=> nC[g][o] ? inC[g][o][ix[id]]/nC[g][o] : null;
+  return {sims, week:remaining[0].w, games:nextGames, pIn, cond};
+}
+
+function scenarioPct(p){ return p==null ? '-' : (p>=0.995 ? '100%' : (p<0.005 ? '0%' : (p*100).toFixed(p<0.1||p>0.9?1:0)+'%')); }
 
 function renderPlayoffScenariosHtml(year, scIn){
   const sc = scIn || computePlayoffScenarios(year);
@@ -13702,14 +14018,109 @@ function renderPlayoffScenariosHtml(year, scIn){
     return `<p class="note">Plain-English playoff scenarios turn on when ${SCENARIO_WEEKS_LEFT} regular-season weeks are left${sc.weeksLeft?` (${sc.weeksLeft} left now)`:''}. Until then, the Playoff% column in Standings is the best read.</p>`;
   }
   const rank = {in:0, alive:1, out:2};
-  const rows = sc.rows.slice().sort((a,b)=> (rank[a.status]-rank[b.status]) || (b.w-a.w));
+  const standings = computeCurrentStandings(year);
+  const recOf = {}; standings.forEach(r=>{ recOf[r.owner]=r; });
+  const pic = playoffPictureFor(standings);
+  const sw = scenarioSwings(year, 6000);
+  const champ = (window.LAST_CHAMP_ODDS||{})[year] || [];
+  const oddsOf = {}; champ.forEach(r=>{ oddsOf[r.owner] = r.playoffPct; });
+  const pOf = id => (oddsOf[id]!=null ? oddsOf[id] : (sw && sw.pIn[id]!=null ? sw.pIn[id] : null));
+  const recTxt = id => { const r = recOf[id]; return r ? `${r.w}-${r.l}` : ''; };
+  const rows = sc.rows.slice().sort((a,b)=> (rank[a.status]-rank[b.status]) || ((pOf(b.id)||0)-(pOf(a.id)||0)) || (b.w-a.w));
   const badge = s => s==='in' ? '<span style="color:var(--green);font-weight:800">IN</span>'
                   : s==='out' ? '<span style="color:var(--red);font-weight:800">OUT</span>'
                   : '<span style="color:var(--gold-deep);font-weight:800">ALIVE</span>';
-  return `<p class="note" style="margin-bottom:10px">Every possible result of the remaining ${sc.games} games was played out against today's records (${sc.weeksLeft} week${sc.weeksLeft===1?'':'s'} left). Division leaders get the top seeds; ties are broken by points scored.</p>
+  const pillColor = p => p==null ? 'var(--muted)' : (p>=0.75 ? 'var(--green)' : (p>=0.3 ? 'var(--gold-deep)' : 'var(--red)'));
+  const counts = {in:0, alive:0, out:0}; sc.rows.forEach(r=>{ counts[r.status]++; });
+  const plural = k=>k===1?'win':'wins';
+
+  // ---- biggest games of the week --------------------------------------------
+  let gamesHtml = '';
+  if(sw){
+    const gl = sw.games.map((g,gi)=>{
+      const aW = sw.cond(gi,0,g.a), aL = sw.cond(gi,1,g.a), bW = sw.cond(gi,1,g.b), bL = sw.cond(gi,0,g.b);
+      const swing = Math.abs((aW||0)-(aL||0)) + Math.abs((bW||0)-(bL||0));
+      return {g, gi, aW, aL, bW, bL, swing};
+    }).sort((x,y)=>y.swing-x.swing);
+    gamesHtml = `<div class="section-title" style="margin-top:18px;font-size:14px">Week ${sw.week}: the games that move the playoff race <span class="sub">each team's playoff odds if it wins vs. if it loses</span></div>
+      <div class="table-wrap"><table class="table-compact"><thead><tr><th>Game</th><th>Team</th><th class="num-cell">Playoff now</th><th class="num-cell">If it wins</th><th class="num-cell">If it loses</th><th class="num-cell">Swing</th></tr></thead><tbody>
+      ${gl.map((x,i)=>[[x.g.a,x.aW,x.aL],[x.g.b,x.bW,x.bL]].map(([id,w,l],k)=>`<tr${k===1?' style="border-bottom:2px solid var(--line, #d8d0bc)"':''}>${k===0?`<td rowspan="2" class="num-cell" style="vertical-align:middle;white-space:nowrap">#${i+1}${i===0?' &#128293;':''}</td>`:''}<td class="team-name">${currentTeamName(id)} <span class="note">${recTxt(id)}</span></td><td class="num-cell">${scenarioPct(pOf(id))}</td><td class="num-cell" style="color:var(--green)">${scenarioPct(w)}</td><td class="num-cell" style="color:var(--red)">${scenarioPct(l)}</td><td class="num-cell"><b>${((w-l)*100).toFixed(0)} pts</b></td></tr>`).join('')).join('')}
+      </tbody></table></div>
+      <p class="note" style="margin-top:6px">Games are ranked by the combined swing for the two teams involved. "If it wins / loses" is the share of ${sw.sims.toLocaleString()} simulated seasons in which that team makes the field after that result.</p>`;
+  }
+
+  // ---- per-team detail ------------------------------------------------------
+  const remWeeks = (FULL_SCHEDULE[year]||[]).filter(w=>!w.playoff && !(MATCHUPS[year]||[]).some(m=>!m.playoff && m.w===w.w));
+  const lastIn = pic.field[pic.field.length-1], firstOut = pic.order[pic.field.length];
+  function cutLine(id){
+    const r = recOf[id]; if(!r) return '';
+    const pos = pic.field.indexOf(id);
+    const lead = pic.leaders[id] ? ` as the ${pic.leaders[id]} leader` : '';
+    if(pos>=0){
+      const out = firstOut && recOf[firstOut];
+      let t = `Holds seed ${pos+1} of ${pic.field.length}${lead}`;
+      if(out){
+        const gap = r.w - out.w, pfGap = r.pf - out.pf;
+        t += gap>0 ? `, ${gap} win${gap===1?'':'s'} clear of the first team out (${currentTeamName(firstOut)}).` : (gap===0 ? `, level on wins with the first team out (${currentTeamName(firstOut)}) and ${pfGap>=0?'ahead':'behind'} by ${Math.abs(pfGap).toFixed(0)} points scored.` : `, behind ${currentTeamName(firstOut)} on wins but inside on the division tiebreak.`);
+      } else t += '.';
+      return t;
+    }
+    const cut = recOf[lastIn];
+    if(!cut) return '';
+    const gap = cut.w - r.w, pfGap = cut.pf - r.pf;
+    return gap>0 ? `Currently out: ${gap} win${gap===1?'':'s'} behind the last playoff spot (${currentTeamName(lastIn)}) and ${Math.abs(pfGap).toFixed(0)} points ${pfGap>0?'behind':'ahead'} in scoring.` : `Currently out: level on wins with the last playoff spot (${currentTeamName(lastIn)}) but ${Math.abs(pfGap).toFixed(0)} points ${pfGap>0?'behind':'ahead'} on the points tiebreak.`;
+  }
+  function ladder(r){
+    return `<div class="sc-line"><span class="sc-k">Chance by final wins</span> ${r.ladder.map(x=>{
+      const win = r.w + x.k;
+      if(x.kind==='in') return `<span class="sc-chip" style="color:var(--green);border-color:var(--green)">${x.k} ${plural(x.k)} (${win}-${(r.l+r.R-x.k)}): in</span>`;
+      if(x.kind==='out') return `<span class="sc-chip" style="color:var(--red);border-color:var(--red)">${x.k} ${plural(x.k)} (${win}-${(r.l+r.R-x.k)}): out</span>`;
+      const p = Math.min(99, Math.max(1, Math.round(x.pct)));
+      return `<span class="sc-chip" style="color:var(--gold-deep);border-color:var(--gold-deep)">${x.k} ${plural(x.k)} (${win}-${(r.l+r.R-x.k)}): ${p}%</span>`;
+    }).join('')}</div>`;
+  }
+  function nextGame(id){
+    if(!sw) return '';
+    const gi = sw.games.findIndex(g=>g.a===id||g.b===id); if(gi<0) return '';
+    const g = sw.games[gi], me = g.a===id ? 0 : 1, opp = me===0 ? g.b : g.a;
+    const w = sw.cond(gi,me,id), l = sw.cond(gi,1-me,id);
+    const drop = (w!=null&&l!=null) ? Math.round((w-l)*100) : null;
+    return `<div class="sc-line"><span class="sc-k">Week ${sw.week} vs ${currentTeamName(opp)} (${recTxt(opp)}, ${scenarioPct(pOf(opp))} to make it)</span> In <b style="color:var(--green)">${scenarioPct(w)}</b> with a win, <b style="color:var(--red)">${scenarioPct(l)}</b> with a loss${drop!=null?` &mdash; a ${drop}-point swing`:''}.</div>`;
+  }
+  function schedule(id){
+    const bits = [];
+    remWeeks.forEach(w=>{
+      w.g.forEach(([tA,tB])=>{
+        const a = ownerForTeam(year,tA), b = ownerForTeam(year,tB);
+        if(a!==id && b!==id) return;
+        const opp = a===id ? b : a;
+        const op = pOf(opp);
+        const race = op!=null && op>=0.2 && op<=0.9;
+        bits.push(`<span class="sc-chip${race?' sc-race':''}" title="${race?'Direct playoff rival (20% to 90% to make it)':''}">Wk ${w.w} ${currentTeamName(opp)} ${recTxt(opp)}</span>`);
+      });
+    });
+    return bits.length ? `<div class="sc-line"><span class="sc-k">Remaining games</span> ${bits.join('')}</div>` : '';
+  }
+  function rooting(id){
+    if(!sw) return '';
+    const mine = sw.games.findIndex(g=>g.a===id||g.b===id);
+    const list = [];
+    sw.games.forEach((g,gi)=>{
+      if(gi===mine) return;
+      const pa = sw.cond(gi,0,id), pb = sw.cond(gi,1,id);
+      if(pa==null||pb==null) return;
+      const d = pa-pb;
+      if(Math.abs(d)>=0.02) list.push({team: d>0?g.a:g.b, other: d>0?g.b:g.a, d:Math.abs(d)});
+    });
+    list.sort((x,y)=>y.d-x.d);
+    if(!list.length) return '';
+    return `<div class="sc-line"><span class="sc-k">Root for (week ${sw.week})</span> ${list.slice(0,3).map(x=>`${currentTeamName(x.team)} over ${currentTeamName(x.other)} <span class="note">(+${Math.round(x.d*100)} pts)</span>`).join(' &middot; ')}</div>`;
+  }
+  const css = `<style>.sc-line{margin-top:6px;font-size:12px;line-height:1.5}.sc-k{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}.sc-chip{display:inline-block;padding:1px 7px;margin:2px 4px 2px 0;border:1px solid var(--muted);border-radius:10px;font-size:11px;white-space:nowrap}.sc-race{font-weight:800;border-width:2px}.sc-pill{display:inline-block;margin-left:6px;padding:0 7px;border-radius:10px;font-size:11px;font-weight:800;color:#fff;vertical-align:1px}</style>`;
+  return css + `<p class="note" style="margin-bottom:10px">Every possible result of the remaining ${sc.games} games was played out against today's records (${sc.weeksLeft} week${sc.weeksLeft===1?'':'s'} left). Division leaders get the top seeds; ties are broken by points scored. ${counts.in} clinched, ${counts.alive} alive, ${counts.out} out. The percentage next to each name is that team's chance to make the playoffs (same projection as the Standings column). In each team's remaining games, bold opponents are direct playoff rivals (20% to 90% to make it).</p>
     <div class="table-wrap"><table class="table-compact"><thead><tr><th>Team</th><th class="num-cell">Record</th><th>Status</th><th>What it takes</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td class="team-name">${currentTeamName(r.id)}</td><td class="num-cell">${r.w}-${r.l}</td><td>${badge(r.status)}</td><td style="white-space:normal;min-width:260px">${scenarioSentence(r)}</td></tr>`).join("")}
-    </tbody></table></div>`;
+    ${rows.map(r=>{ const p = pOf(r.id); return `<tr><td class="team-name" style="white-space:nowrap;vertical-align:top">${currentTeamName(r.id)}${p!=null?`<span class="sc-pill" style="background:${pillColor(p)}" title="Chance to make the playoffs">${scenarioPct(p)}</span>`:''}</td><td class="num-cell" style="vertical-align:top">${r.w}-${r.l}</td><td style="vertical-align:top">${badge(r.status)}</td><td style="white-space:normal;min-width:300px">${scenarioSentence(r, true)}<div class="sc-line">${cutLine(r.id)}</div>${r.status==='alive'||r.status==='in'?ladder(r):''}${r.status!=='out'?nextGame(r.id):''}${schedule(r.id)}${r.status==='alive'?rooting(r.id):''}</td></tr>`; }).join("")}
+    </tbody></table></div>` + gamesHtml;
 }
 
 function pageLiveSeason(){
@@ -14045,10 +14456,10 @@ function renderContenderTiers(year, odds){
   const recById = {}; standings.forEach(r=>{ recById[r.owner]=r; });
   const pic = playoffPictureFor(standings);
   const tiers = [
-    {key:'bye',  label:'Bye Contenders',  color:'var(--gold-deep)', blurb:'Realistic shot at the 1 seed and the first-round bye.',  test:o=>o.oneSeedPct>=0.08},
-    {key:'in',   label:'Likely In',       color:'var(--green)',     blurb:'Favored to make the field, but not in the bye race.',    test:o=>o.playoffPct>=0.55},
-    {key:'bub',  label:'On the Bubble',   color:'var(--muted)',     blurb:'Playoff odds between 30% and 55%. The next few weeks decide it.', test:o=>o.playoffPct>=0.30},
-    {key:'long', label:'Long Shots',      color:'var(--red)',       blurb:'Below 30% to make the field. Needs wins and help.',      test:()=>true}
+    {key:'bye',  label:'Bye Contenders',  color:'var(--gold-deep)', blurb:'Realistic shot at the 1 seed and the first-round bye.', tip:'Teams with a 15% or better chance to finish as the 1 seed in the simulations. Only the 1 seed skips the first round of the 7-team playoff, so this is the title-favorite group. These teams are almost always playoff locks too (the 1 seed odds already require a top record).',  test:o=>o.oneSeedPct>=0.15},
+    {key:'in',   label:'Likely In',       color:'var(--green)',     blurb:'Favored to make the field, but not in the bye race.', tip:'Teams that make the 7-team playoff field in at least 55% of simulations but have under a 15% chance at the 1 seed. They are favored to get in, but would likely play in the first round instead of getting the bye.',    test:o=>o.playoffPct>=0.55},
+    {key:'bub',  label:'On the Bubble',   color:'var(--muted)',     blurb:'Playoff odds between 30% and 55%. The next few weeks decide it.', tip:'Teams that make the playoffs in 30% to 55% of simulations. It is close to a coin flip, so one or two results (or a tiebreaker on points for) can move a team in or out of the field.', test:o=>o.playoffPct>=0.30},
+    {key:'long', label:'Long Shots',      color:'var(--red)',       blurb:'Below 30% to make the field. Needs wins and help.', tip:'Teams that make the playoffs in fewer than 30% of simulations. They need to win most of their remaining games and get other results to go their way. Not mathematically eliminated unless the odds read 0%.',      test:()=>true}
   ];
   const groups = tiers.map(t=>({...t, rows:[]}));
   odds.slice().sort((a,b)=>b.champPct-a.champPct || b.playoffPct-a.playoffPct).forEach(o=>{
@@ -14057,16 +14468,17 @@ function renderContenderTiers(year, odds){
   const pct = x=>(x*100).toFixed(x>=0.995||x===0?0:1)+'%';
   wrap.innerHTML = `<div class="tiers-grid">` + groups.filter(g=>g.rows.length).map(g=>`
     <div class="card tier-card" style="border-left:4px solid ${g.color}">
-      <div class="tier-head"><span style="color:${g.color}">${g.label}</span><span class="note">${g.rows.length} team${g.rows.length===1?'':'s'}</span></div>
+      <div class="tier-head"><span style="color:${g.color}">${g.label}<span class="info-i" data-tip="${g.tip}">&#9432;</span></span><span class="note">${g.rows.length} team${g.rows.length===1?'':'s'}</span></div>
       <div class="note" style="margin:0 0 8px">${g.blurb}</div>
       <table class="table-compact tier-table"><thead><tr><th class="team-col">Team</th><th class="num-cell">W-L</th><th class="num-cell">Playoff</th><th class="num-cell">1 Seed</th><th class="num-cell">Title</th></tr></thead><tbody>
       ${g.rows.map(o=>{ const r = recById[o.owner]||{w:0,l:0}; return `<tr><td class="team-name">${currentTeamName(o.owner)}${divLeaderMarkHtml(pic.leaders[o.owner])}</td><td class="num-cell">${r.w}-${r.l}</td><td class="num-cell">${pct(o.playoffPct)}</td><td class="num-cell">${pct(o.oneSeedPct)}</td><td class="num-cell">${pct(o.champPct)}</td></tr>`; }).join('')}
       </tbody></table>
     </div>`).join('') + `</div>
-    <p class="note" style="margin-top:8px">Tiers come from the same 2,000-simulation projection as the Standings odds columns, so they shift as results come in. Bye Contenders have an 8% or better chance at the 1 seed; the other tiers go by playoff odds (55% and 30% cutoffs). The ${DIV_LEADER_MARK} marks a division leader.</p>`;
+    <p class="note" style="margin-top:8px">Tiers come from the same 5,000-simulation projection as the Standings odds columns, so they shift as results come in. Bye Contenders have a 15% or better chance at the 1 seed; the other tiers go by playoff odds (55% and 30% cutoffs). The ${DIV_LEADER_MARK} marks a division leader.</p>`;
 }
 function fillChampionshipOdds(year){
   const champOdds = simulateChampionshipOdds(year);
+  window.LAST_CHAMP_ODDS = window.LAST_CHAMP_ODDS || {}; window.LAST_CHAMP_ODDS[year] = champOdds;
   renderContenderTiers(year, champOdds);
   champOdds.forEach(r=>{
     const tip = `Proj. final wins: ${r.projWins.toFixed(1)} &middot; 1-seed in ${(r.oneSeedPct*100).toFixed(0)}% of sims`;
