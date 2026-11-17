@@ -18243,7 +18243,12 @@ function analyticsHubInit(app){
     }
     if(cur) cur.appendChild(k);
   });
-  const titleEl = pre[0], pickers = pre.slice(1);
+  const titleEl = pre.find(k=>k.classList.contains('section-title')) || null;
+  const ctrlEl = pre.find(k=>k.classList.contains('statslab-controls')) || null;
+  pre.forEach(k=>{ if(k!==titleEl && k!==ctrlEl) k.classList.add('ah-off'); });   // old long note, if still present
+  const hintEl = document.createElement('p'); hintEl.className = 'note ah-hint'; hintEl.dataset.keep = '1'; hintEl.style.margin = '0 0 16px';
+  if(ctrlEl) ctrlEl.after(hintEl);
+  const pickers = [ctrlEl, hintEl].filter(Boolean);
   if(titleEl) titleEl.classList.add('ah-title');
   if(nav) nav.classList.add('ah-nav');
   const hub = document.createElement('div'); hub.className='ah-hub';
@@ -18259,7 +18264,14 @@ function analyticsHubInit(app){
     window.AH.open = f ? key : null; window.AH.sub = null;
     hub.hidden = !!f; bar.hidden = !f;
     if(titleEl) titleEl.classList.add('ah-off');
-    pickers.forEach(p=>{ p.classList.toggle('ah-off', !(f && f.years)); });
+    pickers.forEach(p=>{ p.classList.remove('ah-off'); });
+    const hint = hintEl;
+    if(hint){
+      const lbl = yearLabel();
+      hint.textContent = !f ? `Every feature opens on ${lbl}. Change the season here, or pick a From and To year for a range, and it carries into the features below. Choose Career for every season combined.`
+        : f.years ? `Showing ${lbl}. Change the season or pick a range here.`
+        : (f.key==='finder' ? `The Finder starts on ${lbl}. Change the season or range here, or clear its Years boxes to search all of history.` : `${f.title} covers every season on record, so the season picker doesn't change it.`);
+    }
     if(foot) foot.classList.toggle('ah-off', !f);
     if(nav) nav.classList.toggle('ah-nav-feature', !!f);
     Object.values(wraps).forEach(w=>{ w.hidden = true; });
@@ -18282,8 +18294,38 @@ function analyticsHubInit(app){
     const c = e.target.closest('[data-sub]'); if(c) show(window.AH.open, c.dataset.sub);
   });
   window.analyticsHubShow = show;
+  function pickedYears(){
+    const all = Object.keys(MATCHUPS).map(Number).sort((a,b)=>a-b);
+    const one = document.getElementById('analyticsYearSingle'), fr = document.getElementById('analyticsYearFrom'), to = document.getElementById('analyticsYearTo');
+    if(fr && to && fr.value && to.value){ const lo = Math.min(+fr.value,+to.value), hi = Math.max(+fr.value,+to.value); return {kind:'range', lo, hi}; }
+    if(one && one.value==='career') return {kind:'career', lo:all[0], hi:all[all.length-1]};
+    const y = one && +one.value || all[all.length-1]; return {kind:'single', lo:y, hi:y};
+  }
+  function yearLabel(){ const p = pickedYears(); return p.kind==='career' ? 'every season (career)' : (p.kind==='range' ? `${p.lo}\u2013${p.hi}` : `the ${p.lo} season`); }
+  const fire = (el, types)=>{ if(el) types.forEach(t=>el.dispatchEvent(new Event(t,{bubbles:true}))); };
+  // Push the page-level season choice into the tools that have their own year controls
+  function syncLinked(){
+    const p = pickedYears();
+    [['lbScopeType','lbYear','lbFromYear','lbToYear'],['llScopeType','llYear','llFromYear','llToYear']].forEach(([sc,yr,fr,to])=>{
+      const scope = document.getElementById(sc); if(!scope) return;
+      scope.value = p.kind==='career' ? 'career' : (p.kind==='range' ? 'range' : 'single');
+      const y = document.getElementById(yr), a = document.getElementById(fr), b = document.getElementById(to);
+      if(p.kind==='single' && y) y.value = String(p.lo);
+      if(p.kind==='range'){ if(a) a.value = String(p.lo); if(b) b.value = String(p.hi); }
+      fire(scope, ['change']);
+    });
+    [['gfYearFrom','gfYearTo'],['sfYearFrom','sfYearTo'],['tfYearFrom','tfYearTo']].forEach(([a,b])=>{
+      const A = document.getElementById(a), B = document.getElementById(b); if(!A||!B) return;
+      A.value = p.kind==='career' ? '' : String(p.lo); B.value = p.kind==='career' ? '' : String(p.hi);
+      fire(A, ['input','change']); fire(B, ['input','change']);
+    });
+    const open = window.AH && window.AH.open, f = AH_FEATURES.find(x=>x.key===open);
+    if(!f || f.years || f.key==='finder') show(open, window.AH.sub);
+  }
+  ['analyticsYearSingle','analyticsYearFrom','analyticsYearTo'].forEach(id=>{ const el = document.getElementById(id); if(el) el.addEventListener('change', syncLinked); });
   window.analyticsHubFor = id=>{ const f = AH_FEATURES.find(x=>x.secs.some(y=>y[0]===id)); if(f) show(f.key, id); };
   show(null);
+  syncLinked();
 }
 function polishPage(app){
   collapseSections(app); if(currentPage==='Analytics') analyticsHubInit(app); collapseWideTables(app); animateNumbers(app); updateJumpNavOffset(); updateJumpNavSpy();
