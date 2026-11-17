@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="gridiron">
 <head>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wofford League</title>
@@ -931,6 +932,35 @@ if(typeof MATCHUPS==="undefined"){
 .gm-overlay-in{text-align:center;color:#fff;padding:16px}.gm-overlay-in h4{margin:0 0 6px;font-size:22px}.gm-overlay-in p{margin:0 0 12px}
 .gm-table td,.gm-table th{padding:4px 8px}
 @media(max-width:640px){.gm-bracket{grid-template-columns:1fr}.gm-duel{grid-template-columns:1fr}.gm-vs{display:none}.gm-grid{grid-template-columns:1fr 1fr}.gm-tile-desc{display:none}}
+.gm-sub{margin:14px 0 2px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#777)}
+.gm-sub span{text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px}
+.wd-grid{display:flex;flex-direction:column;gap:5px;margin:10px 0;overflow-x:auto}
+.wd-row{display:grid;grid-template-columns:minmax(110px,1.4fr) repeat(5,minmax(52px,1fr));gap:5px;align-items:stretch}
+.wd-head{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted,#777);text-align:center}
+.wd-name{font-size:13px;font-weight:600;display:flex;align-items:center}
+.wd-tile{display:flex;align-items:center;justify-content:center;gap:3px;padding:10px 4px;border-radius:5px;font-weight:700;font-size:14px;color:#fff;background:#6b6b6b}
+.wd-tile i{font-style:normal;font-size:10px}
+.wd-tile.g{background:#4d8f5b}.wd-tile.y{background:#c49a2c}.wd-tile.x{background:#7a746a}
+.od-attempt{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:5px 0}
+.od-cell{padding:8px 4px;border-radius:5px;font-size:12px;text-align:center;color:#fff;overflow:hidden;text-overflow:ellipsis}
+.od-cell.g{background:#4d8f5b}.od-cell.x{background:#7a746a}
+.gm-share{background:var(--panel2,#f4f4f4);border:1px solid var(--line,#ddd);border-radius:6px;padding:10px;font-size:14px;line-height:1.4;white-space:pre-wrap;margin:10px 0}
+.ig-wrap{overflow-x:auto;margin:10px 0}
+.ig-grid{display:grid;grid-template-columns:minmax(80px,.8fr) repeat(3,minmax(90px,1fr));gap:5px;min-width:340px}
+.ig-head{display:flex;align-items:center;justify-content:center;text-align:center;padding:6px;font-size:12px;font-weight:700;background:var(--panel2,#eee);border-radius:5px}
+.ig-head.side{justify-content:flex-start;text-align:left}
+.ig-cell{min-height:64px;border:1px solid var(--line,#ccc);border-radius:5px;background:var(--panel,#fff);color:var(--text,#222);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:4px}
+.ig-cell:hover:not(:disabled){border-color:var(--gold,#c90)}
+.ig-cell.sel{outline:2px solid var(--gold,#c90)}
+.ig-cell.ok{background:#4d8f5b;color:#fff;cursor:default}
+.ig-input{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+.ig-input input{flex:1;min-width:180px;padding:8px 10px;border:1px solid var(--line,#ccc);border-radius:6px;background:var(--panel2,#fff);color:var(--text,#222);font:inherit}
+
+.gm-me{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.gm-status{font-size:12.5px;color:var(--muted,#777)}
+.gm-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+.gm-me-row td{font-weight:700;background:rgba(217,165,32,.15)}
+.gm-today{margin-top:8px}
 
 </style>
 </head>
@@ -5341,15 +5371,15 @@ function teamScoringRange(yearSel){
 
 if(typeof Chart !== "undefined"){
   Chart.defaults.font.family = "'Source Serif 4', serif";
-  Chart.defaults.color = "#746B58";
-  Chart.defaults.borderColor = "#E0CD86";
-  Chart.defaults.plugins.legend.labels.color = "#221F1A";
+  Chart.defaults.color = (getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#746B58');
+  Chart.defaults.borderColor = (getComputedStyle(document.documentElement).getPropertyValue('--line').trim()||'#E0CD86');
+  Chart.defaults.plugins.legend.labels.color = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'));
   Chart.defaults.plugins.legend.labels.font = {family:"'Montserrat',sans-serif", weight:700, size:11};
-  Chart.defaults.plugins.tooltip.backgroundColor = "#1C1C1D";
-  Chart.defaults.plugins.tooltip.titleColor = "#DBA514";
+  Chart.defaults.plugins.tooltip.backgroundColor = (getComputedStyle(document.documentElement).getPropertyValue('--tipbg').trim()||'#1C1C1D');
+  Chart.defaults.plugins.tooltip.titleColor = (getComputedStyle(document.documentElement).getPropertyValue('--gold').trim()||'#DBA514');
   Chart.defaults.plugins.tooltip.titleFont = {family:"'Montserrat',sans-serif", weight:700};
   Chart.defaults.plugins.tooltip.bodyColor = "#F7F3E8";
-  Chart.defaults.plugins.tooltip.borderColor = "#8F6B0D";
+  Chart.defaults.plugins.tooltip.borderColor = (getComputedStyle(document.documentElement).getPropertyValue('--gold-deep').trim()||'#8F6B0D');
   Chart.defaults.plugins.tooltip.borderWidth = 1;
   Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.plugins.tooltip.cornerRadius = 6;
@@ -5419,7 +5449,7 @@ function makeTeamLabelPlugin(rows, datasetIndex){
       const meta = chart.getDatasetMeta(datasetIndex);
       ctx.save();
       ctx.font = '700 9px Montserrat, sans-serif';
-      ctx.fillStyle = '#221F1A';
+      ctx.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A');
       const placed = [];
       function overlaps(a,b){ return !(a.x+a.w<b.x || b.x+b.w<a.x || a.y+a.h<b.y || b.y+b.h<a.y); }
       rows.forEach((r,i)=>{
@@ -5472,11 +5502,11 @@ function makeQuadrantPlugin(avgX, avgY, cornerLabels){
       const W = 118, H = 34;
       function place(x,y,align,lines){
         const bx = align==='left' ? x : x-W;
-        ctx.fillStyle = '#F7F3E8'; ctx.strokeStyle = '#221F1A'; ctx.lineWidth = 1;
+        ctx.fillStyle = '#F7F3E8'; ctx.strokeStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'); ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.roundRect ? ctx.roundRect(bx,y,W,H,4) : ctx.rect(bx,y,W,H);
         ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#221F1A'; ctx.textAlign = 'center';
+        ctx.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A'); ctx.textAlign = 'center';
         ctx.fillText(lines[0], bx+W/2, y+6);
         ctx.fillText(lines[1], bx+W/2, y+20);
       }
@@ -6126,7 +6156,7 @@ function renderScoringChart(type, year, years){
       type:'bar',
       data:{ labels: rows.map(r=>r.label), datasets:[{label:'Luck', data:rows.map(r=>r.val), backgroundColor: rows.map(r=>r.val>=0?'#3D7A4E':'#B23B3B')}] },
       options:{ indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false},
-          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>v>0?'+'+v:v, font:{size:10,weight:'700'}, color:'#221F1A' } },
+          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>v>0?'+'+v:v, font:{size:10,weight:'700'}, color:(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A') } },
         scales:{x:{title:{display:true,text:'Actual wins minus expected wins'}, min:-axisBound, max:axisBound, ticks:{stepSize:axisBound<=5?1:(axisBound<=10?2:5)}}} }
     });
   });
@@ -6169,7 +6199,7 @@ function renderPrimetimeChart(years){
       options:{ indexAxis:'y', maintainAspectRatio:false,
         plugins:{ legend:{display:false},
           tooltip:{callbacks:{label:c=>`${c.raw>=0?'+':''}${c.raw.toFixed(2)} PPG in primetime vs. other weeks`}},
-          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>(v>=0?'+':'')+v.toFixed(1), font:{size:10,weight:'700'}, color:'#221F1A' }
+          datalabels:{ display:true, anchor:'end', align:v=>v.dataset.data[v.dataIndex]>=0?'right':'left', formatter:v=>(v>=0?'+':'')+v.toFixed(1), font:{size:10,weight:'700'}, color:(getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#221F1A') }
         },
         scales:{ x:{title:{display:true,text:'Primetime PPG minus non-primetime PPG'}, min:-axisBound, max:axisBound} }
       }
@@ -8005,9 +8035,11 @@ GM.curRows = ()=>computeCurrentStandings(2026).filter(r=>r.owner!=="rm2");
 
 /* ---------- shell: tiles + stage ---------- */
 const GM_LIST = [
+  {id:'wordle',title:'Owner Wordle', tag:'Daily', daily:true, desc:'Find the mystery team in five guesses. Tiles compare titles, wins, scoring, best finish and 2026 wins.'},
+  {id:'orderit',title:'Order It', tag:'Daily', daily:true, desc:'Put five teams in order on a hidden stat. Three tries, and green squares show what you got right.'},
+  {id:'grid',  title:'Immaculate Grid', tag:'Daily', daily:true, desc:'Name a player who fits both the team and the clue for each of nine squares. Nine guesses.'},
   {id:'hol',   title:'Higher or Lower', tag:'Seasons & careers', desc:'Guess whether the next team-season or career total is higher or lower. How long can you keep a streak?'},
   {id:'trivia',title:'League Trivia',   tag:'10 questions',     desc:'Champions, last places, record scores and more, generated from the league history.'},
-  {id:'startsit',title:'Start/Sit Challenge', tag:'Real past weeks', desc:'Set the lineup for a real past week, then see how you did against the best possible lineup.'},
   {id:'owner', title:'Guess the Owner', tag:'5 rounds',         desc:'Clues about a mystery team appear one at a time. Fewer clues means more points.'},
   {id:'rank',  title:'Blind Ranking',   tag:'3 rounds',         desc:'Rank five teams from highest to lowest on a hidden stat.'},
   {id:'bracket',title:'Bracket Challenge', tag:'Current playoff picture', desc:'Pick the playoff bracket from the current seeds, with the site model\'s win chances beside every game.'},
@@ -8019,22 +8051,31 @@ let _gmSel = null;
 
 function pageGames(){
   GM.stopAll();
+  const tileHtml = g=>`<button type="button" class="gm-tile${_gmSel===g.id?' active':''}" data-game="${g.id}">
+        <span class="gm-tile-tag">${g.tag}</span><span class="gm-tile-title">${g.title}</span><span class="gm-tile-desc">${g.desc}</span>
+        <span class="gm-tile-best" data-best="${g.id}"></span></button>`;
   return `
     <div class="section-title">${iconSvg('star')}Games <span class="sub">league trivia and arcade games &mdash; scores are saved on this device</span></div>
+    <div class="gm-me"><label class="gm-lab">You are <select id="gmMe"><option value="">Choose your team&hellip;</option>${GM.owners().map(o=>`<option value="${o}"${GM.me()===o?' selected':''}>${GM.esc(GM.name(o))}</option>`).join('')}</select></label><span class="gm-status" id="gmStatus">${GM.api?'':'Leaderboard not connected yet.'}</span></div>
+    <h4 class="gm-sub">Daily puzzles <span>new puzzle every day &middot; same for everyone</span></h4>
     <div class="gm-grid" id="gmGrid">
-      ${GM_LIST.map(g=>`<button type="button" class="gm-tile${_gmSel===g.id?' active':''}" data-game="${g.id}">
-        <span class="gm-tile-tag">${g.tag}</span><span class="gm-tile-title">${g.title}</span><span class="gm-tile-desc">${g.desc}</span>
-        <span class="gm-tile-best" data-best="${g.id}"></span></button>`).join('')}
+      ${GM_LIST.filter(g=>g.daily).map(tileHtml).join('')}
+    </div>
+    <h4 class="gm-sub">Practice games</h4>
+    <div class="gm-grid" id="gmGrid2">
+      ${GM_LIST.filter(g=>!g.daily).map(tileHtml).join('')}
     </div>
     <div class="gm-stage card" id="gmStage" ${_gmSel?'':'hidden'}></div>
-    <p class="note">Scores and streaks are stored in this browser only, so they do not carry to other devices or show up for other league members. History-based games leave out Team Methot, like the rest of the analytics.</p>`;
+    <div class="gm-stage card" id="gmBoard"></div>
+    <p class="note">${GM.api?'Scores post to the shared league leaderboard once you choose your team above. Streaks stay in this browser.':'Scores and streaks are stored in this browser only.'} History-based games leave out Team Methot, like the rest of the analytics.</p>`;
 }
 
 function gamesInit(){
   const grid = document.getElementById('gmGrid');
   if(!grid) return;
   GM.refreshBest();
-  grid.querySelectorAll('.gm-tile').forEach(b=>b.addEventListener('click', ()=>gmOpen(b.dataset.game, true)));
+  GM.initBoard();
+  document.querySelectorAll('.gm-tile').forEach(b=>b.addEventListener('click', ()=>gmOpen(b.dataset.game, true)));
   if(_gmSel) gmOpen(_gmSel, false);
 }
 function gmOpen(id, scroll){
@@ -8044,7 +8085,7 @@ function gmOpen(id, scroll){
   document.querySelectorAll('.gm-tile').forEach(t=>t.classList.toggle('active', t.dataset.game===id));
   stage.hidden = false;
   stage.innerHTML = '';
-  const fn = {hol:gmHigherLower, trivia:gmTrivia, startsit:gmStartSit, owner:gmGuessOwner, rank:gmBlindRank, bracket:gmBracket, kicker:gmKicker, dash:gmDash, passer:gmPasser}[id];
+  const fn = {hol:gmHigherLower, trivia:gmTrivia, wordle:gmWordle, orderit:gmOrderIt, grid:gmImmaculate, owner:gmGuessOwner, rank:gmBlindRank, bracket:gmBracket, kicker:gmKicker, dash:gmDash, passer:gmPasser}[id];
   try{ fn(stage); }catch(e){ stage.innerHTML = '<p class="note">This game hit an error: '+GM.esc(e.message)+'</p>'; }
   if(scroll) stage.scrollIntoView({block:'start', behavior:'smooth'});
 }
@@ -8052,10 +8093,10 @@ GM.refreshBest = ()=>{
   const bests = {
     hol: (()=>{ const a = GM.store.get('hol_best',{}); const m = Math.max(0, ...Object.values(a)); return m ? 'Best streak: '+m : ''; })(),
     trivia: (()=>{ const v = GM.store.get('trivia_best',null); return v!=null ? 'Best: '+v+'/10' : ''; })(),
-    startsit: (()=>{ const v = GM.store.get('startsit_best',null); return v!=null ? 'Best: '+v+'% of optimal' : ''; })(),
     owner: (()=>{ const v = GM.store.get('owner_best',null); return v!=null ? 'Best: '+v+'/30' : ''; })(),
     rank: (()=>{ const v = GM.store.get('rank_best',null); return v!=null ? 'Best: '+v+'/30' : ''; })(),
     bracket: '',
+    wordle: GM.dailyBadge('wordle'), orderit: GM.dailyBadge('orderit'), grid: GM.dailyBadge('grid'),
     kicker: (()=>{ const v = GM.store.get('kicker_best',null); return v!=null ? 'High score: '+v : ''; })(),
     dash: (()=>{ const v = GM.store.get('dash_best',null); return v!=null ? 'High score: '+v : ''; })(),
     passer: (()=>{ const v = GM.store.get('passer_best',null); return v!=null ? 'High score: '+v+' yds' : ''; })()
@@ -8125,7 +8166,7 @@ function gmHigherLower(el){
         el.querySelectorAll('.gm-actions button').forEach(b=>b.disabled = true);
         el.querySelector('.gm-duel-card:last-child').classList.add('good');
         setTimeout(()=>{ left = right; last = left; right = draw(); locked = false; render(); }, 1100);
-      } else { over = true; render(s.fmt(val(right))); el.querySelector('.gm-duel-card:last-child').classList.add('bad'); }
+      } else { over = true; GM.submit('hol', streak); render(s.fmt(val(right))); el.querySelector('.gm-duel-card:last-child').classList.add('bad'); }
     };
     const hi = el.querySelector('#holHi'), lo = el.querySelector('#holLo');
     if(hi) hi.onclick = ()=>guess(true);
@@ -8208,6 +8249,7 @@ function gmTrivia(el){
     if(i>=qs.length){
       const best = GM.store.get('trivia_best', null);
       if(best==null || score>best){ GM.store.set('trivia_best', score); GM.refreshBest(); }
+      GM.submit('trivia', score);
       el.innerHTML = `<div class="gm-head"><h3>League Trivia</h3></div>
         <p class="gm-final">${score}<span>/10</span></p><p class="gm-prompt">${score>=9?'League historian.':score>=7?'You know this league.':score>=4?'Decent. Some gaps.':'Time to read the History tab.'}</p>
         <button class="gm-btn" id="trAgain">Play again</button>`;
@@ -8230,78 +8272,6 @@ function gmTrivia(el){
     });
   };
   render();
-}
-
-/* ============ 3. START/SIT CHALLENGE ============ */
-GM.slotDefs = [
-  {k:'QB', label:'QB', elig:['QB']}, {k:'RB1', label:'RB', elig:['RB']}, {k:'RB2', label:'RB', elig:['RB']},
-  {k:'WR1', label:'WR', elig:['WR']}, {k:'WR2', label:'WR', elig:['WR']}, {k:'TE', label:'TE', elig:['TE']},
-  {k:'FLEX', label:'FLEX', elig:['RB','WR','TE']}, {k:'K', label:'K', elig:['K']}, {k:'DST', label:'D/ST', elig:['D/ST']}
-];
-GM.optimalLineup = (players)=>{
-  const by = pos=>players.filter(p=>p.pos===pos).sort((a,b)=>b.pts-a.pts);
-  const picks = [by('QB')[0], ...by('RB').slice(0,2), ...by('WR').slice(0,2), by('TE')[0], by('K')[0], by('D/ST')[0]].filter(Boolean);
-  const rest = players.filter(p=>['RB','WR','TE'].includes(p.pos) && !picks.includes(p)).sort((a,b)=>b.pts-a.pts)[0];
-  if(rest) picks.push(rest);
-  return {picks, total: picks.reduce((s,p)=>s+p.pts,0)};
-};
-function gmStartSit(el){
-  // find a random team-week with a full roster and at least 2 weeks of history
-  const cands = [];
-  Object.keys(PLAYER_SCORES).forEach(y=>Object.keys(PLAYER_SCORES[y]).forEach(w=>{
-    if(+w<3 || +w>17) return;
-    Object.keys(PLAYER_SCORES[y][w]).forEach(t=>{
-      const o = ownerForTeam(+y, t);
-      if(!o || o==="rm2") return;
-      const pl = PLAYER_SCORES[y][w][t];
-      if(pl.length>=14) cands.push({y:+y, w:+w, t, o});
-    });
-  }));
-  if(!cands.length){ el.innerHTML = '<p class="note">No roster data available yet.</p>'; return; }
-  const c = GM.pick(cands);
-  const roster = PLAYER_SCORES[c.y][c.w][c.t].map((p,i)=>({...p, id:i}));
-  // hint: average of the player's previous three scored games that season (any team)
-  const hist = {};
-  for(let w=1; w<c.w; w++){
-    const wk = PLAYER_SCORES[c.y][w]; if(!wk) continue;
-    Object.values(wk).forEach(pl=>pl.forEach(p=>{ (hist[p.name] = hist[p.name]||[]).push([w, p.pts]); }));
-  }
-  const hint = p=>{ const h = (hist[p.name]||[]).sort((a,b)=>b[0]-a[0]).slice(0,3); if(!h.length) return '—'; return GM.f1(h.reduce((s,x)=>s+x[1],0)/h.length); };
-  const slotOptions = s=>roster.filter(p=>s.elig.includes(p.pos)).sort((a,b)=>(parseFloat(hint(b))||0)-(parseFloat(hint(a))||0));
-  el.innerHTML = `<div class="gm-head"><h3>Start/Sit Challenge</h3><button class="gm-btn small" id="ssNew">New week</button></div>
-    <p class="gm-prompt">Set the lineup for this roster. The number beside each name is the player's average over his previous three games this season. Points are hidden until you lock it in.</p>
-    <div class="gm-slots">${GM.slotDefs.map(s=>`<label class="gm-slot"><span>${s.label}</span>
-      <select data-slot="${s.k}"><option value="">Choose&hellip;</option>${slotOptions(s).map(p=>`<option value="${p.id}">${GM.esc(p.name)} (${p.pos}) • ${hint(p)}</option>`).join('')}</select></label>`).join('')}</div>
-    <div class="gm-actions"><button class="gm-btn" id="ssLock">Lock in lineup</button></div>
-    <p class="note">Flex can be any RB, WR or TE. Your roster has ${roster.length} players.</p>
-    <div id="ssResult"></div>`;
-  el.querySelector('#ssNew').onclick = ()=>gmStartSit(el);
-  el.querySelector('#ssLock').onclick = ()=>{
-    const sel = {}; let miss = false;
-    el.querySelectorAll('[data-slot]').forEach(s=>{ if(s.value==='') miss = true; sel[s.dataset.slot] = s.value===''?null:roster[+s.value]; });
-    const chosen = Object.values(sel).filter(Boolean);
-    const out = el.querySelector('#ssResult');
-    if(miss){ out.innerHTML = '<p class="gm-result bad">Fill every slot first.</p>'; return; }
-    if(new Set(chosen.map(p=>p.id)).size < chosen.length){ out.innerHTML = '<p class="gm-result bad">The same player is in two slots.</p>'; return; }
-    const total = chosen.reduce((s,p)=>s+p.pts,0);
-    const opt = GM.optimalLineup(roster);
-    const actual = roster.filter(p=>!p.bench).reduce((s,p)=>s+p.pts,0);
-    const pct = opt.total ? Math.round(total/opt.total*100) : 0;
-    const best = GM.store.get('startsit_best', null);
-    if(best==null || pct>best){ GM.store.set('startsit_best', pct); GM.refreshBest(); }
-    el.querySelectorAll('[data-slot]').forEach(s=>s.disabled = true);
-    el.querySelector('#ssLock').disabled = true;
-    const optSet = new Set(opt.picks.map(p=>p.id));
-    out.innerHTML = `<div class="gm-final-row">
-        <div><span>You</span><b>${GM.f2(total)}</b></div><div><span>${GM.esc(GM.name(c.o))}'s actual</span><b>${GM.f2(actual)}</b></div><div><span>Best possible</span><b>${GM.f2(opt.total)}</b></div></div>
-      <p class="gm-result ${pct>=95?'good':pct>=85?'':'bad'}">${pct}% of the best lineup. ${total>actual?'You beat the real manager.':total===actual?'You matched the real manager.':'The real manager did better.'}</p>
-      <p class="note">${GM.esc(GM.name(c.o))}, Week ${c.w} of ${c.y}.</p>
-      <table class="table-compact gm-table"><thead><tr><th>Player</th><th>Pos</th><th class="num-cell">Pts</th><th>Notes</th></tr></thead><tbody>
-      ${roster.slice().sort((a,b)=>b.pts-a.pts).map(p=>`<tr><td>${GM.esc(p.name)}</td><td>${p.pos}</td><td class="num-cell">${GM.f2(p.pts)}</td><td>${chosen.some(x=>x.id===p.id)?'<b>You started</b> ':''}${optSet.has(p.id)?'Optimal ':''}${!p.bench?'Real start':''}</td></tr>`).join('')}
-      </tbody></table>
-      <div class="gm-actions"><button class="gm-btn" id="ssAgain">Another week</button></div>`;
-    out.querySelector('#ssAgain').onclick = ()=>gmStartSit(el);
-  };
 }
 
 /* ============ 4. GUESS THE OWNER ============ */
@@ -8328,6 +8298,7 @@ function gmGuessOwner(el){
     if(round>=ids.length){
       const best = GM.store.get('owner_best', null);
       if(best==null || total>best){ GM.store.set('owner_best', total); GM.refreshBest(); }
+      GM.submit('owner', total);
       el.innerHTML = `<div class="gm-head"><h3>Guess the Owner</h3></div><p class="gm-final">${total}<span>/30</span></p>
         <p class="gm-prompt">${total>=24?'You know these teams cold.':total>=14?'Solid.':'Study the standings.'}</p><button class="gm-btn" id="goAgain">Play again</button>`;
       el.querySelector('#goAgain').onclick = ()=>gmGuessOwner(el); return;
@@ -8385,6 +8356,7 @@ function gmBlindRank(el){
     if(round>=metrics.length){
       const best = GM.store.get('rank_best', null);
       if(best==null || total>best){ GM.store.set('rank_best', total); GM.refreshBest(); }
+      GM.submit('rank', total);
       el.innerHTML = `<div class="gm-head"><h3>Blind Ranking</h3></div><p class="gm-final">${total}<span>/30</span></p><p class="gm-prompt">${total>=26?'Nearly perfect.':total>=18?'Good read on the league.':'Rough day.'}</p><button class="gm-btn" id="brAgain">Play again</button>`;
       el.querySelector('#brAgain').onclick = ()=>gmBlindRank(el); return;
     }
@@ -8486,7 +8458,7 @@ function gmBracket(el){
 /* ============ ARCADE: shared canvas helpers ============ */
 GM.arcadeShell = (el, title, extraControls)=>{
   const owners = GM.owners();
-  const me = GM.store.get('arcade_me', owners.includes('bc')?'bc':owners[0]);
+  const me = GM.me() || GM.store.get('arcade_me', owners.includes('bc')?'bc':owners[0]);
   el.innerHTML = `<div class="gm-head"><h3>${title}</h3>
       <div class="gm-controls"><label class="gm-lab">Play as <select id="arcMe">${owners.map(o=>`<option value="${o}"${o===me?' selected':''}>${GM.esc(GM.name(o))}</option>`).join('')}</select></label>${extraControls||''}</div></div>
     <div class="gm-hud" id="arcHud"></div>
@@ -8499,7 +8471,7 @@ GM.arcadeShell = (el, title, extraControls)=>{
   canvas.width = W*dpr; canvas.height = H*dpr; canvas.style.width = W+'px'; canvas.style.height = H+'px';
   const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
   const api = {el, canvas, ctx, W, H, wrap, me, hud:el.querySelector('#arcHud'), overlay:el.querySelector('#arcOverlay'), help:el.querySelector('#arcHelp')};
-  el.querySelector('#arcMe').onchange = e=>{ GM.store.set('arcade_me', e.target.value); gmOpen(_gmSel, false); };
+  el.querySelector('#arcMe').onchange = e=>{ GM.store.set('arcade_me', e.target.value); GM.store.set('me', e.target.value); gmOpen(_gmSel, false); };
   return api;
 };
 GM.field = (ctx, W, H, offset)=>{
@@ -8578,6 +8550,7 @@ function gmKicker(el){
       if(kick>=KICKS){
         phase = 'over'; const best = GM.store.get('kicker_best', null);
         if(best==null || score>best){ GM.store.set('kicker_best', score); GM.refreshBest(); }
+        GM.submit('kicker', score);
         GM.overlay(api, `<h4>Final score ${score}</h4><p>${score>=22?'All-pro leg.':score>=12?'Solid kicker.':'Needs more practice.'}</p><button class="gm-btn">Play again</button>`, begin);
       } else newKick();
     }
@@ -8671,6 +8644,7 @@ function gmDash(el){
     if(over){
       const sc = Math.floor(score); const best = GM.store.get('dash_best', null);
       if(best==null || sc>best){ GM.store.set('dash_best', sc); GM.refreshBest(); }
+      GM.submit('dash', sc);
       hudUpdate();
       GM.overlay(api, `<h4>Tackled! ${sc} points</h4><p>${ballsGot} footballs collected.</p><button class="gm-btn">Run it back</button>`, begin);
     } else if((Math.floor(score)%5)===0) hudUpdate();
@@ -8726,6 +8700,7 @@ function gmPasser(el){
           over = true;
           const best = GM.store.get('passer_best', null);
           if(best==null || yards>best){ GM.store.set('passer_best', yards); GM.refreshBest(); }
+          GM.submit('passer', yards);
           setTimeout(()=>GM.overlay(api, `<h4>${yards} passing yards</h4><p>${comps} of ${THROWS} completed, ${ints} interception${ints===1?'':'s'}.</p><button class="gm-btn">Play again</button>`, begin), 700);
         }
       }
@@ -8741,6 +8716,334 @@ function gmPasser(el){
     ctx.font = '600 12px sans-serif'; ctx.fillStyle = '#fff6b0'; ctx.textAlign = 'left'; ctx.fillText('Yellow ring = receiver', 10, H-10); ctx.fillStyle = '#ff9a9a'; ctx.textAlign = 'right'; ctx.fillText('Red ring = defender', W-10, H-10);
   });
 }
+
+/* ============ DAILY PUZZLE FRAMEWORK ============ */
+GM.dayKey = ()=>{ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+GM.puzNum = ()=>{ const d = new Date(); return Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()) - Date.UTC(2026,10,16))/864e5)+1; };
+GM.mkrng = str=>{
+  let h = 1779033703 ^ str.length;
+  for(let i=0;i<str.length;i++){ h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h<<13)|(h>>>19); }
+  let a = (()=>{ h = Math.imul(h ^ (h>>>16), 2246822507); h = Math.imul(h ^ (h>>>13), 3266489909); return (h ^= h>>>16)>>>0; })();
+  return ()=>{ a |= 0; a = (a + 0x6D2B79F5)|0; let t = Math.imul(a ^ (a>>>15), 1|a); t = (t + Math.imul(t ^ (t>>>7), 61|t)) ^ t; return ((t ^ (t>>>14))>>>0)/4294967296; };
+};
+GM.rshuffle = (arr, rng)=>{ arr = arr.slice(); for(let i=arr.length-1;i>0;i--){ const j = Math.floor(rng()*(i+1)); [arr[i],arr[j]] = [arr[j],arr[i]]; } return arr; };
+GM.dget = g=>GM.store.get('daily_'+g+'_'+GM.dayKey(), null);
+GM.dset = (g,v)=>GM.store.set('daily_'+g+'_'+GM.dayKey(), v);
+GM.dstat = g=>GM.store.get('dstat_'+g, {last:'', count:0, max:0, played:0, wins:0});
+GM.dfinish = (g, won)=>{
+  const st = GM.dstat(g), today = GM.dayKey();
+  if(st.last===today) return st;
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const yk = y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+  st.count = (st.last===yk) ? st.count+1 : 1;
+  st.max = Math.max(st.max, st.count); st.played++; if(won) st.wins++; st.last = today;
+  GM.store.set('dstat_'+g, st); GM.refreshBest();
+  return st;
+};
+GM.dailyBadge = g=>{
+  const d = GM.dget(g), st = GM.dstat(g);
+  if(d && d.done) return 'Done today ✓' + (st.count>1 ? ' · '+st.count+'-day streak' : '');
+  return st.count ? 'Streak '+st.count+' · play today' : 'Play today';
+};
+GM.dailyFooter = (el, g, shareText, score)=>{
+  const st = GM.dstat(g);
+  const box = document.createElement('div'); box.className = 'gm-daily-foot';
+  box.innerHTML = `<pre class="gm-share">${GM.esc(shareText)}</pre>
+    <div class="gm-actions"><button class="gm-btn" data-share>Copy result</button></div>
+    <p class="note" data-sharemsg></p>
+    <div class="gm-final-row"><div><span>Streak</span><b>${st.count}</b></div><div><span>Best streak</span><b>${st.max}</b></div><div><span>Played</span><b>${st.played}</b></div><div><span>Solved</span><b>${st.wins}</b></div></div>
+    <p class="note">A new puzzle unlocks at midnight in your time zone.</p>`;
+  el.appendChild(box);
+  if(score!=null){ GM.postOnce(g, score, shareText.split('\n')[0]); GM.todayPanel(box, g); }
+  box.querySelector('[data-share]').onclick = ()=>{
+    const m = box.querySelector('[data-sharemsg]');
+    const fallback = ()=>{ m.textContent = 'Copy from the box above.'; };
+    try{ navigator.clipboard.writeText(shareText).then(()=>{ m.textContent = 'Copied.'; }, fallback); }catch(e){ fallback(); }
+  };
+};
+
+/* ============ DAILY 1: OWNER WORDLE ============ */
+GM.wordleAttrs = id=>{
+  const c = GM.careers()[id]; const cur = GM.curRows().find(r=>r.owner===id);
+  return [
+    {k:'Titles', v:c.titles, fmt:v=>String(v), tol:0, near:1},
+    {k:'Career W', v:c.w, fmt:v=>String(v), tol:0, near:6},
+    {k:'PPG', v:c.pf/c.games, fmt:GM.f1, tol:1.5, near:5},
+    {k:'Best finish', v:c.best, fmt:v=>ordinal(v), tol:0, near:1},
+    {k:'2026 W', v:cur?cur.w:0, fmt:v=>String(v), tol:0, near:1}
+  ];
+};
+function gmWordle(el){
+  const ids = GM.owners().filter(id=>GM.careers()[id]);
+  const rng = GM.mkrng('wordle-'+GM.dayKey());
+  const target = ids.slice().sort()[Math.floor(rng()*ids.length)];
+  const tAttrs = GM.wordleAttrs(target), MAX = 5;
+  let state = GM.dget('wordle') || {guesses:[], done:false, won:false};
+  const rowFor = g=>{
+    const a = GM.wordleAttrs(g);
+    return a.map((x,i)=>{
+      const d = tAttrs[i].v - x.v, ad = Math.abs(d);
+      const cls = ad<=x.tol ? 'g' : ad<=x.near ? 'y' : 'x';
+      const arrow = ad<=x.tol ? '' : (d>0 ? '▲' : '▼');
+      return {cls, txt:x.fmt(x.v), arrow};
+    });
+  };
+  const emoji = g=>rowFor(g).map(t=>t.cls==='g'?'🟩':t.cls==='y'?'🟨':'⬛').join('');
+  const render = ()=>{
+    const left = ids.filter(i=>!state.guesses.includes(i));
+    el.innerHTML = `<div class="gm-head"><h3>Owner Wordle <span class="gm-hud-inline">#${GM.puzNum()}</span></h3><span class="gm-hud-inline">${state.guesses.length}/${MAX} guesses</span></div>
+      <p class="gm-prompt">Find the mystery owner. Green is a match. Yellow is close. The arrow points toward the answer. Stats cover 2022–2025 unless marked 2026.</p>
+      <div class="wd-grid"><div class="wd-row wd-head"><span class="wd-name"></span>${tAttrs.map(a=>`<span>${a.k}</span>`).join('')}</div>
+      ${state.guesses.map(g=>`<div class="wd-row"><span class="wd-name">${GM.esc(GM.name(g))}</span>${rowFor(g).map(t=>`<span class="wd-tile ${t.cls}">${t.txt}${t.arrow?`<i>${t.arrow}</i>`:''}</span>`).join('')}</div>`).join('')}
+      </div>
+      ${state.done ? '' : `<div class="gm-actions"><select id="wdPick">${left.map(i=>`<option value="${i}">${GM.esc(GM.name(i))}</option>`).join('')}</select><button class="gm-btn" id="wdGo">Guess</button></div>`}
+      <div id="wdEnd"></div>`;
+    if(state.done){
+      const end = el.querySelector('#wdEnd');
+      end.innerHTML = `<p class="gm-result ${state.won?'good':'bad'}">${state.won?'Solved in '+state.guesses.length+'.':'Out of guesses.'} The mystery owner was ${GM.esc(GM.name(target))}.</p>`;
+      GM.dailyFooter(end, 'wordle', `Owner Wordle #${GM.puzNum()} ${state.won?state.guesses.length:'X'}/${MAX}\n`+state.guesses.map(emoji).join('\n'), state.won?6-state.guesses.length:0);
+      return;
+    }
+    el.querySelector('#wdGo').onclick = ()=>{
+      const g = el.querySelector('#wdPick').value; if(!g) return;
+      state.guesses.push(g);
+      if(g===target){ state.done = true; state.won = true; }
+      else if(state.guesses.length>=MAX){ state.done = true; }
+      GM.dset('wordle', state);
+      if(state.done) GM.dfinish('wordle', state.won);
+      render();
+    };
+  };
+  render();
+}
+
+/* ============ DAILY 2: ORDER IT ============ */
+function gmOrderIt(el){
+  const rng = GM.mkrng('order-'+GM.dayKey());
+  const metrics = GM.rankMetrics();
+  const m = metrics[Math.floor(rng()*metrics.length)];
+  // five items with distinct values, chosen deterministically
+  const pool = GM.rshuffle(m.items, rng), five = [];
+  for(const it of pool){ if(!five.some(x=>Math.abs(x.v-it.v)<1e-9 || m.fmt(x.v)===m.fmt(it.v))) five.push(it); if(five.length===5) break; }
+  const truth = five.map((t,i)=>i).sort((a,b)=>five[b].v-five[a].v);
+  const MAX = 3;
+  let state = GM.dget('orderit') || {attempts:[], done:false, won:false};
+  let order = [];
+  const marks = at=>at.map((o,p)=>o===truth[p]);
+  const render = ()=>{
+    el.innerHTML = `<div class="gm-head"><h3>Order It <span class="gm-hud-inline">#${GM.puzNum()}</span></h3><span class="gm-hud-inline">${state.attempts.length}/${MAX} tries</span></div>
+      <p class="gm-prompt">Tap the teams from <b>most</b> to <b>least</b>: ${GM.esc(m.q)}. After each try, green means the team sits in the right spot.</p>
+      ${state.attempts.map(at=>`<div class="od-attempt">${at.map((o,p)=>`<span class="od-cell ${o===truth[p]?'g':'x'}">${GM.esc(five[o].label)}</span>`).join('')}</div>`).join('')}
+      ${state.done ? '' : `<div class="gm-opts">${five.map((t,i)=>{ const pos = order.indexOf(i); return `<button class="gm-opt${pos>=0?' picked':''}" data-i="${i}">${pos>=0?`<b class="gm-badge">${pos+1}</b>`:''}${GM.esc(t.label)}</button>`; }).join('')}</div>
+        <div class="gm-actions"><button class="gm-btn small" id="odReset">Reset</button></div>`}
+      <div id="odEnd"></div>`;
+    if(state.done){
+      const end = el.querySelector('#odEnd');
+      end.innerHTML = `<p class="gm-result ${state.won?'good':'bad'}">${state.won?'Solved in '+state.attempts.length+'.':'Not this time.'} Correct order: ${truth.map(i=>`${GM.esc(five[i].label)} (${m.fmt(five[i].v)})`).join(' &gt; ')}.</p>`;
+      const sq = state.attempts.map(at=>marks(at).map(b=>b?'🟩':'⬛').join('')).join('\n');
+      GM.dailyFooter(end, 'orderit', `Order It #${GM.puzNum()} ${state.won?state.attempts.length:'X'}/${MAX}\n`+sq, state.won?[0,5,3,1][state.attempts.length]:0);
+      return;
+    }
+    el.querySelectorAll('.gm-opt').forEach(b=>b.onclick = ()=>{
+      const i = +b.dataset.i; if(order.includes(i)) return; order.push(i);
+      if(order.length<5){ render(); return; }
+      state.attempts.push(order.slice());
+      const won = order.every((o,p)=>o===truth[p]);
+      if(won){ state.done = true; state.won = true; } else if(state.attempts.length>=MAX){ state.done = true; }
+      order = []; GM.dset('orderit', state);
+      if(state.done) GM.dfinish('orderit', state.won);
+      render();
+    });
+    el.querySelector('#odReset').onclick = ()=>{ order = []; render(); };
+  };
+  render();
+}
+
+/* ============ DAILY 3: IMMACULATE GRID ============ */
+GM.playerIndex = ()=>{
+  if(GM._pidx) return GM._pidx;
+  const idx = {};
+  Object.keys(PLAYER_SCORES).forEach(y=>Object.keys(PLAYER_SCORES[y]).forEach(w=>{
+    const wk = PLAYER_SCORES[y][w];
+    Object.keys(wk).forEach(team=>{
+      const o = ownerForTeam(+y, team);
+      wk[team].forEach(p=>{
+        const e = idx[p.name] = idx[p.name] || {name:p.name, pos:p.pos, owners:new Set(), max:-99, years:new Set(), round:99};
+        if(o && o!=="rm2") e.owners.add(o);
+        e.years.add(String(y)); if(p.pts>e.max) e.max = p.pts;
+      });
+    });
+  }));
+  try{ Object.keys(DRAFTS).forEach(y=>(DRAFTS[y].picks||[]).forEach(pk=>{ const e = idx[pk.player]; if(e && pk.round<e.round) e.round = pk.round; })); }catch(e){}
+  return GM._pidx = idx;
+};
+GM.gridCriteria = [
+  {id:'QB', label:'Quarterback', f:p=>p.pos==='QB'},
+  {id:'RB', label:'Running back', f:p=>p.pos==='RB'},
+  {id:'WR', label:'Wide receiver', f:p=>p.pos==='WR'},
+  {id:'TE', label:'Tight end', f:p=>p.pos==='TE'},
+  {id:'big', label:'Scored 30+ in a week', f:p=>p.max>=30},
+  {id:'y22', label:'Rostered in 2022', f:p=>p.years.has('2022')},
+  {id:'y26', label:'Rostered in 2026', f:p=>p.years.has('2026')},
+  {id:'multi', label:'On 4+ different teams', f:p=>p.owners.size>=4},
+  {id:'draft', label:'Drafted in rounds 1–3', f:p=>p.round<=3}
+];
+GM.buildGrid = rng=>{
+  const idx = Object.values(GM.playerIndex()), owners = GM.owners();
+  for(let tries=0; tries<800; tries++){
+    const rows = GM.rshuffle(owners, rng).slice(0,3).map(o=>({kind:'owner', id:o, label:GM.name(o), f:p=>p.owners.has(o)}));
+    const cols = GM.rshuffle(GM.gridCriteria, rng).slice(0,3);
+    if(cols.filter(c=>['QB','RB','WR','TE'].includes(c.id)).length>1) continue;
+    let ok = true; const answers = [];
+    for(let r=0;r<3&&ok;r++){ answers[r] = []; for(let c=0;c<3;c++){ const a = idx.filter(p=>rows[r].f(p)&&cols[c].f(p)).map(p=>p.name); if(a.length<3){ ok = false; break; } answers[r][c] = a; } }
+    if(ok) return {rows, cols, answers};
+  }
+  return null;
+};
+function gmImmaculate(el){
+  const rng = GM.mkrng('grid-'+GM.dayKey());
+  const puz = GM.buildGrid(rng);
+  if(!puz){ el.innerHTML = '<p class="note">No grid could be built from the current data.</p>'; return; }
+  const idx = GM.playerIndex(), names = Object.keys(idx).sort();
+  const MAX = 9;
+  let state = GM.dget('grid') || {cells:{}, used:[], wrong:[], done:false};
+  let sel = null, msg = '';
+  const filled = ()=>Object.keys(state.cells).length;
+  const render = ()=>{
+    const remaining = MAX - state.used.length;
+    el.innerHTML = `<div class="gm-head"><h3>Immaculate Grid <span class="gm-hud-inline">#${GM.puzNum()}</span></h3><span class="gm-hud-inline">${remaining} guess${remaining===1?'':'es'} left &middot; ${filled()}/9 filled</span></div>
+      <p class="gm-prompt">Pick a square, then name a player who fits <b>both</b> its team and its clue. The team list counts anyone who ever sat on that roster, bench included, from 2022 to now.</p>
+      <div class="ig-wrap"><div class="ig-grid">
+        <div class="ig-corner"></div>${puz.cols.map(c=>`<div class="ig-head">${c.label}</div>`).join('')}
+        ${puz.rows.map((r,ri)=>`<div class="ig-head side">${GM.esc(r.label)}</div>${puz.cols.map((c,ci)=>{ const k = ri+'_'+ci, v = state.cells[k]; return `<button class="ig-cell${v?' ok':''}${sel===k?' sel':''}" data-k="${k}" ${v||state.done?'disabled':''}>${v?GM.esc(v):''}</button>`; }).join('')}`).join('')}
+      </div></div>
+      ${state.done ? '' : `<div class="ig-input"><input id="igName" list="igNames" placeholder="${sel?'Type a player name':'Select a square first'}" ${sel?'':'disabled'} autocomplete="off"><datalist id="igNames">${names.map(n=>`<option value="${GM.esc(n)}">`).join('')}</datalist><button class="gm-btn" id="igGo" ${sel?'':'disabled'}>Guess</button></div>`}
+      <p class="gm-result ${msg.startsWith('Correct')?'good':msg?'bad':''}">${GM.esc(msg)}</p>
+      <div id="igEnd"></div>`;
+    if(state.done){
+      const end = el.querySelector('#igEnd'); const f = filled();
+      end.innerHTML = `<p class="gm-result ${f===9?'good':''}">${f} of 9 squares filled.</p>`;
+      const sq = [0,1,2].map(r=>[0,1,2].map(c=>state.cells[r+'_'+c]?'🟩':'⬛').join('')).join('\n');
+      GM.dailyFooter(end, 'grid', `Immaculate Grid #${GM.puzNum()} ${f}/9\n`+sq, Math.round(f*5/9));
+      return;
+    }
+    el.querySelectorAll('.ig-cell').forEach(b=>b.onclick = ()=>{ sel = b.dataset.k; msg = ''; render(); const i = el.querySelector('#igName'); if(i) i.focus(); });
+    const go = ()=>{
+      const inp = el.querySelector('#igName'); const raw = inp.value.trim(); if(!raw||!sel) return;
+      const name = names.find(n=>n.toLowerCase()===raw.toLowerCase());
+      if(!name){ msg = 'That name is not in the player pool.'; render(); return; }
+      if(Object.values(state.cells).includes(name)){ msg = name+' is already on the grid.'; render(); return; }
+      const [r,c] = sel.split('_').map(Number);
+      state.used.push(name);
+      if(puz.rows[r].f(idx[name]) && puz.cols[c].f(idx[name])){ state.cells[sel] = name; msg = 'Correct: '+name+'.'; sel = null; }
+      else { msg = name+' does not fit that square.'; }
+      if(state.used.length>=MAX || filled()===9) state.done = true;
+      GM.dset('grid', state);
+      if(state.done) GM.dfinish('grid', filled()===9);
+      render();
+    };
+    el.querySelector('#igGo').onclick = go;
+    el.querySelector('#igName').addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+  };
+  render();
+}
+
+
+/* ============ LEADERBOARD (Google Sheets via Apps Script) ============ */
+GM.api = 'https://script.google.com/macros/s/AKfycbzd57phRA_NqO9sg5pVe-D3TeuQRjj70_WtL1eKilasqCRGx5_fasQ7-IOVnQbljvUc/exec'; // paste the Apps Script Web app URL between the quotes
+GM.me = ()=>{ const v = GM.store.get('me', null); return (v && GM.owners().includes(v)) ? v : null; };
+GM.DAILY = ['wordle','orderit','grid'];
+GM.status = msg=>{ const el = document.getElementById('gmStatus'); if(el) el.textContent = msg; };
+GM._cache = null;
+GM.fetchBoard = async force=>{
+  if(!GM.api) throw new Error('not connected');
+  if(!force && GM._cache && Date.now()-GM._cache.t < 20000) return GM._cache.rows;
+  const res = await fetch(GM.api+(GM.api.includes('?')?'&':'?')+'action=board&_='+Date.now());
+  const j = await res.json(); if(!j.ok) throw new Error(j.error||'error');
+  const rows = j.rows.map(r=>({day:String(r[0]), game:r[1], owner:r[2], score:Number(r[3]), detail:r[4]}));
+  GM._cache = {t:Date.now(), rows}; return rows;
+};
+GM.post = async (game, score, detail)=>{
+  const me = GM.me(); if(!GM.api || !me) return {skipped:true};
+  const res = await fetch(GM.api, {method:'POST', body:JSON.stringify({game, owner:me, score, detail:detail||'', day:GM.dayKey()})});
+  const j = await res.json(); GM._cache = null; return j;
+};
+GM.flushPending = async ()=>{
+  const q = GM.store.get('pending', []); if(!q.length || !GM.api || !GM.me()) return;
+  const keep = [];
+  for(const it of q){ try{ const j = await fetch(GM.api,{method:'POST', body:JSON.stringify({...it, owner:GM.me()})}).then(r=>r.json()); if(!j.ok && j.error!=='bad day') keep.push(it); }catch(e){ keep.push(it); } }
+  GM.store.set('pending', keep);
+};
+GM.submit = async (game, score, detail)=>{
+  if(!GM.api || !(score>0)) return;
+  if(!GM.me()){ GM.status('Choose your team at the top of the page to post scores to the leaderboard.'); return; }
+  try{
+    const j = await GM.post(game, score, detail);
+    if(j.ok){ GM.status(j.saved ? 'Score posted to the leaderboard.' : 'Score received. It was not a new best.'); GM.renderBoard(); }
+    else GM.status('Leaderboard rejected the score ('+(j.error||'error')+').');
+  }catch(e){
+    const q = GM.store.get('pending', []); q.push({game, score, detail:detail||'', day:GM.dayKey()}); GM.store.set('pending', q.slice(-20));
+    GM.status('Could not reach the leaderboard. The score will retry next time.');
+  }
+};
+GM.postOnce = async (game, score, detail)=>{
+  const flag = 'posted_'+game+'_'+GM.dayKey();
+  if(!GM.api || GM.store.get(flag, false)) return;
+  if(!GM.me()){ GM.status('Choose your team at the top of the page to post today’s result.'); return; }
+  try{
+    const j = await GM.post(game, score, detail);
+    if(j.ok){ GM.store.set(flag, true); GM.status('Result posted to the leaderboard.'); GM.renderBoard(); }
+  }catch(e){ GM.status('Could not reach the leaderboard.'); }
+};
+GM.todayPanel = async (box, game)=>{
+  if(!GM.api) return;
+  const div = document.createElement('div'); div.className = 'gm-today'; div.innerHTML = '<h4 class="gm-sub">Today’s results</h4><p class="note">Loading&hellip;</p>'; box.appendChild(div);
+  try{
+    const rows = (await GM.fetchBoard()).filter(r=>r.game===game && r.day===GM.dayKey()).sort((a,b)=>b.score-a.score);
+    div.innerHTML = '<h4 class="gm-sub">Today’s results</h4>' + (rows.length ? `<table class="table-compact gm-table"><tbody>${rows.map(r=>`<tr><td>${GM.esc(GM.name(r.owner))}</td><td class="num-cell">${r.score}</td><td>${GM.esc(r.detail||'')}</td></tr>`).join('')}</tbody></table>` : '<p class="note">No results posted yet.</p>');
+  }catch(e){ div.innerHTML = '<h4 class="gm-sub">Today’s results</h4><p class="note">Could not load results.</p>'; }
+};
+GM.boardViews = [
+  {id:'points', label:'Daily points (all time)'}, {id:'today', label:'Today’s dailies'},
+  {id:'trivia', label:'Trivia best'}, {id:'owner', label:'Guess the Owner best'}, {id:'rank', label:'Blind Ranking best'},
+  {id:'hol', label:'Higher or Lower streak'}, {id:'kicker', label:'Field Goal Kicker'}, {id:'dash', label:'Gridiron Dash'}, {id:'passer', label:'Pocket Passer (yards)'}
+];
+GM._view = 'points';
+GM.initBoard = ()=>{
+  const me = document.getElementById('gmMe');
+  if(me) me.onchange = e=>{ GM.store.set('me', e.target.value); GM.store.set('arcade_me', e.target.value); GM.status(e.target.value?'Playing as '+GM.name(e.target.value)+'.':''); GM.flushPending(); GM.renderBoard(); };
+  GM.flushPending();
+  GM.renderBoard();
+};
+GM.renderBoard = async ()=>{
+  const el = document.getElementById('gmBoard'); if(!el) return;
+  if(!GM.api){ el.hidden = true; return; }
+  el.hidden = false;
+  if(!el.dataset.ready){
+    el.dataset.ready = '1';
+    el.innerHTML = `<div class="gm-head"><h3>League Leaderboard</h3><div class="gm-controls"><select id="gmBoardView">${GM.boardViews.map(v=>`<option value="${v.id}"${v.id===GM._view?' selected':''}>${v.label}</option>`).join('')}</select><button class="gm-btn small" id="gmBoardRefresh">Refresh</button></div></div><div id="gmBoardBody"><p class="note">Loading&hellip;</p></div>`;
+    el.querySelector('#gmBoardView').onchange = e=>{ GM._view = e.target.value; GM.renderBoard(); };
+    el.querySelector('#gmBoardRefresh').onclick = ()=>{ GM._cache = null; GM.renderBoard(); };
+  }
+  const body = el.querySelector('#gmBoardBody');
+  let rows; try{ rows = await GM.fetchBoard(); }catch(e){ body.innerHTML = '<p class="note">Could not load the leaderboard right now.</p>'; return; }
+  const me = GM.me(), v = GM._view, today = GM.dayKey();
+  const nameCell = o=>`<span class="gm-dot" style="background:${ownerColor(o)}"></span>${GM.esc(GM.name(o))}`;
+  const table = (head, data)=>data.length ? `<table class="table-compact gm-table"><thead><tr>${head.map((h,i)=>`<th${i>1?' class="num-cell"':''}>${h}</th>`).join('')}</tr></thead><tbody>${data.map((r,i)=>`<tr${r.o===me?' class="gm-me-row"':''}><td>${i+1}</td><td>${nameCell(r.o)}</td>${r.cells.map(c=>`<td class="num-cell">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '<p class="note">No scores yet. Be the first.</p>';
+  if(v==='points'){
+    const by = {};
+    rows.filter(r=>GM.DAILY.includes(r.game)).forEach(r=>{ const o = by[r.owner] = by[r.owner]||{o:r.owner, pts:0, n:0}; o.pts += r.score; o.n++; });
+    const data = Object.values(by).sort((a,b)=>b.pts-a.pts||b.n-a.n).map(x=>({o:x.o, cells:[x.pts, x.n, (x.pts/x.n).toFixed(1)]}));
+    body.innerHTML = table(['#','Team','Points','Puzzles','Avg'], data) + '<p class="note">Points per puzzle: Owner Wordle 5 for a first-guess solve down to 1 for the last guess. Order It 5, 3 or 1 for a solve on try 1, 2 or 3. Immaculate Grid up to 5 by squares filled.</p>';
+  } else if(v==='today'){
+    const by = {};
+    rows.filter(r=>GM.DAILY.includes(r.game) && r.day===today).forEach(r=>{ const o = by[r.owner] = by[r.owner]||{o:r.owner, t:0, w:'—', od:'—', g:'—'}; o.t += r.score; if(r.game==='wordle')o.w=r.score; if(r.game==='orderit')o.od=r.score; if(r.game==='grid')o.g=r.score; });
+    body.innerHTML = table(['#','Team','Total','Wordle','Order It','Grid'], Object.values(by).sort((a,b)=>b.t-a.t).map(x=>({o:x.o, cells:[x.t,x.w,x.od,x.g]})));
+  } else {
+    const data = rows.filter(r=>r.game===v).sort((a,b)=>b.score-a.score).map(r=>({o:r.owner, cells:[r.score]}));
+    body.innerHTML = table(['#','Team','Best'], data);
+  }
+};
 
 function pageTrades(){
   if(!TRADES.length){
@@ -17445,6 +17748,215 @@ function condenseNotes(root){
   let t = null;
   new MutationObserver(()=>{ clearTimeout(t); t = setTimeout(()=>{ try{ applyGlossaryTips(app); }catch(e){} }, 150); }).observe(app, {childList:true, subtree:true});
 })();
+</script>
+<style id="gridiron-theme">
+/* ===== gridiron: light, muted ===== */
+:root[data-theme="gridiron"]{
+  --bg:#F5F0E0; --panel:#FBF8EE; --panel2:#EEE7D1; --line:#E0D6B8; --text:#1F1D16; --muted:#6B6650;
+  --gold:#D9A520; --gold-deep:#8F6B0D; --black:#8F6B0D; --red:#B5503F; --red-muted:#C9958B; --green:#5C7F63;
+  --font-display:'Montserrat','Inter',sans-serif; --font-body:'Source Serif 4',Georgia,serif;
+  --card-radius:8px; --card-radius-lg:8px; --card-shadow:0 1px 2px rgba(40,40,30,.06); --card-shadow-hover:0 4px 12px rgba(40,40,30,.10);
+  --card-border-top:1px solid var(--line); --tipbg:#1F1D16;
+}
+:root[data-theme="gridiron"] body{background:var(--bg);color:var(--text);}
+:root[data-theme="gridiron"] header.top{background:var(--panel);border-bottom:1px solid var(--line);}
+:root[data-theme="gridiron"] .brand{color:var(--text);}
+:root[data-theme="gridiron"] .search-wrap input{background:var(--panel2);border:1px solid var(--line);color:var(--text);}
+:root[data-theme="gridiron"] .search-wrap input::placeholder{color:var(--muted);}
+:root[data-theme="gridiron"] .admin-bubble{background:var(--panel2);border-color:var(--line);color:var(--muted);}
+:root[data-theme="gridiron"] .admin-bubble:hover{background:var(--tint);}
+:root[data-theme="gridiron"] .admin-bubble.authed{background:var(--gold);color:#fff;}
+:root[data-theme="gridiron"] nav.tabs{background:var(--panel);border-top:1px solid var(--line);}
+:root[data-theme="gridiron"] nav.tabs button{background:transparent;color:var(--muted);border-right:none;border-bottom:2px solid transparent;font-family:var(--font-body);font-weight:600;letter-spacing:.03em;}
+:root[data-theme="gridiron"] nav.tabs button:hover{background:var(--panel2);color:var(--text);}
+:root[data-theme="gridiron"] nav.tabs button.active{background:transparent;color:var(--gold-deep);border-bottom-color:var(--gold);}
+:root[data-theme="gridiron"] h1,:root[data-theme="gridiron"] h2,:root[data-theme="gridiron"] .section-title{font-weight:600;letter-spacing:0;}
+:root[data-theme="gridiron"] .section-title{border-bottom:1px solid var(--line);box-shadow:none;font-size:20px;}
+:root[data-theme="gridiron"] .section-title svg{color:var(--gold-deep);}
+:root[data-theme="gridiron"] .card{box-shadow:var(--card-shadow);}
+:root[data-theme="gridiron"] .table-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius);}
+:root[data-theme="gridiron"] table th{background:var(--panel2);color:var(--muted);}
+:root[data-theme="gridiron"] tbody tr:nth-child(even){background:color-mix(in srgb,var(--panel2) 45%,transparent);}
+:root[data-theme="gridiron"] tbody tr:hover{background:var(--tint) !important;}
+:root[data-theme="gridiron"] .hero{background:var(--panel2);border-bottom:1px solid var(--line);}
+:root[data-theme="gridiron"] .hero h1,:root[data-theme="gridiron"] .hr-team,:root[data-theme="gridiron"] .hr-record{color:var(--text);}
+:root[data-theme="gridiron"] .hr-owner,:root[data-theme="gridiron"] .hr-pct{color:var(--muted);}
+:root[data-theme="gridiron"] .hero-edition,:root[data-theme="gridiron"] .hr-label{color:var(--gold-deep);}
+:root[data-theme="gridiron"] .hero-frame{border-color:var(--line);}
+:root[data-theme="gridiron"] .hero-frame::before,:root[data-theme="gridiron"] .hero-frame::after,:root[data-theme="gridiron"] .hero-frame .corner-bl,:root[data-theme="gridiron"] .hero-frame .corner-br{border-color:var(--gold);}
+:root[data-theme="gridiron"] .hero-rotate{border-left-color:var(--line);}
+:root[data-theme="gridiron"] .hr-dot{background:var(--line);} :root[data-theme="gridiron"] .hr-dot.active{background:var(--gold);}
+:root[data-theme="gridiron"] .banner{background:var(--gold-deep);}
+:root[data-theme="gridiron"] .banner .byear{color:#F3E7C8;}
+:root[data-theme="gridiron"] .jump-nav a.active{color:var(--gold-deep);border-bottom-color:var(--gold);}
+:root[data-theme="gridiron"] .dc-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--card-radius-lg);box-shadow:var(--card-shadow);}
+:root[data-theme="gridiron"] .dc-head{background:var(--tint);color:var(--gold-deep);border-bottom:1px solid var(--line);}
+:root[data-theme="gridiron"] .dc-trophy .award-icon{color:var(--sec);}
+:root[data-theme="gridiron"] .dc-latest{background:var(--tint);} :root[data-theme="gridiron"] .dc-latest .dc-year{background:var(--gold-deep);color:#fff;}
+:root[data-theme="gridiron"] .dc-crown{color:var(--sec);}
+:root[data-theme="gridiron"] .dc-foot{background:var(--panel2);color:var(--gold-deep);border-top:1px solid var(--line);}
+:root[data-theme="gridiron"] .odds-disclaimer{background:#F7EFD9;border-color:var(--sec);color:var(--text);}
+:root[data-theme="gridiron"] .chart-pill.active{background:var(--gold-deep);color:#fff;border-color:var(--gold-deep);}
+:root[data-theme="gridiron"] .mobile-tabbar{background:var(--panel);border-top:1px solid var(--line);}
+:root[data-theme="gridiron"] .mms-panel{background:var(--panel);}
+:root[data-theme="gridiron"] .mms-panel button.active{background:var(--gold-deep);color:#fff;}
+/* ticker */
+:root[data-theme="gridiron"] .ticker-wrap{background:var(--tint);border:1px solid var(--line);}
+:root[data-theme="gridiron"] .ticker-track,:root[data-theme="gridiron"] .ticker-track *{color:var(--text);border-color:var(--line);}
+:root[data-theme="gridiron"] .ticker-label{color:var(--gold-deep) !important;}
+/* shared grouped-nav parts */
+:root[data-theme="gridiron"] .gn-lab,:root[data-theme="gridiron"] .gn-pages button{font-family:var(--font-body);cursor:pointer;}
+:root[data-theme="gridiron"] .stack-part{margin-top:44px;padding-top:26px;border-top:2px solid var(--gold);position:relative;}
+:root[data-theme="gridiron"] .stack-tag{position:absolute;top:-13px;left:0;background:var(--bg);padding:0 12px 0 0;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);}
+
+/* Gridiron Light: brand + grouped nav share one slim row, page links sit in a thin sub-row.
+   Green = navigation and controls, gold = headings, trophies and banners, black = text, header cap and ticker. */
+:root[data-theme="gridiron"] header.top{border-bottom:1px solid var(--line);border-top:3px solid #1F1D16;}
+:root[data-theme="gridiron"] .brand{color:#1F1D16;}
+:root[data-theme="gridiron"] .hero{background:#EFE7CB;border-bottom:1px solid var(--line);}
+:root[data-theme="gridiron"] .hero-frame{border-color:#E3CF8C;}
+:root[data-theme="gridiron"] .hero-frame::before,:root[data-theme="gridiron"] .hero-frame::after,:root[data-theme="gridiron"] .hero-frame .corner-bl,:root[data-theme="gridiron"] .hero-frame .corner-br{border-color:#DBA514;}
+:root[data-theme="gridiron"] .hero-edition,:root[data-theme="gridiron"] .hr-label{color:#9A700A;}
+:root[data-theme="gridiron"] .hero-rotate{border-left-color:#E3CF8C;} :root[data-theme="gridiron"] .hr-dot.active{background:#DBA514;}
+:root[data-theme="gridiron"] .podium-bar.p1{background:#DBA514;}
+/* Banners: cream cloth hung from a black rod, gold header band and gold swallowtail */
+:root[data-theme="gridiron"] .banner-row{gap:34px;padding-top:14px;}
+:root[data-theme="gridiron"] .banner{background:transparent;clip-path:none;overflow:visible;aspect-ratio:1/1.6;filter:drop-shadow(0 0 .6px #BFAE7A) drop-shadow(0 3px 4px rgba(60,50,10,.22));}
+:root[data-theme="gridiron"] .banner::before{content:"";position:absolute;z-index:3;top:-10px;left:-9px;right:-9px;height:9px;background:#1F1D16;border-radius:5px;}
+:root[data-theme="gridiron"] .banner::after{content:"";position:absolute;z-index:0;inset:0;clip-path:polygon(0 0,100% 0,100% 100%,50% 89%,0 100%);background:linear-gradient(#DBA514,#DBA514) top/100% 9% no-repeat,linear-gradient(#DBA514,#DBA514) bottom/100% 11% no-repeat,#FBF8EE;}
+:root[data-theme="gridiron"] .banner>*{z-index:1;}
+:root[data-theme="gridiron"] .banner-pin,:root[data-theme="gridiron"] .banner-edge{display:none;}
+:root[data-theme="gridiron"] .banner .byear{top:16%;color:#1F1D16;font-size:26px;}
+:root[data-theme="gridiron"] .banner-laurels{top:34%;}
+:root[data-theme="gridiron"] .banner-laurels svg,:root[data-theme="gridiron"] .banner-laurels svg *{color:#8F6B0D;fill:#F2D77A;stroke:#8F6B0D;stroke-width:1.1;}
+:root[data-theme="gridiron"] .banner .bteam{top:60%;left:12px;right:12px;color:#1F1D16;font-weight:800;font-size:11.5px;}
+:root[data-theme="gridiron"] .ticker-wrap{background:#27251D;border-color:#27251D;}
+:root[data-theme="gridiron"] .ticker-track,:root[data-theme="gridiron"] .ticker-track *{color:#F3EEDC;border-color:#4A4636;}
+:root[data-theme="gridiron"] .ticker-label{color:#E8B923 !important;}
+:root[data-theme="gridiron"] table th{background:#F1EBD6;color:#4A4636;}
+:root[data-theme="gridiron"] tbody tr:nth-child(even){background:#F8F3E3;}
+:root[data-theme="gridiron"] tbody tr:hover{background:#F3E9C6 !important;}
+:root[data-theme="gridiron"] .topbar{padding:7px 20px;gap:18px;}
+:root[data-theme="gridiron"] .brand{font-size:17px;letter-spacing:.01em;}
+:root[data-theme="gridiron"] .brand .crest{width:26px;height:26px;}
+:root[data-theme="gridiron"] .gn-primary{display:flex;gap:2px;align-items:center;margin-left:8px;}
+:root[data-theme="gridiron"] .gn-primary button{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:10px 14px;cursor:pointer;}
+:root[data-theme="gridiron"] .gn-primary button:hover{color:var(--text);background:var(--panel2);}
+:root[data-theme="gridiron"] .gn-primary button.active{color:var(--gold-deep);border-bottom-color:var(--gold);}
+:root[data-theme="gridiron"] .search-wrap{flex:0 1 190px;}
+@media (min-width:641px){
+  :root[data-theme="gridiron"] nav.tabs{display:block;max-width:none;padding:0;background:var(--tint);border-top:none;border-bottom:1px solid var(--line);}
+  :root[data-theme="gridiron"] nav.tabs.empty{display:none;}
+}
+@media (max-width:640px){ :root[data-theme="gridiron"] .gn-primary{display:none;} }
+:root[data-theme="gridiron"] .gn-sub-in{display:flex;justify-content:center;gap:4px;max-width:1120px;margin:0 auto;padding:4px 20px;}
+:root[data-theme="gridiron"] .gn-sub-in button{padding:4px 15px;border-radius:14px;font-size:11px;background:transparent;border:1px solid transparent;color:var(--muted);font-family:var(--font-display);font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;}
+:root[data-theme="gridiron"] .gn-sub-in button:hover{background:var(--panel);}
+:root[data-theme="gridiron"] .gn-sub-in button.active{background:var(--panel);color:var(--gold-deep);border-color:var(--gold);}
+:root[data-theme="gridiron"] .section-title{font-family:var(--font-display);font-weight:800;border-bottom:2px solid #DBA514;}
+:root[data-theme="gridiron"] .section-title svg{color:#8F6B0D;}
+:root[data-theme="gridiron"] .shame-card{background:#B5503F;color:#FBF3E4;border-top:3px solid #7E2F23;}
+:root[data-theme="gridiron"] .shame-year{color:#F3D7A6;} :root[data-theme="gridiron"] .shame-rec{color:#F0CDBF;}
+:root[data-theme="gridiron"] .gn-primary button.active{color:#8F6B0D;}
+:root[data-theme="gridiron"] .chart-pill.active,:root[data-theme="gridiron"] .toggle-btn.active{background:#D9A520;color:#1F1D16;}
+:root[data-theme="gridiron"] .gn-sub-in button.active{border-color:#D9A520;}
+:root[data-theme="gridiron"] nav.tabs{background:#F6EDCF !important;}
+:root[data-theme="gridiron"] .dc-card{border-top:3px solid #DBA514;}
+:root[data-theme="gridiron"] .dc-head{background:#FAF1CE;color:#7A5A06;}
+:root[data-theme="gridiron"] .dc-latest .dc-year{background:#8F6B0D;}
+
+</style>
+<script>
+(function(){
+  var theme=document.documentElement.getAttribute('data-theme');
+  if(['sage','linen','dusty','plum','stone','gridiron'].indexOf(theme)<0) return;
+  function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+  function icon(p){ return '<svg class="nav-icon" viewBox="0 0 24 24">'+((typeof NAV_ICONS!=='undefined'&&NAV_ICONS[p])||'')+'</svg>'; }
+  function label(p){ return NAV_LABELS[p]||p; }
+  var GROUPS=[{l:'Home',p:['Home']},{l:'Season',p:['Current Season','Dashboard','Odds']},{l:'Teams',p:['Franchise','Transactions','Trade Calculator']},{l:'Analysis',p:['Analytics','History','Rivalries']},{l:'Play',p:['Games']}];
+  GROUPS.forEach(function(g){ g.p=g.p.filter(function(p){ return PAGES.indexOf(p)>=0; }); });
+  var DESC={'Home':'Trophies, banners and podiums','Current Season':'Standings, power rankings, rosters, schedule','Dashboard':'League KPIs, featured game, charts','Odds':'Lines, props and futures (display only)','Franchise':'One-team deep dives','Transactions':'Draft history and trades','Trade Calculator':'Value any trade','Analytics':'Charts, stats lab, finder, draft value','History':'Timeline, records and awards','Rivalries':'Head-to-head records and network','Games':'Trivia, higher or lower, arcade'};
+  function gIdx(p){ for(var i=0;i<GROUPS.length;i++) if(GROUPS[i].p.indexOf(p)>=0) return i; return -1; }
+  function go(p){ currentPage=p; renderNav(); renderPage(); window.scrollTo(0,0); }
+  function wire(root){ root.querySelectorAll('button[data-page]').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); go(b.dataset.page); }); }); }
+
+  /* ---------- grouped navs: sage (sub-row), linen (side menu), stone (dropdowns) ---------- */
+  function navSage(){
+    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage), g=GROUPS[gi]||null;
+    tabs.innerHTML='<div class="gn-primary">'+GROUPS.map(function(x,i){ return '<button class="gn-lab'+(i===gi?' active':'')+'" data-page="'+x.p[0]+'">'+x.l+'</button>'; }).join('')+'</div>'+
+      '<div class="gn-sub'+((!g||g.p.length<2)?' empty':'')+'"><div class="gn-sub-in">'+(g&&g.p.length>1?g.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+label(p)+'</button>'; }).join(''):'')+'</div></div>';
+    wire(tabs); renderMobileTabbar();
+  }
+  function navGridiron(){
+    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage), g=GROUPS[gi]||null, tb=document.querySelector('.topbar');
+    var pr=document.getElementById('gnPrimary');
+    if(!pr){ pr=document.createElement('div'); pr.id='gnPrimary'; pr.className='gn-primary'; var br=tb.querySelector('.brand'); br.insertAdjacentElement('afterend',pr); }
+    pr.innerHTML=GROUPS.map(function(x,i){ return '<button data-page="'+x.p[0]+'" class="'+(i===gi?'active':'')+'">'+x.l+'</button>'; }).join('');
+    var multi=g&&g.p.length>1;
+    tabs.className='tabs'+(multi?'':' empty');
+    tabs.innerHTML='<div class="gn-sub-in">'+(multi?g.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+label(p)+'</button>'; }).join(''):'')+'</div>';
+    wire(pr); wire(tabs); renderMobileTabbar();
+  }
+  function navLinen(){
+    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage);
+    tabs.innerHTML=GROUPS.map(function(x){ return '<div class="gn-grp"><div class="gn-lab">'+(x.p.length>1?x.l:'Overview')+'</div><div class="gn-pages">'+x.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+icon(p)+label(p)+'</button>'; }).join('')+'</div></div>'; }).join('');
+    wire(tabs); renderMobileTabbar();
+  }
+  function navStone(){
+    var tabs=document.getElementById('tabs'), gi=gIdx(currentPage);
+    tabs.innerHTML=GROUPS.map(function(x,i){
+      var single=x.p.length<2;
+      return '<div class="gn-grp'+(i===gi?' cur':'')+(single?' single':'')+'"><button class="gn-lab" '+(single?'data-page="'+x.p[0]+'"':'data-grp="1"')+'>'+x.l+'</button>'+(single?'':'<div class="gn-menu">'+x.p.map(function(p){ return '<button data-page="'+p+'" class="'+(p===currentPage?'active':'')+'">'+icon(p)+'<span><b>'+label(p)+'</b><small>'+DESC[p]+'</small></span></button>'; }).join('')+'</div>')+'</div>';
+    }).join('');
+    wire(tabs);
+    tabs.querySelectorAll('.gn-lab[data-grp]').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); var gp=b.parentNode, was=gp.classList.contains('open'); tabs.querySelectorAll('.gn-grp.open').forEach(function(o){o.classList.remove('open');}); if(!was) gp.classList.add('open'); }); });
+    renderMobileTabbar();
+  }
+  if(!window.__stoneClose){ window.__stoneClose=1; document.addEventListener('click',function(){ document.querySelectorAll('.gn-grp.open').forEach(function(o){o.classList.remove('open');}); }); }
+
+  /* ---------- dusty: merged views, pages stacked into one scroll ---------- */
+  var STACKS={'Home':['Dashboard'],'Current Season':['Odds'],'Transactions':['Trade Calculator'],'Analytics':['Rivalries']};
+  var TAG={'Dashboard':'Dashboard','Odds':'Odds & Lines','Trade Calculator':'Trade Calculator','Rivalries':'Rivalries'};
+  var SECOND={}; Object.keys(STACKS).forEach(function(l){ STACKS[l].forEach(function(p){ SECOND[p]=l; }); });
+  function setupDusty(){
+    var O={'Home':pageHome,'Dashboard':pageDashboard,'Current Season':pageLiveSeason,'Odds':pageOdds,'Analytics':pageAnalytics,'Rivalries':pageRecords,'Transactions':pageTransactions,'Trade Calculator':pageTradeCalculator};
+    function stacked(lead){ return function(){ var h=O[lead](); STACKS[lead].forEach(function(p){ h+='<section class="stack-part" id="stack-'+slug(p)+'" data-tag="'+TAG[p]+'"><div class="stack-tag">'+TAG[p]+'</div>'+O[p]()+'</section>'; }); return h; }; }
+    pageHome=stacked('Home'); pageLiveSeason=stacked('Current Season'); pageTransactions=stacked('Transactions'); pageAnalytics=stacked('Analytics');
+    PAGES.splice(0,PAGES.length,'Home','Current Season','Franchise','Transactions','Analytics','History','Games');
+    NAV_LABELS['Home']='Overview'; NAV_LABELS['Current Season']='Season'; NAV_LABELS['Transactions']='Deals'; NAV_LABELS['Analytics']='Insights'; NAV_LABELS['History']='Archive'; NAV_LABELS['Games']='Games';
+    MOBILE_PRIMARY_PAGES.splice(0,MOBILE_PRIMARY_PAGES.length,'Home','Current Season','Franchise','Analytics');
+    var _rp=renderPage, pending=null;
+    renderPage=function(){
+      if(SECOND[currentPage]){ pending='stack-'+slug(currentPage); currentPage=SECOND[currentPage]; }
+      _rp();
+      var app=document.getElementById('app'), nav=app.querySelector('.jump-nav'), parts=app.querySelectorAll('.stack-part');
+      app.querySelectorAll('.stack-part .jump-nav').forEach(function(n){ n.remove(); });
+      parts.forEach(function(sp){ if(nav) nav.insertAdjacentHTML('beforeend','<a href="#'+sp.id+'">'+sp.getAttribute('data-tag')+' ▸</a>'); });
+      try{ if(app.querySelector('#stack-odds')&&typeof fillOddsSims==='function'){ var cp=currentPage; currentPage='Odds'; fillOddsSims(); setTimeout(function(){ currentPage=cp; },120); } }catch(e){}
+      try{ if(app.querySelector('#stack-rivalries')&&typeof setupRivalryNetworkClicks==='function') setupRivalryNetworkClicks(); }catch(e){}
+      if(pending){ var t=document.getElementById(pending); pending=null; if(t) setTimeout(function(){ t.scrollIntoView({block:'start'}); },60); }
+    };
+  }
+
+  /* ---------- plum: matchday-first ordering and landing page ---------- */
+  function setupPlum(){
+    PAGES.splice(0,PAGES.length,'Current Season','Odds','Dashboard','Franchise','Transactions','Trade Calculator','Analytics','Rivalries','History','Games','Home');
+    NAV_LABELS['Current Season']='Season'; NAV_LABELS['Odds']='Lines'; NAV_LABELS['Dashboard']='Scoreboard'; NAV_LABELS['Franchise']='Teams'; NAV_LABELS['Transactions']='Trades'; NAV_LABELS['Analytics']='Insights'; NAV_LABELS['Home']='Trophy Room';
+    MOBILE_PRIMARY_PAGES.splice(0,MOBILE_PRIMARY_PAGES.length,'Current Season','Odds','Franchise','Analytics');
+  }
+
+  if(theme==='sage') renderNav=navSage;
+  if(theme==='gridiron') renderNav=navGridiron;
+  if(theme==='linen') renderNav=navLinen;
+  if(theme==='stone') renderNav=navStone;
+  if(theme==='dusty') setupDusty();
+  if(theme==='plum') setupPlum();
+  var ih=window.__initHash||''; 
+  if(theme==='plum' && (ih===''||ih==='#/home'||ih==='#')) currentPage='Current Season';
+  if(theme==='dusty' && SECOND[currentPage]) currentPage=SECOND[currentPage];
+  renderNav(); renderPage();
+})();
+
 </script>
 </body>
 </html>
