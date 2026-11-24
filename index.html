@@ -10179,11 +10179,20 @@ function lastPlaceTrophies(){
     return last ? {year, owner:last.owner, detail:`${last.w}-${last.l}`} : null;
   }).filter(Boolean);
 }
+// Runner-up: lost the championship game (second spot of the playoff podium).
+// Finished seasons only, same as the other title trophies.
+function runnerUpTrophies(){
+  return Object.keys(SEASONS).map(Number).map(year=>{
+    const r = playoffPodium(year)[1];
+    return r ? {year, owner:r.owner, detail:'Lost the title game'} : null;
+  }).filter(Boolean);
+}
 const TROPHY_TYPES = [
   {key:'league', label:'League Champion', getAll:leagueTitleTrophies, color:'#C79A3C', shape:'chalice'},
   {key:'cup', label:"Commissioner's Cup", getAll:cupTitleTrophies, color:'#8A5FC2', shape:'cup'},
   {key:'division', label:'Division Champion', getAll:divisionTitleTrophies, color:'#4F86B8', shape:'shield'},
   {key:'scoring', label:'Scoring Champion', getAll:scoringTitleChampions, color:'#C24B4B', shape:'star'},
+  {key:'runner', label:'Runner-Up', getAll:runnerUpTrophies, color:'#9AA3AD', shape:'chalice'},
   {key:'worst', label:'Last Place', getAll:lastPlaceTrophies, color:'#D2A867', shape:'spoon'}
 ];
 // Lighten (positive amt) or darken (negative amt) a #rrggbb hex color by amt
@@ -18252,7 +18261,7 @@ function analyticsHubInit(app){
   if(titleEl) titleEl.classList.add('ah-title');
   if(nav) nav.classList.add('ah-nav');
   const hub = document.createElement('div'); hub.className='ah-hub';
-  hub.innerHTML = `<div class="section-title">${iconSvg('chart')}Analysis <span class="sub">pick a feature to open it</span></div>
+  hub.innerHTML = `<div class="section-title">${iconSvg('chart')}Analytics <span class="sub">pick a feature to open it</span></div>
     <div class="ah-grid">${AH_FEATURES.map(f=>`<button type="button" class="ah-tile" data-ah="${f.key}">
       <span class="ah-ic">${iconSvg(f.icon,22)}</span><span class="ah-t">${f.title}</span><span class="ah-b">${f.blurb}</span>${f.secs.length>1?`<span class="ah-n">${f.secs.length} views</span>`:''}</button>`).join('')}</div>`;
   const bar = document.createElement('div'); bar.className='ah-bar'; bar.hidden = true;
@@ -18523,7 +18532,7 @@ function condenseNotes(root){
   function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
   function icon(p){ return '<svg class="nav-icon" viewBox="0 0 24 24">'+((typeof NAV_ICONS!=='undefined'&&NAV_ICONS[p])||'')+'</svg>'; }
   function label(p){ return NAV_LABELS[p]||p; }
-  var GROUPS=[{l:'Home',p:['Home']},{l:'Season',p:['Current Season','Dashboard','Odds']},{l:'Teams',p:['Franchise','Transactions','Trade Calculator']},{l:'Analysis',p:['Analytics','History','Rivalries']},{l:'Play',p:['Games']}];
+  var GROUPS=[{l:'Home',p:['Home']},{l:'Season',p:['Current Season','Dashboard','Odds']},{l:'Teams',p:['Franchise','Transactions','Trade Calculator']},{l:'Analytics',p:['Analytics','History','Rivalries']},{l:'Play',p:['Games']}];
   GROUPS.forEach(function(g){ g.p=g.p.filter(function(p){ return PAGES.indexOf(p)>=0; }); });
   var DESC={'Home':'Trophies, banners and podiums','Current Season':'Standings, power rankings, rosters, schedule','Dashboard':'League KPIs, featured game, charts','Odds':'Lines, props and futures (display only)','Franchise':'One-team deep dives','Transactions':'Draft history and trades','Trade Calculator':'Value any trade','Analytics':'Charts, stats lab, finder, draft value','History':'Timeline, records and awards','Rivalries':'Head-to-head records and network','Games':'Trivia, higher or lower, arcade'};
   function gIdx(p){ for(var i=0;i<GROUPS.length;i++) if(GROUPS[i].p.indexOf(p)>=0) return i; return -1; }
