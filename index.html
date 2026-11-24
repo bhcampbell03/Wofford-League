@@ -47,7 +47,12 @@ if(typeof Chart==="undefined"){
 }
 </script>
 
-<script src="data.js"></script>
+<script>
+/* Cache-bust data.js: GitHub Pages and browsers cache it for up to 10 minutes
+   (and phones longer), so a fresh scrape could show old records. The query
+   string is ignored by the server but forces a new download each load. */
+document.write('<script src="data.js?v='+Date.now()+'"><\/script>');
+</script>
 <script>
 /* If data.js didn't load (index.html opened on its own, or uploaded without it),
    try the published copy once before giving up; the main script then shows a
@@ -59,7 +64,7 @@ if(typeof MATCHUPS==="undefined"){
     /* data.js picked by hand for a local preview (see the "League data not found" screen) */
     document.write("<scr"+"ipt>"+_pv.replace(/<\/script/gi,"<\\/script")+"<\/scr"+"ipt>");
   }else{
-    document.write('<script src="https://bhcampbell03.github.io/Wofford-League/data.js"><\/script>');
+    document.write('<script src="https://bhcampbell03.github.io/Wofford-League/data.js?v='+Date.now()+'"><\/script>');
   }
 }
 </script>
