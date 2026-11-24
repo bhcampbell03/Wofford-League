@@ -14042,7 +14042,15 @@ function scenarioSwings(year, sims){
   return {sims, week:remaining[0].w, games:nextGames, pIn, cond};
 }
 
-function scenarioPct(p){ return p==null ? '-' : (p>=0.995 ? '100%' : (p<0.005 ? '0%' : (p*100).toFixed(p<0.1||p>0.9?1:0)+'%')); }
+// 100% / 0% are shown only when `exact` says the spot is mathematically locked
+// (clinched / eliminated). Every other chance is clamped to 99.9% / 0.1%.
+function scenarioPct(p, exact){
+  if(p==null) return '-';
+  if(exact && p>=1) return '100%';
+  if(exact && p<=0) return '0%';
+  p = Math.min(0.999, Math.max(0.001, p));
+  return (p*100).toFixed(p<0.1||p>0.9?1:0)+'%';
+}
 
 function renderPlayoffScenariosHtml(year, scIn){
   const sc = scIn || computePlayoffScenarios(year);
@@ -14056,7 +14064,10 @@ function renderPlayoffScenariosHtml(year, scIn){
   const sw = scenarioSwings(year, 6000);
   const champ = (window.LAST_CHAMP_ODDS||{})[year] || [];
   const oddsOf = {}; champ.forEach(r=>{ oddsOf[r.owner] = r.playoffPct; });
-  const pOf = id => (oddsOf[id]!=null ? oddsOf[id] : (sw && sw.pIn[id]!=null ? sw.pIn[id] : null));
+  const statusOf = {}; sc.rows.forEach(r=>{ statusOf[r.id]=r.status; });
+  const rawP = id => (oddsOf[id]!=null ? oddsOf[id] : (sw && sw.pIn[id]!=null ? sw.pIn[id] : null));
+  // Clinched = exactly 100%, eliminated = exactly 0%; anyone still alive stays strictly between.
+  const pOf = id => { const st = statusOf[id]; if(st==='in') return 1; if(st==='out') return 0; const v = rawP(id); return v==null ? null : Math.min(0.999, Math.max(0.001, v)); };
   const recTxt = id => { const r = recOf[id]; return r ? `${r.w}-${r.l}` : ''; };
   const rows = sc.rows.slice().sort((a,b)=> (rank[a.status]-rank[b.status]) || ((pOf(b.id)||0)-(pOf(a.id)||0)) || (b.w-a.w));
   const badge = s => s==='in' ? '<span style="color:var(--green);font-weight:800">IN</span>'
@@ -14117,7 +14128,7 @@ function renderPlayoffScenariosHtml(year, scIn){
     const g = sw.games[gi], me = g.a===id ? 0 : 1, opp = me===0 ? g.b : g.a;
     const w = sw.cond(gi,me,id), l = sw.cond(gi,1-me,id);
     const drop = (w!=null&&l!=null) ? Math.round((w-l)*100) : null;
-    return `<div class="sc-line"><span class="sc-k">Week ${sw.week} vs ${currentTeamName(opp)} (${recTxt(opp)}, ${scenarioPct(pOf(opp))} to make it)</span> In <b style="color:var(--green)">${scenarioPct(w)}</b> with a win, <b style="color:var(--red)">${scenarioPct(l)}</b> with a loss${drop!=null?` &mdash; a ${drop}-point swing`:''}.</div>`;
+    return `<div class="sc-line"><span class="sc-k">Week ${sw.week} vs ${currentTeamName(opp)} (${recTxt(opp)}, ${scenarioPct(pOf(opp), true)} to make it)</span> In <b style="color:var(--green)">${scenarioPct(w)}</b> with a win, <b style="color:var(--red)">${scenarioPct(l)}</b> with a loss${drop!=null?` &mdash; a ${drop}-point swing`:''}.</div>`;
   }
   function schedule(id){
     const bits = [];
@@ -14152,7 +14163,7 @@ function renderPlayoffScenariosHtml(year, scIn){
   return css + `<p class="note" style="margin-bottom:10px">Every possible result of the remaining ${sc.games} games was played out against today's records (${sc.weeksLeft} week${sc.weeksLeft===1?'':'s'} left). Division leaders get the top seeds; ties are broken by points scored. ${counts.in} clinched, ${counts.alive} alive, ${counts.out} out. The percentage next to each name is that team's chance to make the playoffs (same projection as the Standings column). In each team's remaining games, bold opponents are direct playoff rivals (20% to 90% to make it).</p>
     <p style="margin:0 0 8px"><button type="button" class="filter-chip chip-sm" onclick="document.querySelectorAll('#scenarioWrap .sc-det').forEach(d=>d.open=true)">Expand all</button> <button type="button" class="filter-chip chip-sm" onclick="document.querySelectorAll('#scenarioWrap .sc-det').forEach(d=>d.open=false)">Collapse all</button></p>
     <div class="table-wrap"><table class="table-compact"><thead><tr><th>Team</th><th class="num-cell">Record</th><th>Status</th><th>What it takes</th></tr></thead><tbody>
-    ${rows.map(r=>{ const p = pOf(r.id); return `<tr><td class="team-name" style="white-space:nowrap;vertical-align:top">${currentTeamName(r.id)}${p!=null?`<span class="sc-pill" style="background:${pillColor(p)}" title="Chance to make the playoffs">${scenarioPct(p)}</span>`:''}</td><td class="num-cell" style="vertical-align:top">${r.w}-${r.l}</td><td style="vertical-align:top">${badge(r.status)}</td><td style="white-space:normal;min-width:300px">${scenarioSentence(r, true)}<details class="sc-det"><summary>Show details</summary><div class="sc-line">${cutLine(r.id)}</div>${r.status==='alive'||r.status==='in'?ladder(r):''}${r.status!=='out'?nextGame(r.id):''}${schedule(r.id)}${r.status==='alive'?rooting(r.id):''}</details></td></tr>`; }).join("")}
+    ${rows.map(r=>{ const p = pOf(r.id); return `<tr><td class="team-name" style="white-space:nowrap;vertical-align:top">${currentTeamName(r.id)}${p!=null?`<span class="sc-pill" style="background:${pillColor(p)}" title="Chance to make the playoffs">${scenarioPct(p, true)}</span>`:''}</td><td class="num-cell" style="vertical-align:top">${r.w}-${r.l}</td><td style="vertical-align:top">${badge(r.status)}</td><td style="white-space:normal;min-width:300px">${scenarioSentence(r, true)}<details class="sc-det"><summary>Show details</summary><div class="sc-line">${cutLine(r.id)}</div>${r.status==='alive'||r.status==='in'?ladder(r):''}${r.status!=='out'?nextGame(r.id):''}${schedule(r.id)}${r.status==='alive'?rooting(r.id):''}</details></td></tr>`; }).join("")}
     </tbody></table></div>` + gamesHtml;
 }
 
